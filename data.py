@@ -22,18 +22,18 @@ class DaVinciDataSet(Dataset):
         self.root_dir = root_dir
         self.image_set = image_set
 
-        new_height = round(480*resize)
-        new_width = round(640*resize)
+        #new_height = round(480*resize)
+        #new_width = round(640*resize)
 
         if not img_transform:
             self.img_transform = transforms.Compose([transforms.Grayscale(),
-                                                     transforms.Resize((new_height, new_width)),
+                                                     #transforms.Resize((new_height, new_width)),
                                                      transforms.ToTensor()])
         else:
             self.img_transform = img_transform
 
         if not target_transform:
-            self.target_transform = transforms.Compose([transforms.Resize((new_height, new_width)),
+            self.target_transform = transforms.Compose([#transforms.Resize((new_height, new_width)),
                                                         transforms.ToTensor()])
         else:
             self.target_transform = target_transform
@@ -102,21 +102,26 @@ class DaVinciDataSet(Dataset):
         return len(self.all_samples)
 
     def __getitem__(self, index):
-        sample = self.all_samples[index]
-        video_name = sample[0]
-        frames = sample[1]
+        frames = self.all_samples[index]
+        #video_name = sample[0]
+        #frames = sample[1]
 
         images = []
         for frame in frames:
-            img_path = os.path.join(self.root_dir, 'nyu2_{}'.format(self.image_set), video_name, '{}.jpg'.format(frame))
+            img_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'image_0', '{:s}'.format(frame))
             image = Image.open(img_path)
             image = self.img_transform(image)
             images.append(image)
 
         image_tensor = torch.stack(images)
-        image_tensor = torch.squeeze(image_tensor, 1)
+        print(image_tensor.shape)
 
-        target_path = os.path.join(self.root_dir, 'nyu2_{}'.format(self.image_set), video_name, '{}.png'.format(frames[-1]))
+        # why did i do this - needed for dataloaders?
+        image_tensor = torch.squeeze(image_tensor, 1)
+        print(image_tensor.shape)
+
+        # target is only the last frame
+        target_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[-1]))
         target = Image.open(target_path)
         target = self.target_transform(target)
 
@@ -176,4 +181,5 @@ class DaVinciDataSet(Dataset):
 #     #     return loader
 
 ds = DaVinciDataSet()
+ds.__getitem__(0)
 #dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/')
