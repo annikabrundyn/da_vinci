@@ -9,12 +9,12 @@ from torch.utils.data import random_split
 import pytorch_lightning as pl
 from PIL import Image
 
-class NYUDepth(Dataset):
+class DaVinciDataSet(Dataset):
 
     def __init__(self,
-                 root_dir,
+                 root_dir = '/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
                  image_set='train',
-                 frames_per_sample=1,
+                 frames_per_sample=3,
                  resize=1,
                  img_transform=None,
                  target_transform=None
@@ -41,36 +41,38 @@ class NYUDepth(Dataset):
         # create dict with each video name (of diff. scenes) as a key and a list of corresponding frames for that video
         self.videos = {}
         self.frames_per_sample = frames_per_sample
-        img_list = self.read_image_list(os.path.join(root_dir, '{:s}.csv'.format(image_set)))
 
-        for (img_filename, target_filename) in img_list:
-            key, jpg = img_filename.split('/')[2:]
-            frame_num = jpg.split('.')[0]
-            if key in self.videos:
-                self.videos[key].append(int(frame_num))
-            else:
-                self.videos[key] = [int(frame_num)]
+        # img list is already sorted in the correct order
+        # TODO: add a check for this
+        img_list = self.read_image_list(os.path.join(root_dir, '{:s}.txt'.format(image_set)))
+
+        # for (img_filename, target_filename) in img_list:
+        #     key, jpg = img_filename.split('/')[2:]
+        #     frame_num = jpg.split('.')[0]
+        #     if key in self.videos:
+        #         self.videos[key].append(int(frame_num))
+        #     else:
+        #         self.videos[key] = [int(frame_num)]
 
         # sort the frames and create samples containing k frames per sample
         self.all_samples = []
-        for key, value in self.videos.items():
-            value.sort()
 
-            if self.frames_per_sample > 1:
-                step_size = 1 # sample overlap size
-                for i in range(0, len(value)-self.frames_per_sample, step_size):
-                    frames = value[i:i+self.frames_per_sample]
+        if self.frames_per_sample > 1:
+            step_size = 1 # sample overlap size
+            for i in range(0, len(img_list)-self.frames_per_sample, step_size):
+                frames = img_list[i:i+self.frames_per_sample]
 
-                    # Randomly drop one frame to reduce correlation between samples
-                    if self.frames_per_sample > 2:
-                        rand_idx = random.randint(0, self.frames_per_sample - 2)
-                        _ = frames.pop(rand_idx)
+                # Randomly drop one frame to reduce correlation between samples
+                if self.frames_per_sample > 2:
+                    rand_idx = random.randint(0, self.frames_per_sample - 2)
+                    _ = frames.pop(rand_idx)
 
-                    self.all_samples += [(key, frames)]
+                self.all_samples += [frames]
 
-            # only using single frame
-            else:
-                self.all_samples += ([(key, [i]) for i in self.videos[key]])
+        # only using single frame
+        else:
+            self.all_samples += [[i] for i in img_list]
+
         print("len of all samples:", len(self.all_samples))
 
         # shuffle
@@ -91,9 +93,9 @@ class NYUDepth(Dataset):
             next_line = list_file.readline()
             if not next_line:
                 break
-            jpg, png = next_line.rstrip().split(',')
+            png_name = next_line.rstrip()
 
-            img_list.append((jpg, png))
+            img_list.append(png_name)
         return img_list
 
     def __len__(self):
@@ -121,57 +123,57 @@ class NYUDepth(Dataset):
         return image_tensor, target
 
 
-class NYUDepthDataModule(pl.LightningDataModule):
-    def __init__(
-            self,
-            data_dir: str,
-            frames_per_sample: int = 1,
-            resize: float = 0.5,
-            val_split: float = 0.2,
-            num_workers: int = 4,
-            batch_size: int = 32,
-            seed: int = 42,
-            *args,
-            **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.data_dir = data_dir if data_dir is not None else os.getcwd()
-        self.frames_per_sample = frames_per_sample
-        self.resize = resize
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        self.seed = seed
+# class DaVinciDataModule(pl.LightningDataModule):
+#     def __init__(
+#             self,
+#             data_dir: str,
+#             frames_per_sample: int = 1,
+#             resize: float = 0.5,
+#             val_split: float = 0.2,
+#             num_workers: int = 4,
+#             batch_size: int = 32,
+#             seed: int = 42,
+#             *args,
+#             **kwargs,
+#     ):
+#         super().__init__(*args, **kwargs)
+#         self.data_dir = data_dir if data_dir is not None else os.getcwd()
+#         self.frames_per_sample = frames_per_sample
+#         self.resize = resize
+#         self.batch_size = batch_size
+#         self.num_workers = num_workers
+#         self.seed = seed
+#
+#         self.dataset = NYUDepth(self.data_dir, frames_per_sample=self.frames_per_sample, resize=self.resize)
+#
+#         val_len = int(val_split * len(self.dataset))
+#         train_len = len(self.dataset) - val_len
+#
+#         print(train_len)
+#         print(val_len)
+#
+#         self.trainset, self.valset = random_split(self.dataset, lengths=[train_len, val_len])
+#
+#     def train_dataloader(self):
+#         loader = DataLoader(self.trainset,
+#                             batch_size=self.batch_size,
+#                             shuffle=True,
+#                             num_workers=self.num_workers)
+#         return loader
+#
+#     def val_dataloader(self):
+#         loader = DataLoader(self.valset,
+#                             batch_size=self.batch_size,
+#                             shuffle=False,
+#                             num_workers=self.num_workers)
+#         return loader
+#
+#     # def test_dataloader(self):
+#     #     loader = DataLoader(self.testset,
+#     #                         batch_size=self.batch_size,
+#     #                         shuffle=False,
+#     #                         num_workers=self.num_workers)
+#     #     return loader
 
-        self.dataset = NYUDepth(self.data_dir, frames_per_sample=self.frames_per_sample, resize=self.resize)
-
-        val_len = int(val_split * len(self.dataset))
-        train_len = len(self.dataset) - val_len
-
-        print(train_len)
-        print(val_len)
-
-        self.trainset, self.valset = random_split(self.dataset, lengths=[train_len, val_len])
-
-    def train_dataloader(self):
-        loader = DataLoader(self.trainset,
-                            batch_size=self.batch_size,
-                            shuffle=True,
-                            num_workers=self.num_workers)
-        return loader
-
-    def val_dataloader(self):
-        loader = DataLoader(self.valset,
-                            batch_size=self.batch_size,
-                            shuffle=False,
-                            num_workers=self.num_workers)
-        return loader
-
-    # def test_dataloader(self):
-    #     loader = DataLoader(self.testset,
-    #                         batch_size=self.batch_size,
-    #                         shuffle=False,
-    #                         num_workers=self.num_workers)
-    #     return loader
-
-#ds = NYUDepth('/Users/annikabrundyn/Developer/nyu_depth/data/')
+ds = DaVinciDataSet()
 #dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/')
