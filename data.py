@@ -39,24 +39,14 @@ class DaVinciDataSet(Dataset):
             self.target_transform = target_transform
 
         # create dict with each video name (of diff. scenes) as a key and a list of corresponding frames for that video
-        self.videos = {}
         self.frames_per_sample = frames_per_sample
 
         # img list is already sorted in the correct order
         # TODO: add a check for this
         img_list = self.read_image_list(os.path.join(root_dir, '{:s}.txt'.format(image_set)))
 
-        # for (img_filename, target_filename) in img_list:
-        #     key, jpg = img_filename.split('/')[2:]
-        #     frame_num = jpg.split('.')[0]
-        #     if key in self.videos:
-        #         self.videos[key].append(int(frame_num))
-        #     else:
-        #         self.videos[key] = [int(frame_num)]
-
-        # sort the frames and create samples containing k frames per sample
+        # create samples containing k frames per sample
         self.all_samples = []
-
         if self.frames_per_sample > 1:
             step_size = 1 # sample overlap size
             for i in range(0, len(img_list)-self.frames_per_sample, step_size):
@@ -103,8 +93,6 @@ class DaVinciDataSet(Dataset):
 
     def __getitem__(self, index):
         frames = self.all_samples[index]
-        #video_name = sample[0]
-        #frames = sample[1]
 
         images = []
         for frame in frames:
@@ -114,11 +102,7 @@ class DaVinciDataSet(Dataset):
             images.append(image)
 
         image_tensor = torch.stack(images)
-        print(image_tensor.shape)
-
-        # why did i do this - needed for dataloaders?
         image_tensor = torch.squeeze(image_tensor, 1)
-        print(image_tensor.shape)
 
         # target is only the last frame
         target_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[-1]))
