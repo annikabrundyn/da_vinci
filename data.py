@@ -12,12 +12,12 @@ from PIL import Image
 class DaVinciDataSet(Dataset):
 
     def __init__(self,
-                 root_dir = '/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-                 image_set='train',
-                 frames_per_sample=3,
-                 resize=1,
-                 img_transform=None,
-                 target_transform=None
+                 root_dir: str,
+                 image_set: str = 'train',
+                 frames_per_sample: int =3,
+                 resize: float = 1,
+                 img_transform = None,
+                 target_transform = None
                  ):
         self.root_dir = root_dir
         self.image_set = image_set
@@ -91,6 +91,7 @@ class DaVinciDataSet(Dataset):
             image = self.img_transform(image)
             images.append(image)
 
+        # channels are the b/w input frames
         image_tensor = torch.stack(images)
         image_tensor = torch.squeeze(image_tensor, 1)
 
@@ -102,58 +103,57 @@ class DaVinciDataSet(Dataset):
         return image_tensor, target
 
 
-# class DaVinciDataModule(pl.LightningDataModule):
-#     def __init__(
-#             self,
-#             data_dir: str,
-#             frames_per_sample: int = 1,
-#             resize: float = 0.5,
-#             val_split: float = 0.2,
-#             num_workers: int = 4,
-#             batch_size: int = 32,
-#             seed: int = 42,
-#             *args,
-#             **kwargs,
-#     ):
-#         super().__init__(*args, **kwargs)
-#         self.data_dir = data_dir if data_dir is not None else os.getcwd()
-#         self.frames_per_sample = frames_per_sample
-#         self.resize = resize
-#         self.batch_size = batch_size
-#         self.num_workers = num_workers
-#         self.seed = seed
-#
-#         self.dataset = NYUDepth(self.data_dir, frames_per_sample=self.frames_per_sample, resize=self.resize)
-#
-#         val_len = int(val_split * len(self.dataset))
-#         train_len = len(self.dataset) - val_len
-#
-#         print(train_len)
-#         print(val_len)
-#
-#         self.trainset, self.valset = random_split(self.dataset, lengths=[train_len, val_len])
-#
-#     def train_dataloader(self):
-#         loader = DataLoader(self.trainset,
-#                             batch_size=self.batch_size,
-#                             shuffle=True,
-#                             num_workers=self.num_workers)
-#         return loader
-#
-#     def val_dataloader(self):
-#         loader = DataLoader(self.valset,
-#                             batch_size=self.batch_size,
-#                             shuffle=False,
-#                             num_workers=self.num_workers)
-#         return loader
-#
-#     # def test_dataloader(self):
-#     #     loader = DataLoader(self.testset,
-#     #                         batch_size=self.batch_size,
-#     #                         shuffle=False,
-#     #                         num_workers=self.num_workers)
-#     #     return loader
+class DaVinciDataModule(pl.LightningDataModule):
+    def __init__(
+            self,
+            data_dir: str,
+            frames_per_sample: int = 1,
+            resize: float = 1,
+            val_split: float = 0.2,
+            num_workers: int = 4,
+            batch_size: int = 32,
+            seed: int = 42,
+            *args,
+            **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.data_dir = data_dir if data_dir is not None else os.getcwd()
+        self.frames_per_sample = frames_per_sample
+        self.resize = resize
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.seed = seed
 
-ds = DaVinciDataSet()
-ds.__getitem__(0)
-#dm = NYUDepthDataModule('/Users/annikabrundyn/Developer/nyu_depth/data/')
+        self.train_dataset = DaVinciDataSet(self.data_dir,
+                                            frames_per_sample=self.frames_per_sample,
+                                            resize=self.resize,
+                                            image_set='train')
+
+        self.val_dataset = DaVinciDataSet(self.data_dir,
+                                          frames_per_sample=self.frames_per_sample,
+                                          resize=self.resize,
+                                          image_set='test')
+
+    def train_dataloader(self):
+        loader = DataLoader(self.train_dataset,
+                            batch_size=self.batch_size,
+                            shuffle=True,
+                            num_workers=self.num_workers)
+        return loader
+
+    def val_dataloader(self):
+        loader = DataLoader(self.val_dataset,
+                            batch_size=self.batch_size,
+                            shuffle=False,
+                            num_workers=self.num_workers)
+        return loader
+
+    # def test_dataloader(self):
+    #     loader = DataLoader(self.testset,
+    #                         batch_size=self.batch_size,
+    #                         shuffle=False,
+    #                         num_workers=self.num_workers)
+    #     return loader
+
+ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
+dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
