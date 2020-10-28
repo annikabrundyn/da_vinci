@@ -51,12 +51,10 @@ class DaVinciDataSet(Dataset):
             step_size = 1 # sample overlap size
             for i in range(0, len(img_list)-self.frames_per_sample, step_size):
                 frames = img_list[i:i+self.frames_per_sample]
-
                 # Randomly drop one frame to reduce correlation between samples
                 if self.frames_per_sample > 2:
                     rand_idx = random.randint(0, self.frames_per_sample - 2)
                     _ = frames.pop(rand_idx)
-
                 self.all_samples += [frames]
 
         # only using single frame
@@ -68,15 +66,7 @@ class DaVinciDataSet(Dataset):
         # shuffle
         random.shuffle(self.all_samples)
 
-
     def read_image_list(self, filename):
-        """
-        Read one of the image index lists
-        Parameters:
-            filename (string):  path to the image list file
-        Returns:
-            list (int):  list of strings that correspond to image names
-        """
         list_file = open(filename, 'r')
         img_list = []
         while True:
