@@ -14,7 +14,8 @@ class DaVinciDataSet(Dataset):
     def __init__(self,
                  root_dir: str,
                  image_set: str = 'train',
-                 frames_per_sample: int =3,
+                 frames_per_sample: int = 3,
+                 frames_to_drop: int = 1,
                  resize: float = 1,
                  img_transform = None,
                  target_transform = None
@@ -124,15 +125,26 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.seed = seed
 
-        self.train_dataset = DaVinciDataSet(self.data_dir,
-                                            frames_per_sample=self.frames_per_sample,
-                                            resize=self.resize,
-                                            image_set='train')
+        self.train_val_dataset = DaVinciDataSet(self.data_dir,
+                                                frames_per_sample=self.frames_per_sample,
+                                                resize=self.resize,
+                                                image_set='train')
 
-        self.val_dataset = DaVinciDataSet(self.data_dir,
-                                          frames_per_sample=self.frames_per_sample,
-                                          resize=self.resize,
-                                          image_set='test')
+        self.test_dataset = DaVinciDataSet(self.data_dir,
+                                           frames_per_sample=self.frames_per_sample,
+                                           resize=self.resize,
+                                           image_set='test')
+
+        # split into train/validation
+        val_len = int(val_split * len(self.train_val_dataset))
+        train_len = len(self.train_val_dataset) - val_len
+
+        print(train_len)
+        print(val_len)
+
+        self.train_dataset, self.val_dataset = random_split(self.train_val_dataset,
+                                                            lengths=[train_len, val_len],
+                                                            seed=self.seed)
 
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,
@@ -148,12 +160,12 @@ class DaVinciDataModule(pl.LightningDataModule):
                             num_workers=self.num_workers)
         return loader
 
-    # def test_dataloader(self):
-    #     loader = DataLoader(self.testset,
-    #                         batch_size=self.batch_size,
-    #                         shuffle=False,
-    #                         num_workers=self.num_workers)
-    #     return loader
+    def test_dataloader(self):
+        loader = DataLoader(self.test_dataset,
+                            batch_size=self.batch_size,
+                            shuffle=False,
+                            num_workers=self.num_workers)
+        return loader
 
 #ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
 #dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
