@@ -38,7 +38,7 @@ class UNet(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
-        # final layer to make depth map dimensions equal
+        # final layer to match the depth map dimensions
         self.conv_reshape = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(3,11), stride=1, padding=1, dilation=8)
 
     def forward(self, x):
@@ -49,9 +49,9 @@ class UNet(nn.Module):
         # Up path
         for i, layer in enumerate(self.layers[self.num_layers:-1]):
             xi[-1] = layer(xi[-1], xi[-2 - i])
-        # Last conv layer to usual output
+        # Final conv layer of UNet
         output = self.layers[-1](xi[-1])
-        # Conv layer to reshape for depth map dimensions
+        # Extra conv layer to reshape for depth map dimensions
         output = self.conv_reshape(output)
         return output
 
