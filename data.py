@@ -16,26 +16,21 @@ class DaVinciDataSet(Dataset):
                  image_set: str = 'train',
                  frames_per_sample: int = 3,
                  frames_to_drop: int = 1,
-                 resize: float = 1,
+                 resize: float = 1,   #leaving this in case we want to add the ability to resize
                  img_transform = None,
                  target_transform = None
                  ):
         self.root_dir = root_dir
         self.image_set = image_set
 
-        #new_height = round(480*resize)
-        #new_width = round(640*resize)
-
         if not img_transform:
             self.img_transform = transforms.Compose([transforms.Grayscale(),
-                                                     #transforms.Resize((new_height, new_width)),
                                                      transforms.ToTensor()])
         else:
             self.img_transform = img_transform
 
         if not target_transform:
-            self.target_transform = transforms.Compose([#transforms.Resize((new_height, new_width)),
-                                                        transforms.ToTensor()])
+            self.target_transform = transforms.Compose([transforms.ToTensor()])
         else:
             self.target_transform = target_transform
 
@@ -61,8 +56,6 @@ class DaVinciDataSet(Dataset):
         # only using single frame
         else:
             self.all_samples += [[i] for i in img_list]
-
-        print("len of all samples:", len(self.all_samples))
 
         # shuffle
         random.shuffle(self.all_samples)
@@ -139,12 +132,8 @@ class DaVinciDataModule(pl.LightningDataModule):
         val_len = int(val_split * len(self.train_val_dataset))
         train_len = len(self.train_val_dataset) - val_len
 
-        print(train_len)
-        print(val_len)
-
         self.train_dataset, self.val_dataset = random_split(self.train_val_dataset,
-                                                            lengths=[train_len, val_len],
-                                                            seed=self.seed)
+                                                            lengths=[train_len, val_len])
 
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,

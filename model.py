@@ -113,7 +113,8 @@ class DepthMap(pl.LightningModule):
 
 
 if __name__ == '__main__':
-    pl.seed_everything(1234)
+    # sets seed for numpy, torch, python.random and PYTHONHASHSEED
+    pl.seed_everything(42)
 
     parser = ArgumentParser()
 
@@ -136,6 +137,7 @@ if __name__ == '__main__':
     # sanity checks
     print("size of trainset:", len(dm.train_dataset))
     print("size of validset:", len(dm.val_dataset))
+    print("size of testset:", len(dm.test_dataset))
 
     # model
     model = DepthMap(**args.__dict__)
