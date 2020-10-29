@@ -39,9 +39,16 @@ class DepthMap(pl.LightningModule):
         self.output_img_freq = output_img_freq
         self.batch_size = batch_size
 
+        # calculate the input channels for UNet
+        if frames_per_sample <= 2:
+            self.input_channels = frames_per_sample
+        else:
+            max_drop_frames = self.frames_per_sample - 2
+            self.frames_to_drop = min(self.frames_to_drop, max_drop_frames)
+            self.input_channels = self.frames_per_sample - self.frames_to_drop
+
         self.net = UNet(num_classes=num_classes,
-                        frames_per_sample=self.frames_per_sample,
-                        frames_to_drop=self.frames_to_drop,
+                        input_channels=self.input_channels,
                         num_layers=self.num_layers,
                         features_start=self.features_start,
                         bilinear=self.bilinear)
