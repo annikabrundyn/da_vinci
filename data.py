@@ -15,7 +15,7 @@ class DaVinciDataSet(Dataset):
                  root_dir: str,
                  image_set: str = 'train',
                  frames_per_sample: int = 5,
-                 frames_to_drop: int = 4,
+                 frames_to_drop: int = 2,
                  resize: float = 1,   #leaving this in case we want to add the ability to resize
                  img_transform = None,
                  target_transform = None
@@ -107,8 +107,8 @@ class DaVinciDataModule(pl.LightningDataModule):
     def __init__(
             self,
             data_dir: str,
-            frames_per_sample: int = 3,
-            frames_to_drop: int = 1,
+            frames_per_sample: int = 5,
+            frames_to_drop: int = 2,
             resize: float = 1,
             val_split: float = 0.2,
             num_workers: int = 4,
@@ -126,11 +126,13 @@ class DaVinciDataModule(pl.LightningDataModule):
 
         self.train_val_dataset = DaVinciDataSet(self.data_dir,
                                                 frames_per_sample=self.frames_per_sample,
+                                                frames_to_drop=self.frames_to_drop,
                                                 resize=self.resize,
                                                 image_set='train')
 
         self.test_dataset = DaVinciDataSet(self.data_dir,
                                            frames_per_sample=self.frames_per_sample,
+                                           frames_to_drop=self.frames_to_drop,
                                            resize=self.resize,
                                            image_set='test')
 

@@ -125,6 +125,6 @@ class Up(nn.Module):
         return self.conv(x)
 
 
-model = UNet(input_channels=1, num_classes=1)
-x = torch.rand((5, 1, 192, 384))
-y = model(x)
+#model = UNet(input_channels=1, num_classes=1)
+#x = torch.rand((5, 1, 192, 384))
+#y = model(x)
