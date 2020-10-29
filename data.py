@@ -1,6 +1,5 @@
 import os
 import random
-import warnings
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -15,8 +14,8 @@ class DaVinciDataSet(Dataset):
     def __init__(self,
                  root_dir: str,
                  image_set: str = 'train',
-                 frames_per_sample: int = 3,
-                 frames_to_drop: int = 1,
+                 frames_per_sample: int = 5,
+                 frames_to_drop: int = 4,
                  resize: float = 1,   #leaving this in case we want to add the ability to resize
                  img_transform = None,
                  target_transform = None
@@ -56,7 +55,7 @@ class DaVinciDataSet(Dataset):
                         #TODO: Add warning if user input more frames to drop than makes sense
                         self.frames_to_drop = max_frames_to_drop
                     for i in range(self.frames_to_drop):
-                        rand_idx = random.randint(0, self.frames_per_sample - 2)
+                        rand_idx = random.randint(0, len(frames) - 2)
                         _ = frames.pop(rand_idx)
                 self.all_samples += [frames]
 
@@ -108,22 +107,22 @@ class DaVinciDataModule(pl.LightningDataModule):
     def __init__(
             self,
             data_dir: str,
-            frames_per_sample: int = 1,
+            frames_per_sample: int = 3,
+            frames_to_drop: int = 1,
             resize: float = 1,
             val_split: float = 0.2,
             num_workers: int = 4,
             batch_size: int = 32,
-            seed: int = 42,
             *args,
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.data_dir = data_dir if data_dir is not None else os.getcwd()
         self.frames_per_sample = frames_per_sample
+        self.frames_to_drop = frames_to_drop
         self.resize = resize
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.seed = seed
 
         self.train_val_dataset = DaVinciDataSet(self.data_dir,
                                                 frames_per_sample=self.frames_per_sample,
