@@ -1,5 +1,6 @@
 import os
 import random
+import warnings
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -34,23 +35,29 @@ class DaVinciDataSet(Dataset):
         else:
             self.target_transform = target_transform
 
-        # create dict with each video name (of diff. scenes) as a key and a list of corresponding frames for that video
         self.frames_per_sample = frames_per_sample
+        self.frames_to_drop = frames_to_drop
 
-        # img list is already sorted in the correct order
+        # img list is already sorted in the correct order - just a list of the png names
         # TODO: add a check for this
         img_list = self.read_image_list(os.path.join(root_dir, '{:s}.txt'.format(image_set)))
 
-        # create samples containing k frames per sample
+        # create samples containing k frames per sample and dropping some number of random frames
         self.all_samples = []
         if self.frames_per_sample > 1:
             step_size = 1 # sample overlap size
             for i in range(0, len(img_list)-self.frames_per_sample, step_size):
                 frames = img_list[i:i+self.frames_per_sample]
-                # Randomly drop one frame to reduce correlation between samples
+
+                # Randomly drop frames - only do this if we have 3 or more frames
                 if self.frames_per_sample > 2:
-                    rand_idx = random.randint(0, self.frames_per_sample - 2)
-                    _ = frames.pop(rand_idx)
+                    max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
+                    if self.frames_to_drop > max_frames_to_drop:
+                        #TODO: Add warning if user input more frames to drop than makes sense
+                        self.frames_to_drop = max_frames_to_drop
+                    for i in range(self.frames_to_drop):
+                        rand_idx = random.randint(0, self.frames_per_sample - 2)
+                        _ = frames.pop(rand_idx)
                 self.all_samples += [frames]
 
         # only using single frame

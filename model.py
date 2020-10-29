@@ -134,7 +134,7 @@ if __name__ == '__main__':
                             resize=args.resize,
                             batch_size=args.batch_size)
 
-    # sanity checks
+    # sanity check
     print("size of trainset:", len(dm.train_dataset))
     print("size of validset:", len(dm.val_dataset))
     print("size of testset:", len(dm.test_dataset))
