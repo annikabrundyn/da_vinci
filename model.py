@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torchvision
 
 from unet import UNet
-from data import NYUDepthDataModule
+from data import DaVinciDataModule
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -129,7 +129,7 @@ if __name__ == '__main__':
         no_frames = args.input_channels + 1    #1 frame will be dropped
     else:
         no_frames = args.input_channels
-    dm = NYUDepthDataModule(args.data_dir, frames_per_sample=no_frames,
+    dm = DaVinciDataModule(args.data_dir, frames_per_sample=no_frames,
                             resize=args.resize,
                             batch_size=args.batch_size)
 
