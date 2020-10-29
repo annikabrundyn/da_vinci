@@ -11,6 +11,8 @@ from data import DaVinciDataModule
 import numpy as np
 import matplotlib.pyplot as plt
 
+from pytorch_lightning.metrics.functional import ssim, psnr
+
 
 class DepthMap(pl.LightningModule):
     def __init__(
@@ -63,15 +65,29 @@ class DepthMap(pl.LightningModule):
             self._log_images(img, target, pred, step_name='train')
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
+
+        # metrics
+        ssim_val = ssim(pred, target)
+        psnr_val = psnr(pred, target)
+        self.log('train_ssim', ssim_val)
+        self.log('train_psnr', psnr_val)
+
         return loss_val
 
     def validation_step(self, batch, batch_idx):
         img, target = batch
         pred = self(img)
-        if batch_idx % self.output_img_freq == 0:
-            self._log_images(img, target, pred, step_name='valid')
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
+        # log predicted images
+        if batch_idx % self.output_img_freq == 0:
+            self._log_images(img, target, pred, step_name='valid')
+
+        # metrics
+        ssim_val = ssim(pred, target)
+        psnr_val = psnr(pred, target)
+        self.log('valid_ssim', ssim_val)
+        self.log('valid_psnr', psnr_val)
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.lr)
