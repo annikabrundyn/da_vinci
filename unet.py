@@ -37,6 +37,9 @@ class UNet(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
+        # final layer to make depth map dimensions equal
+        self.conv_reshape = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(3,11), stride=1, padding=1, dilation=8)
+
     def forward(self, x):
         xi = [self.layers[0](x)]
         # Down path
@@ -45,7 +48,11 @@ class UNet(nn.Module):
         # Up path
         for i, layer in enumerate(self.layers[self.num_layers:-1]):
             xi[-1] = layer(xi[-1], xi[-2 - i])
-        return self.layers[-1](xi[-1])
+        # Last conv layer to usual output
+        output = self.layers[-1](xi[-1])
+        # Conv layer to reshape for depth map dimensions
+        output = self.conv_reshape(output)
+        return output
 
 
 class DoubleConv(nn.Module):
@@ -115,3 +122,8 @@ class Up(nn.Module):
         # Concatenate along the channels axis
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
+
+
+model = UNet(input_channels=1, num_classes=1)
+x = torch.rand((5, 1, 192, 384))
+y = model(x)

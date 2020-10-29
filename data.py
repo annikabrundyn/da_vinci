@@ -157,3 +157,4 @@ class DaVinciDataModule(pl.LightningDataModule):
 
 ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
 dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
+print("hi")
