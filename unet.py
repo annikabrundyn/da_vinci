@@ -14,15 +14,26 @@ class UNet(nn.Module):
     def __init__(
             self,
             num_classes: int,
-            input_channels: int = 3,
+            frames_per_sample: int = 5,
+            frames_to_drop: int = 0,
             num_layers: int = 5,
             features_start: int = 64,
             bilinear: bool = False
     ):
         super().__init__()
         self.num_layers = num_layers
+        self.frames_per_sample = frames_per_sample
+        self.frames_to_drop = frames_to_drop
 
-        layers = [DoubleConv(input_channels, features_start)]
+        # calculate the input channels
+        if frames_per_sample <= 2:
+            self.input_channels = frames_per_sample
+        else:
+            max_drop_frames = self.frames_per_sample - 2
+            self.frames_to_drop = min(self.frames_to_drop, max_drop_frames)
+            self.input_channels = self.frames_per_sample - self.frames_to_drop
+
+        layers = [DoubleConv(self.input_channels, features_start)]
 
         feats = features_start
         for _ in range(num_layers - 1):
