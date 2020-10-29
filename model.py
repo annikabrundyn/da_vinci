@@ -134,9 +134,8 @@ if __name__ == '__main__':
                             batch_size=args.batch_size)
 
     # sanity checks
-    print("size of dataset:", len(dm.dataset))
-    print("size of trainset:", len(dm.trainset))
-    print("size of validset:", len(dm.valset))
+    print("size of trainset:", len(dm.train_dataset))
+    print("size of validset:", len(dm.val_dataset))
 
     # model
     model = DepthMap(**args.__dict__)

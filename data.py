@@ -155,6 +155,5 @@ class DaVinciDataModule(pl.LightningDataModule):
     #                         num_workers=self.num_workers)
     #     return loader
 
-ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
-dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
-print("hi")
+#ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
+#dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
