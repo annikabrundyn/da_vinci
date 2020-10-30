@@ -124,7 +124,6 @@ class DepthMap(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_dir", type=str, default='.', help="path to nyu depth data")
-        parser.add_argument("--resize", type=float, default=1, help="percent to downsample images")
         parser.add_argument("--frames_per_sample", type=int, default=5, help="number of frames to include in each sample")
         parser.add_argument("--frames_to_drop", type=int, default=2, help="number of frames to randomly drop in each sample")
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
@@ -156,7 +155,6 @@ if __name__ == '__main__':
     dm = DaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
-                           resize=args.resize,
                            batch_size=args.batch_size)
 
     # sanity check

@@ -45,7 +45,7 @@ if __name__ == '__main__':
     dm = DaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
-                           resize=args.resize,
+                           include_right_view=True,
                            batch_size=args.batch_size)
 
     # sanity check
