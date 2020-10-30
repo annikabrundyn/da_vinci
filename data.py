@@ -16,12 +16,14 @@ class DaVinciDataSet(Dataset):
                  image_set: str = 'train',
                  frames_per_sample: int = 5,
                  frames_to_drop: int = 2,
+                 include_right_view: bool = False, #whether to include right images
                  resize: float = 1,   #leaving this in case we want to add the ability to resize
                  img_transform = None,
                  target_transform = None
                  ):
         self.root_dir = root_dir
         self.image_set = image_set
+        self.include_right_view = include_right_view
 
         if not img_transform:
             self.img_transform = transforms.Compose([transforms.Grayscale(),
@@ -85,22 +87,36 @@ class DaVinciDataSet(Dataset):
         frames = self.all_samples[index]
 
         images = []
+        if self.include_right_view:
+            right_images = []
+
         for frame in frames:
             img_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'image_0', '{:s}'.format(frame))
             image = Image.open(img_path)
             image = self.img_transform(image)
             images.append(image)
 
+            if self.include_right_view:
+                img_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'image_1', '{:s}'.format(frame))
+                image = Image.open(img_path)
+                image = self.img_transform(image)
+                right_images.append(image)
+
         # channels are the b/w input frames
         image_tensor = torch.stack(images)
-        image_tensor = torch.squeeze(image_tensor, 1)
+        image_tensor = torch.squeeze(image_tensor, 1)  ###try concat instead
 
         # target is only the last frame
         target_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[-1]))
         target = Image.open(target_path)
         target = self.target_transform(target)
 
-        return image_tensor, target
+        if self.include_right_view:
+            right_image_tensor = torch.stack(right_images)
+            right_image_tensor = torch.squeeze(right_image_tensor, 1)
+            return image_tensor, right_image_tensor, target
+        else:
+            return image_tensor, target
 
 
 class DaVinciDataModule(pl.LightningDataModule):
