@@ -104,16 +104,16 @@ class DaVinciDataSet(Dataset):
         # channels are the b/w input frames
         image_tensor = torch.cat(images)
 
+        if self.include_right_view:
+            right_image_tensor = torch.cat(right_images)
+            image_tensor = torch.cat((image_tensor, right_image_tensor), dim=0)
+
         # target is only the last frame
         target_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[-1]))
         target = Image.open(target_path)
         target = self.target_transform(target)
 
-        if self.include_right_view:
-            right_image_tensor = torch.cat(right_images)
-            return image_tensor, right_image_tensor, target
-        else:
-            return image_tensor, target
+        return image_tensor, target
 
 
 class DaVinciDataModule(pl.LightningDataModule):

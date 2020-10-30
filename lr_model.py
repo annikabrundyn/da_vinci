@@ -15,17 +15,28 @@ import matplotlib.pyplot as plt
 from pytorch_lightning.metrics.functional import ssim, psnr
 
 
-class LeftRightStackedDM(DepthMap):
+class LeftRightDepthMap(DepthMap):
 
-    def __init__(self):
+    def __init__(
+            self,
+            lr: float = 0.001,
+            num_classes: int = 1,
+            frames_per_sample: int = 5,
+            frames_to_drop: int = 2,
+            num_layers: int = 5,
+            features_start: int = 64,
+            bilinear: bool = False,
+            output_img_freq: int = 100,
+            batch_size: int = 16,
+            **kwargs
+    ):
         super().__init__()
 
-        self.net = UNet()
-
-    def training_step(self, batch, batch_idx):
-        left, right, target = batch
-        input_imgs = torch.cat((left, right))
-        pred = self(input_imgs)
+        self.net = UNet(num_classes=num_classes,
+                        input_channels=2*self.input_channels,
+                        num_layers=self.num_layers,
+                        features_start=self.features_start,
+                        bilinear=self.bilinear)
 
 
 if __name__ == '__main__':
