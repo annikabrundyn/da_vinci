@@ -38,6 +38,26 @@ class LeftRightDepthMap(DepthMap):
                         features_start=self.features_start,
                         bilinear=self.bilinear)
 
+    def _log_images(self, img, target, pred, step_name, limit=1):
+        # TODO: Randomly select image from batch
+        img = img[:limit]
+        target = target[:limit]
+        pred = pred[:limit]
+
+        # Log input/original image
+        img = img.permute(1, 0, 2, 3)
+        left_img = img[:self.input_channels]
+        right_img = img[self.input_channels:]
+        input_images = torchvision.utils.make_grid([left_img, right_img], nrow=self.input_channels)
+        self.logger.experiment.add_image(f'{step_name}_input_img', input_images, self.trainer.global_step)
+
+        # Log colorized depth maps - using magma colormap
+        color_target_dm = self._matplotlib_imshow(target)
+        color_pred_dm = self._matplotlib_imshow(pred)
+
+        self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
+        self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
+
 
 if __name__ == '__main__':
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
@@ -65,7 +85,8 @@ if __name__ == '__main__':
     print("size of testset:", len(dm.test_dataset))
 
     # model
-    model = DepthMap(**args.__dict__)
+    model = LeftRightDepthMap(**args.__dict__)
+    #model._log_images()
 
     # train
     trainer = pl.Trainer().from_argparse_args(args)
