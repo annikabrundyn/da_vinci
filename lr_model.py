@@ -46,9 +46,7 @@ class LeftRightDepthMap(DepthMap):
 
         # Log input/original image
         img = img.permute(1, 0, 2, 3)
-        left_img = img[:self.input_channels]
-        right_img = img[self.input_channels:]
-        input_images = torchvision.utils.make_grid([left_img, right_img], nrow=self.input_channels)
+        input_images = torchvision.utils.make_grid(img, nrow=self.input_channels)
         self.logger.experiment.add_image(f'{step_name}_input_img', input_images, self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
