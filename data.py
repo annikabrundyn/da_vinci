@@ -179,7 +179,5 @@ class DaVinciDataModule(pl.LightningDataModule):
 
 # ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
 #                     include_right_view=True)
-# ds.__getitem__(0)
 # dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
 #                        include_right_view=True)
-# print("hi")
