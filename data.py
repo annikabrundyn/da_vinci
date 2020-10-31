@@ -41,12 +41,13 @@ class DaVinciDataSet(Dataset):
         # img list is already sorted in the correct order - just a list of the png names
         # TODO: add a check for this
         img_list = self.read_image_list(os.path.join(root_dir, '{:s}.txt'.format(image_set)))
+        img_list = img_list[::-1]
 
         # create samples containing k frames per sample and dropping some number of random frames
         self.all_samples = []
         if self.frames_per_sample > 1:
             step_size = 1 # sample overlap size
-            for i in range(0, len(img_list)-self.frames_per_sample, step_size):
+            for i in range(0, len(img_list)-self.frames_per_sample+1, step_size):
                 frames = img_list[i:i+self.frames_per_sample]
 
                 # Randomly drop frames - only do this if we have 3 or more frames
@@ -63,6 +64,9 @@ class DaVinciDataSet(Dataset):
         # only using single frame
         else:
             self.all_samples += [[i] for i in img_list]
+
+        # reverse order so predicted frames align
+        # self.all_samples = self.all_samples[::-1]
 
         # shuffle
         random.shuffle(self.all_samples)
@@ -108,8 +112,8 @@ class DaVinciDataSet(Dataset):
             right_image_tensor = torch.cat(right_images)
             image_tensor = torch.cat((image_tensor, right_image_tensor), dim=0)
 
-        # target is only the last frame
-        target_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[-1]))
+        # target is only the first frame
+        target_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[0]))
         target = Image.open(target_path)
         target = self.target_transform(target)
 
@@ -177,7 +181,6 @@ class DaVinciDataModule(pl.LightningDataModule):
                             num_workers=self.num_workers)
         return loader
 
-# ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-#                     include_right_view=True)
-# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-#                        include_right_view=True)
+ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data', frames_per_sample=3, frames_to_drop=0)
+
+dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
