@@ -1,5 +1,6 @@
 import os
 import random
+import math
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -129,8 +130,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             frames_to_drop: int = 2,
             include_right_view: bool = False,
             val_split: float = 0.2,
-            val_samples_train: int = 3500,
-            val_samples_test: int = 3500,
+            test_split: float = 0.1,
             num_workers: int = 4,
             batch_size: int = 32,
             *args,
@@ -141,6 +141,8 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
+        self.val_split = val_split
+        self.test_split = test_split
         self.batch_size = batch_size
         self.num_workers = num_workers
 
@@ -151,9 +153,9 @@ class DaVinciDataModule(pl.LightningDataModule):
                                                  image_set='train')
 
         # take last 3500 samples in train as validation set
-        self.val_dataset = torch.utils.data.Subset(self.full_train_dataset, list(range(val_samples_train)))
-        self.train_dataset = torch.utils.data.Subset(self.)
-        self.train_dataset = self.full_train_dataset[val_samples_train+self.frames_per_sample:]
+        #self.val_dataset = torch.utils.data.Subset(self.full_train_dataset, list(range(val_samples_train)))
+        #self.train_dataset = torch.utils.data.Subset(self.)
+        #self.train_dataset = self.full_train_dataset[val_samples_train+self.frames_per_sample:]
 
         self.full_test_dataset = DaVinciDataSet(self.data_dir,
                                                 frames_per_sample=self.frames_per_sample,
@@ -162,13 +164,62 @@ class DaVinciDataModule(pl.LightningDataModule):
                                                 image_set='test')
 
         # take first 3500 samples in test as validation set
-        self.val_dataset = self.full_train_dataset[:val_samples_train]
-        self.train_dataset = self.full_train_dataset[val_samples_train+self.frames_per_sample:]
+        #self.val_dataset = self.full_train_dataset[:val_samples_train]
+        #self.train_dataset = self.full_train_dataset[val_samples_train+self.frames_per_sample:]
 
         # split into train/validation
         #val_len = int(val_split * len(self.train_val_dataset))
         #train_len = len(self.train_val_dataset) - val_len
         #self.train_dataset, self.val_dataset = random_split(self.train_val_dataset, lengths=[train_len, val_len])
+
+    def _read_image_list(self, filename):
+        list_file = open(filename, 'r')
+        img_list = []
+        while True:
+            next_line = list_file.readline()
+            if not next_line:
+                break
+            png_name = next_line.rstrip()
+
+            img_list.append(png_name)
+        return img_list
+
+    def _split_into_chunks(self, img_list, window_size, name):
+        all_samples = []
+        for i in range(0, len(img_list) - window_size, window_size):
+            if i + 2*window_size > len(img_list):  #if its the last sample
+                all_samples.append((name, img_list[i:]))
+            else:
+                all_samples.append((name, img_list[i: i+window_size]))
+        return all_samples
+
+
+
+    def setup(self, stage = None):
+        train_img_list = self._read_image_list(os.path.join(self.data_dir, 'train.txt'))
+        train_img_list = train_img_list[::-1]
+        all_samples = self._split_into_chunks(train_img_list, window_size=1000, name='train')
+
+        test_img_list = self._read_image_list(os.path.join(self.data_dir, 'test.txt'))
+        test_img_list = test_img_list[::-1]
+        all_samples += self._split_into_chunks(test_img_list, window_size=1000, name='test')
+
+        # shuffle all 41 sets of 1000 frames
+        random.shuffle(all_samples)
+
+        # split train/val/test
+        val_len = math.floor(self.val_split * len(all_samples))
+        test_len = math.floor(self.test_split * len(all_samples))
+        train_len = len(all_samples) - val_len - test_len
+
+        train_sets = all_samples[:train_len]
+        val_sets = all_samples[train_len:train_len+val_len]
+        test_sets = all_samples[-test_len:]
+
+
+
+
+        train_sets = all_samples
 
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,
@@ -191,6 +242,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                             num_workers=self.num_workers)
         return loader
 
-ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data', frames_per_sample=3, frames_to_drop=0)
+#ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data', frames_per_sample=3, frames_to_drop=0)
 
 dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
+dm.setup()

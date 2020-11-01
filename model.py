@@ -107,6 +107,7 @@ class DepthMap(pl.LightningModule):
 
     def _log_images(self, img, target, pred, step_name, nrow=1, limit=1):
         # TODO: Randomly select image from batch
+        print(img.shape)
         img = img[:limit]
         target = target[:limit]
         pred = pred[:limit]
