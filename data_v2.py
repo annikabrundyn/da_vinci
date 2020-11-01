@@ -50,13 +50,13 @@ class DaVinciDataSet(Dataset):
             right_images = []
 
         for frame in frames:
-            img_path = os.path.join(self.data_dir, '{:s}'.format(image_set), 'image_0', '{:s}'.format(frame))
+            img_path = os.path.join(self.data_dir, image_set, 'image_0', frame)
             image = Image.open(img_path)
             image = self.img_transform(image)
             images.append(image)
 
             if self.include_right_view:
-                img_path = os.path.join(self.data_dir, '{:s}'.format(image_set), 'image_1', '{:s}'.format(frame))
+                img_path = os.path.join(self.data_dir, image_set, 'image_1', frame)
                 image = Image.open(img_path)
                 image = self.img_transform(image)
                 right_images.append(image)
@@ -69,7 +69,7 @@ class DaVinciDataSet(Dataset):
             image_tensor = torch.cat((image_tensor, right_image_tensor), dim=0)
 
         # target is only the first frame
-        target_path = os.path.join(self.data_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[0]))
+        target_path = os.path.join(self.data_dir, image_set, 'disparity', frames[0])
         target = Image.open(target_path)
         target = self.target_transform(target)
 
