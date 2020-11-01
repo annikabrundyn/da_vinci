@@ -16,16 +16,14 @@ class DaVinciDataSet(Dataset):
     def __init__(self,
                  data_dir: str,
                  sample_list: list,
-                 image_set: str = 'train',
-                 frames_per_sample: int = 5,
-                 frames_to_drop: int = 2,
+                 frames_per_sample: int,
+                 frames_to_drop: int,
                  include_right_view: bool = False, #whether to include right images
                  img_transform = None,
                  target_transform = None
                  ):
         self.data_dir = data_dir
         self.sample_list = sample_list
-        self.image_set = image_set
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
@@ -82,8 +80,8 @@ class DaVinciDataModule(pl.LightningDataModule):
     def __init__(
             self,
             data_dir: str,
-            frames_per_sample: int = 5,
-            frames_to_drop: int = 2,
+            frames_per_sample: int,
+            frames_to_drop: int,
             include_right_view: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
@@ -219,8 +217,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                             num_workers=self.num_workers)
         return loader
 
-#ds = DaVinciDataSet('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data', frames_per_sample=3, frames_to_drop=0)
 
-dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
-dm.setup()
-print("done")
+# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
+# dm.setup()
+

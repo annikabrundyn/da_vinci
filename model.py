@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torchvision
 
 from unet import UNet
-from data import DaVinciDataModule
+from data_v2 import DaVinciDataModule
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -106,7 +106,7 @@ class DepthMap(pl.LightningModule):
         return fig
 
     def _log_images(self, img, target, pred, step_name, nrow=1, limit=1):
-        # TODO: Randomly select image from batch
+        # TODO: Randomly select image from batch?
         print(img.shape)
         img = img[:limit]
         target = target[:limit]
@@ -160,6 +160,7 @@ if __name__ == '__main__':
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            batch_size=args.batch_size)
+    dm.setup()
 
     # sanity check
     print("size of trainset:", len(dm.train_dataset))
