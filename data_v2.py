@@ -102,12 +102,6 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-        self.train_dataset = DaVinciDataSet(data_dir=self.data_dir,
-                                            image_set=self.train_samples,
-                                            frames_per_sample=self.frames_per_sample,
-                                            frames_to_drop=self.frames_to_drop,
-                                            include_right_view=self.include_right_view)
-
     def _read_image_list(self, filename):
         list_file = open(filename, 'r')
         img_list = []
@@ -156,7 +150,7 @@ class DaVinciDataModule(pl.LightningDataModule):
 
         return split_samples
 
-    def setup(self, stage = None):
+    def setup(self):
 
         train_img_list = self._read_image_list(os.path.join(self.data_dir, 'train.txt'))
         train_img_list = train_img_list[::-1]
@@ -180,11 +174,29 @@ class DaVinciDataModule(pl.LightningDataModule):
 
         self.train_samples = self._sliding_window(train_sets)
         self.val_samples = self._sliding_window(val_sets)
-        self.test_samples = random.shuffle(self._sliding_window(test_sets))
+        self.test_samples = self._sliding_window(test_sets)
 
         random.shuffle(self.train_samples)
         random.shuffle(self.val_samples)
         random.shuffle(self.test_samples)
+
+        self.train_dataset = DaVinciDataSet(data_dir=self.data_dir,
+                                            sample_list=self.train_samples,
+                                            frames_per_sample=self.frames_per_sample,
+                                            frames_to_drop=self.frames_to_drop,
+                                            include_right_view=self.include_right_view)
+
+        self.val_dataset = DaVinciDataSet(data_dir=self.data_dir,
+                                          sample_list=self.val_samples,
+                                          frames_per_sample=self.frames_per_sample,
+                                          frames_to_drop=self.frames_to_drop,
+                                          include_right_view=self.include_right_view)
+
+        self.test_dataset = DaVinciDataSet(data_dir=self.data_dir,
+                                           sample_list=self.test_samples,
+                                           frames_per_sample=self.frames_per_sample,
+                                           frames_to_drop=self.frames_to_drop,
+                                           include_right_view=self.include_right_view)
 
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,
@@ -211,3 +223,4 @@ class DaVinciDataModule(pl.LightningDataModule):
 
 dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
 dm.setup()
+print("done")
