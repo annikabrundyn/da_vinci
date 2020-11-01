@@ -130,6 +130,7 @@ class DepthMap(pl.LightningModule):
         parser.add_argument("--data_dir", type=str, help="path to davinci data")
         parser.add_argument("--frames_per_sample", type=int, help="number of frames to include in each sample")
         parser.add_argument("--frames_to_drop", type=int, help="number of frames to randomly drop in each sample")
+        parser.add_argument("--include_right_view", type=bool, help="include left and right view")
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--output_img_freq", type=int, default=100)
@@ -159,6 +160,7 @@ if __name__ == '__main__':
     dm = DaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
+                           include_right_view=args.include_right_view,
                            batch_size=args.batch_size)
     dm.setup()
 
