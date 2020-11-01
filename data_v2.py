@@ -218,6 +218,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         return loader
 
 
-# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data')
+# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
+#                        frames_per_sample=3, frames_to_drop=1)
 # dm.setup()
-
+# dm.train_dataset.__getitem__(0)
