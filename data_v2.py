@@ -14,7 +14,8 @@ from PIL import Image
 class DaVinciDataSet(Dataset):
 
     def __init__(self,
-                 root_dir: str,
+                 data_dir: str,
+                 sample_list: list,
                  image_set: str = 'train',
                  frames_per_sample: int = 5,
                  frames_to_drop: int = 2,
@@ -22,8 +23,11 @@ class DaVinciDataSet(Dataset):
                  img_transform = None,
                  target_transform = None
                  ):
-        self.root_dir = root_dir
+        self.data_dir = data_dir
+        self.sample_list = sample_list
         self.image_set = image_set
+        self.frames_per_sample = frames_per_sample
+        self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
 
         if not img_transform:
@@ -37,72 +41,24 @@ class DaVinciDataSet(Dataset):
         else:
             self.target_transform = target_transform
 
-        self.frames_per_sample = frames_per_sample
-        self.frames_to_drop = frames_to_drop
-
-        # img list is already sorted in the correct order - just a list of the png names
-        # TODO: add a check for this
-        img_list = self.read_image_list(os.path.join(root_dir, '{:s}.txt'.format(image_set)))
-        img_list = img_list[::-1]
-
-        # create samples containing k frames per sample and dropping some number of random frames
-        self.all_samples = []
-        if self.frames_per_sample > 1:
-            step_size = 1 # sample overlap size
-            for i in range(0, len(img_list)-self.frames_per_sample+1, step_size):
-                frames = img_list[i:i+self.frames_per_sample]
-
-                # Randomly drop frames - only do this if we have 3 or more frames
-                if self.frames_per_sample > 2:
-                    max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
-                    if self.frames_to_drop > max_frames_to_drop:
-                        #TODO: Add warning if user input more frames to drop than makes sense
-                        self.frames_to_drop = max_frames_to_drop
-                    for i in range(self.frames_to_drop):
-                        rand_idx = random.randint(0, len(frames) - 2)
-                        _ = frames.pop(rand_idx)
-                self.all_samples += [frames]
-
-        # only using single frame
-        else:
-            self.all_samples += [[i] for i in img_list]
-
-        # reverse order so predicted frames align
-        # self.all_samples = self.all_samples[::-1]
-
-        # shuffle
-        # random.shuffle(self.all_samples)
-
-    def read_image_list(self, filename):
-        list_file = open(filename, 'r')
-        img_list = []
-        while True:
-            next_line = list_file.readline()
-            if not next_line:
-                break
-            png_name = next_line.rstrip()
-
-            img_list.append(png_name)
-        return img_list
-
     def __len__(self):
-        return len(self.all_samples)
+        return len(self.sample_list)
 
     def __getitem__(self, index):
-        frames = self.all_samples[index]
+        image_set, frames = self.sample_list[index]
 
         images = []
         if self.include_right_view:
             right_images = []
 
         for frame in frames:
-            img_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'image_0', '{:s}'.format(frame))
+            img_path = os.path.join(self.data_dir, '{:s}'.format(image_set), 'image_0', '{:s}'.format(frame))
             image = Image.open(img_path)
             image = self.img_transform(image)
             images.append(image)
 
             if self.include_right_view:
-                img_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'image_1', '{:s}'.format(frame))
+                img_path = os.path.join(self.data_dir, '{:s}'.format(image_set), 'image_1', '{:s}'.format(frame))
                 image = Image.open(img_path)
                 image = self.img_transform(image)
                 right_images.append(image)
@@ -115,7 +71,7 @@ class DaVinciDataSet(Dataset):
             image_tensor = torch.cat((image_tensor, right_image_tensor), dim=0)
 
         # target is only the first frame
-        target_path = os.path.join(self.root_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[0]))
+        target_path = os.path.join(self.data_dir, '{:s}'.format(self.image_set), 'disparity', '{:s}'.format(frames[0]))
         target = Image.open(target_path)
         target = self.target_transform(target)
 
@@ -146,31 +102,11 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-        self.full_train_dataset = DaVinciDataSet(self.data_dir,
-                                                 frames_per_sample=self.frames_per_sample,
-                                                 frames_to_drop=self.frames_to_drop,
-                                                 include_right_view=self.include_right_view,
-                                                 image_set='train')
-
-        # take last 3500 samples in train as validation set
-        #self.val_dataset = torch.utils.data.Subset(self.full_train_dataset, list(range(val_samples_train)))
-        #self.train_dataset = torch.utils.data.Subset(self.)
-        #self.train_dataset = self.full_train_dataset[val_samples_train+self.frames_per_sample:]
-
-        self.full_test_dataset = DaVinciDataSet(self.data_dir,
-                                                frames_per_sample=self.frames_per_sample,
-                                                frames_to_drop=self.frames_to_drop,
-                                                include_right_view=self.include_right_view,
-                                                image_set='test')
-
-        # take first 3500 samples in test as validation set
-        #self.val_dataset = self.full_train_dataset[:val_samples_train]
-        #self.train_dataset = self.full_train_dataset[val_samples_train+self.frames_per_sample:]
-
-        # split into train/validation
-        #val_len = int(val_split * len(self.train_val_dataset))
-        #train_len = len(self.train_val_dataset) - val_len
-        #self.train_dataset, self.val_dataset = random_split(self.train_val_dataset, lengths=[train_len, val_len])
+        self.train_dataset = DaVinciDataSet(data_dir=self.data_dir,
+                                            image_set=self.train_samples,
+                                            frames_per_sample=self.frames_per_sample,
+                                            frames_to_drop=self.frames_to_drop,
+                                            include_right_view=self.include_right_view)
 
     def _read_image_list(self, filename):
         list_file = open(filename, 'r')
@@ -193,33 +129,62 @@ class DaVinciDataModule(pl.LightningDataModule):
                 all_samples.append((name, img_list[i: i+window_size]))
         return all_samples
 
+    def _sliding_window(self, img_sets):
+        # create samples containing k frames per sample and dropping some number of random frames
+        split_samples = []
+        for (name, frame_list) in img_sets:
+            if self.frames_per_sample > 1:
+                step_size = 1 # sample overlap size
+                for i in range(0, len(frame_list)-self.frames_per_sample+1, step_size):
+                    frames = frame_list[i:i+self.frames_per_sample]
 
+                    # Randomly drop frames - only do this if we have 3 or more frames
+                    if self.frames_per_sample > 2:
+                        max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
+                        if self.frames_to_drop > max_frames_to_drop:
+                            #TODO: Add warning if user input more frames to drop than makes sense
+                            self.frames_to_drop = max_frames_to_drop
+                        for i in range(self.frames_to_drop):
+                            rand_idx = random.randint(1, len(frames) - 1)
+                            _ = frames.pop(rand_idx)
+                    split_samples.append((name, frames))
+
+            # only using single frame
+            else:
+                frames = [[i] for i in frame_list]
+                split_samples.append((name, frames))
+
+        return split_samples
 
     def setup(self, stage = None):
+
         train_img_list = self._read_image_list(os.path.join(self.data_dir, 'train.txt'))
         train_img_list = train_img_list[::-1]
-        all_samples = self._split_into_chunks(train_img_list, window_size=1000, name='train')
+        all_sets = self._split_into_chunks(train_img_list, window_size=1000, name='train')
 
         test_img_list = self._read_image_list(os.path.join(self.data_dir, 'test.txt'))
         test_img_list = test_img_list[::-1]
-        all_samples += self._split_into_chunks(test_img_list, window_size=1000, name='test')
+        all_sets += self._split_into_chunks(test_img_list, window_size=1000, name='test')
 
         # shuffle all 41 sets of 1000 frames
-        random.shuffle(all_samples)
+        random.shuffle(all_sets)
 
         # split train/val/test
-        val_len = math.floor(self.val_split * len(all_samples))
-        test_len = math.floor(self.test_split * len(all_samples))
-        train_len = len(all_samples) - val_len - test_len
+        val_len = math.floor(self.val_split * len(all_sets))
+        test_len = math.floor(self.test_split * len(all_sets))
+        train_len = len(all_sets) - val_len - test_len
 
-        train_sets = all_samples[:train_len]
-        val_sets = all_samples[train_len:train_len+val_len]
-        test_sets = all_samples[-test_len:]
+        train_sets = all_sets[:train_len]
+        val_sets = all_sets[train_len:train_len+val_len]
+        test_sets = all_sets[-test_len:]
 
+        self.train_samples = self._sliding_window(train_sets)
+        self.val_samples = self._sliding_window(val_sets)
+        self.test_samples = random.shuffle(self._sliding_window(test_sets))
 
-
-
-        train_sets = all_samples
+        random.shuffle(self.train_samples)
+        random.shuffle(self.val_samples)
+        random.shuffle(self.test_samples)
 
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,
