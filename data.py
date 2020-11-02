@@ -229,12 +229,11 @@ class DaVinciDataModule(pl.LightningDataModule):
         return loader
 
 
-print("start")
-dm = DaVinciDataModule('/opt/datastore', frames_per_sample=3, frames_to_drop=1, extra_info=True)
-print("dm created")
-dm.setup()
-print("dm setup")
-img, target, extra = next(iter(dm.train_dataloader()))
-print(img.shape)
-print(target.shape)
-print(extra)
+# print("start")
+# dm = DaVinciDataModule('/opt/datastore', frames_per_sample=3, frames_to_drop=1, extra_info=False)
+# print("dm created")
+# dm.setup()
+# print("dm setup")
+# img, target = next(iter(dm.train_dataloader()))
+# print(img.shape)
+# print(target.shape)

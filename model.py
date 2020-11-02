@@ -62,12 +62,12 @@ class DepthMap(pl.LightningModule):
         return self.net(x)
 
     def training_step(self, batch, batch_idx):
-        img, target, extra_info = batch
+        img, target = batch
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
         if batch_idx % self.output_img_freq == 0:
-            self._log_images(img, target, pred, extra_info, step_name='train')
+            self._log_images(img, target, pred, step_name='train')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -78,13 +78,13 @@ class DepthMap(pl.LightningModule):
         return loss_val
 
     def validation_step(self, batch, batch_idx):
-        img, target, extra_info = batch
+        img, target = batch
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
         # log predicted images
         if batch_idx % self.output_img_freq == 0:
-            self._log_images(img, target, pred, extra_info, step_name='valid')
+            self._log_images(img, target, pred, step_name='valid')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -106,23 +106,23 @@ class DepthMap(pl.LightningModule):
         plt.title(title)
         return fig
 
-    def _log_images(self, img, target, pred, extra_info, step_name, nrow=1, limit=1):
+    def _log_images(self, img, target, pred, step_name, nrow=1, limit=1):
         # TODO: Randomly select image from batch instead of first image?
         img = img[:limit]
         target = target[:limit]
         pred = pred[:limit]
-        folder_name = extra_info['image_set'][0]
-        frame_nums = extra_info['frame_nums'][0]
+        #folder_name = extra_info['image_set'][0]
+        #frame_nums = extra_info['frame_nums'][0]
 
         # Log input/original image
         img = img.permute(1, 0, 2, 3)
         input_images = torchvision.utils.make_grid(img, nrow=nrow, padding=3)
         self.logger.experiment.add_image(f'{step_name}/input_img', input_images, self.trainer.global_step)
-        self.logger.experiment.add_text(f'{step_name}/input_img_path', str(frame_nums), self.trainer.global_step)
+        #self.logger.experiment.add_text(f'{step_name}/input_img_path', str(frame_nums), self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
-        color_target_dm = self._matplotlib_imshow(target, f"target (path: {folder_name}/{frame_nums[0]})")
-        color_pred_dm = self._matplotlib_imshow(pred, f"target (path: {folder_name}/{frame_nums[0]})")
+        color_target_dm = self._matplotlib_imshow(target, "target")
+        color_pred_dm = self._matplotlib_imshow(pred, "pred")
 
         self.logger.experiment.add_figure(f'{step_name}/target_dm_color', color_target_dm, self.trainer.global_step)
         self.logger.experiment.add_figure(f'{step_name}/pred_dm_color', color_pred_dm, self.trainer.global_step)
@@ -148,6 +148,7 @@ class DepthMap(pl.LightningModule):
 
 if __name__ == '__main__':
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
+    print("start")
     pl.seed_everything(42)
 
     parser = ArgumentParser()
@@ -164,9 +165,10 @@ if __name__ == '__main__':
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=False,
-                           extra_info=True,
+                           extra_info=False,
                            batch_size=args.batch_size)
     dm.setup()
+    print("dm setup")
 
     # sanity check
     print("size of trainset:", len(dm.train_samples))
@@ -175,7 +177,9 @@ if __name__ == '__main__':
 
     # model
     model = DepthMap(**args.__dict__)
+    print("model instance created")
 
     # train
     trainer = pl.Trainer().from_argparse_args(args)
+    print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
