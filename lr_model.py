@@ -9,21 +9,22 @@ from model import DepthMap
 
 
 class LeftRightDepthMap(DepthMap):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.net = UNet(num_classes=self.num_classes,
-                        input_channels=2*self.input_channels,
-                        num_layers=self.num_layers,
-                        features_start=self.features_start,
-                        bilinear=self.bilinear)
+        self.net = UNet(
+            num_classes=self.num_classes,
+            input_channels=2 * self.input_channels,
+            num_layers=self.num_layers,
+            features_start=self.features_start,
+            bilinear=self.bilinear,
+        )
 
     def _log_images(self, *args, **kwargs):
         super()._log_images(*args, **kwargs, nrow=self.input_channels)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
     pl.seed_everything(42)
 
@@ -37,11 +38,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # data
-    dm = DaVinciDataModule(args.data_dir,
-                           frames_per_sample=args.frames_per_sample,
-                           frames_to_drop=args.frames_to_drop,
-                           include_right_view=True,
-                           batch_size=args.batch_size)
+    dm = DaVinciDataModule(
+        args.data_dir,
+        frames_per_sample=args.frames_per_sample,
+        frames_to_drop=args.frames_to_drop,
+        include_right_view=True,
+        batch_size=args.batch_size,
+    )
 
     # sanity check
     print("size of trainset:", len(dm.train_dataset))
