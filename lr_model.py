@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 import torchvision
 
 from unet import UNet
-from data2 import DaVinciDataModule2
+from data import DaVinciDataModule
 from model import DepthMap
 
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # data
-    dm = DaVinciDataModule2(args.data_dir,
+    dm = DaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=True,
