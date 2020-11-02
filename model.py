@@ -160,14 +160,14 @@ if __name__ == '__main__':
     dm = DaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
-                           include_right_view=args.include_right_view,
+                           include_right_view=False,
                            batch_size=args.batch_size)
     dm.setup()
 
     # sanity check
-    print("size of trainset:", len(dm.train_dataset))
-    print("size of validset:", len(dm.val_dataset))
-    print("size of testset:", len(dm.test_dataset))
+    print("size of trainset:", len(dm.train_samples))
+    print("size of validset:", len(dm.val_samples))
+    print("size of testset:", len(dm.test_samples))
 
     # model
     model = DepthMap(**args.__dict__)
