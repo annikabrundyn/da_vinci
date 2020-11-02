@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torchvision
 
 from unet import UNet
-from data_v2 import DaVinciDataModule
+from data2 import DaVinciDataModule2
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # data
-    dm = DaVinciDataModule(args.data_dir,
+    dm = DaVinciDataModule2(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=args.include_right_view,

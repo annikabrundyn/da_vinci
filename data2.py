@@ -11,7 +11,7 @@ import pytorch_lightning as pl
 from PIL import Image
 
 
-class DaVinciDataSet(Dataset):
+class DaVinciDataSet2(Dataset):
 
     def __init__(self,
                  data_dir: str,
@@ -50,13 +50,13 @@ class DaVinciDataSet(Dataset):
             right_images = []
 
         for frame in frames:
-            img_path = os.path.join(self.data_dir, image_set, 'image_0', frame)
+            img_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'image_0', "{:s}".format(frame))
             image = Image.open(img_path)
             image = self.img_transform(image)
             images.append(image)
 
             if self.include_right_view:
-                img_path = os.path.join(self.data_dir, image_set, 'image_1', frame)
+                img_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'image_1', "{:s}".format(frame))
                 image = Image.open(img_path)
                 image = self.img_transform(image)
                 right_images.append(image)
@@ -69,14 +69,14 @@ class DaVinciDataSet(Dataset):
             image_tensor = torch.cat((image_tensor, right_image_tensor), dim=0)
 
         # target is only the first frame
-        target_path = os.path.join(self.data_dir, image_set, 'disparity', frames[0])
+        target_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'disparity', "{:s}".format(frames[0]))
         target = Image.open(target_path)
         target = self.target_transform(target)
 
         return image_tensor, target
 
 
-class DaVinciDataModule(pl.LightningDataModule):
+class DaVinciDataModule2(pl.LightningDataModule):
     def __init__(
             self,
             data_dir: str,
@@ -124,12 +124,12 @@ class DaVinciDataModule(pl.LightningDataModule):
     def _sliding_window(self, img_sets):
         # create samples containing k frames per sample and dropping some number of random frames
         split_samples = []
-        for (name, frame_list) in img_sets:
-            if self.frames_per_sample > 1:
-                step_size = 1 # sample overlap size
+        step_size = 1  # sample overlap size
+
+        if self.frames_per_sample > 1:
+            for (name, frame_list) in img_sets:
                 for i in range(0, len(frame_list)-self.frames_per_sample+1, step_size):
                     frames = frame_list[i:i+self.frames_per_sample]
-
                     # Randomly drop frames - only do this if we have 3 or more frames
                     if self.frames_per_sample > 2:
                         max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
@@ -139,12 +139,12 @@ class DaVinciDataModule(pl.LightningDataModule):
                         for i in range(self.frames_to_drop):
                             rand_idx = random.randint(1, len(frames) - 1)
                             _ = frames.pop(rand_idx)
-                    split_samples.append((name, frames))
+                    split_samples += [(name, frames)]
 
-            # only using single frame
-            else:
-                frames = [[i] for i in frame_list]
-                split_samples.append((name, frames))
+        # only using single frame
+        else:
+            for (name, frame_list) in img_sets:
+                split_samples += [(name, [i]) for i in frame_list]
 
         return split_samples
 
@@ -178,19 +178,19 @@ class DaVinciDataModule(pl.LightningDataModule):
         random.shuffle(self.val_samples)
         random.shuffle(self.test_samples)
 
-        self.train_dataset = DaVinciDataSet(data_dir=self.data_dir,
+        self.train_dataset = DaVinciDataSet2(data_dir=self.data_dir,
                                             sample_list=self.train_samples,
                                             frames_per_sample=self.frames_per_sample,
                                             frames_to_drop=self.frames_to_drop,
                                             include_right_view=self.include_right_view)
 
-        self.val_dataset = DaVinciDataSet(data_dir=self.data_dir,
+        self.val_dataset = DaVinciDataSet2(data_dir=self.data_dir,
                                           sample_list=self.val_samples,
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
                                           include_right_view=self.include_right_view)
 
-        self.test_dataset = DaVinciDataSet(data_dir=self.data_dir,
+        self.test_dataset = DaVinciDataSet2(data_dir=self.data_dir,
                                            sample_list=self.test_samples,
                                            frames_per_sample=self.frames_per_sample,
                                            frames_to_drop=self.frames_to_drop,
@@ -218,7 +218,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         return loader
 
 
-# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-#                        frames_per_sample=3, frames_to_drop=1)
+# dm = DaVinciDataModule2('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
+#                         frames_per_sample=3, frames_to_drop=1)
 # dm.setup()
 # dm.train_dataset.__getitem__(0)
