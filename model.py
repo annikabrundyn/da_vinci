@@ -175,6 +175,10 @@ if __name__ == '__main__':
     print("size of validset:", len(dm.val_samples))
     print("size of testset:", len(dm.test_samples))
 
+    img, target = next(iter(dm.train_dataloader()))
+    print(img.shape)
+    print(target.shape)
+
     # model
     model = DepthMap(**args.__dict__)
     print("model instance created")
