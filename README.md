@@ -5,7 +5,7 @@
 ### data.py
 
 This is where the DaVinciDataModule (dm) is defined. 
-* datamodules are a PyTorch Lightning feature that basically allow you to specify all the data preprocessing steps up
+* [Datamodules](https://pytorch-lightning.readthedocs.io/en/stable/datamodules.html) are a PyTorch Lightning feature that basically allow you to specify all the data preprocessing steps up
 front to ensure reproducibility in your dataset splits, transforms etc across different experiments.
 
 **DaVinciDataModule:**
