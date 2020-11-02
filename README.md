@@ -8,25 +8,38 @@ This is where the DaVinciDataModule (dm) is defined.
 * datamodules are a PyTorch Lightning feature that basically allow you to specify all the data preprocessing steps up
 front to ensure reproducibility in your dataset splits, transforms etc across different experiments.
 
-DaVinciDataModule:
+**DaVinciDataModule:**
+
 * runs setup() method to:
     * split train and test into sections of 1k consecutive frames
     * shuffle all sets and assign sets of frames to train/val/test up front
     * apply sliding window (with frame dropping) to create the actual samples within train/val/test
     * shuffle all the samples within each of the splits
     * create PyTorch Dataset from the samples to be used in the data loaders
-* the train_dataloader(), val_dataloader()
+* the train_dataloader(), val_dataloader() and test_dataloader() just put the 
+datasets created in setup() into DataLoaders.
  
 ### model.py
 
-This is the left view only model
+This is the left view only model. To run this you have to specify:
+* ```data_dir```: path to where the data is stored
+* ```frames_per_sample```: number of frames to use in each sliding window
+* ```frames_to_drop```: how many frames to drop within each sliding window 
+
+Some other optional arguments:
+* ```batch_size```
+* ```lr```: learning rate
+* ```output_img_freq```: output predicted images to tensorbaord every x batches (default 100)
+* ```num_classes```: basically channels in the output (in our case 1 for grayscale depth maps)
+* ```bilinear```, ```features_start```, ```num_layers``` for UNet architecture - haven't been changing these
 
 
 ### lr_model.py
 
 This is the upper bound model that uses both left + right view as input
-
+Basically exactly the same as the left only model except the input channels to the UNet is x2. 
+Should really just add this as an optional parameter to the model script - will do sometime today.
 
 ### unet.py
 
-This is just the UNet architecture that is used in the two different models
+This is the UNet architecture that is used in the two different models
