@@ -42,11 +42,13 @@ if __name__ == '__main__':
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=True,
                            batch_size=args.batch_size)
+    # have to run setup to do splits/sliding window/etc
+    dm.setup()
 
     # sanity check
-    print("size of trainset:", len(dm.train_dataset))
-    print("size of validset:", len(dm.val_dataset))
-    print("size of testset:", len(dm.test_dataset))
+    print("size of trainset:", len(dm.train_samples))
+    print("size of validset:", len(dm.val_samples))
+    print("size of testset:", len(dm.test_samples))
 
     # model
     model = LeftRightDepthMap(**args.__dict__)

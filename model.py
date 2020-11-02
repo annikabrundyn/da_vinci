@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torchvision
 
 from unet import UNet
-from data_v2 import DaVinciDataModule
+from data import DaVinciDataModule
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -64,10 +64,10 @@ class DepthMap(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         img, target = batch
         pred = self(img)
-        if batch_idx % self.output_img_freq == 0:
-            self._log_images(img, target, pred, step_name='train')
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
+        if batch_idx % self.output_img_freq == 0:
+            self._log_images(img, target, pred, step_name='train')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -97,32 +97,35 @@ class DepthMap(pl.LightningModule):
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
 
-    def _matplotlib_imshow(self, img, inverse=True, cmap='magma'):
+    def _matplotlib_imshow(self, img, title, inverse=True, cmap='magma'):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
         fig = plt.figure()
         plt.imshow(npimg, cmap=cmap)
+        plt.title(title)
         return fig
 
     def _log_images(self, img, target, pred, step_name, nrow=1, limit=1):
-        # TODO: Randomly select image from batch?
-        print(img.shape)
+        # TODO: Randomly select image from batch instead of first image?
         img = img[:limit]
         target = target[:limit]
         pred = pred[:limit]
+        #folder_name = extra_info['image_set'][0]
+        #frame_nums = extra_info['frame_nums'][0]
 
         # Log input/original image
         img = img.permute(1, 0, 2, 3)
         input_images = torchvision.utils.make_grid(img, nrow=nrow, padding=3)
-        self.logger.experiment.add_image(f'{step_name}_input_img', input_images, self.trainer.global_step)
+        self.logger.experiment.add_image(f'{step_name}/input_img', input_images, self.trainer.global_step)
+        #self.logger.experiment.add_text(f'{step_name}/input_img_path', str(frame_nums), self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
-        color_target_dm = self._matplotlib_imshow(target)
-        color_pred_dm = self._matplotlib_imshow(pred)
+        color_target_dm = self._matplotlib_imshow(target, "target")
+        color_pred_dm = self._matplotlib_imshow(pred, "pred")
 
-        self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
-        self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
+        self.logger.experiment.add_figure(f'{step_name}/target_dm_color', color_target_dm, self.trainer.global_step)
+        self.logger.experiment.add_figure(f'{step_name}/pred_dm_color', color_pred_dm, self.trainer.global_step)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -145,6 +148,7 @@ class DepthMap(pl.LightningModule):
 
 if __name__ == '__main__':
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
+    print("start")
     pl.seed_everything(42)
 
     parser = ArgumentParser()
@@ -160,18 +164,26 @@ if __name__ == '__main__':
     dm = DaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
-                           include_right_view=args.include_right_view,
+                           include_right_view=False,
+                           extra_info=False,
                            batch_size=args.batch_size)
     dm.setup()
+    print("dm setup")
 
     # sanity check
-    print("size of trainset:", len(dm.train_dataset))
-    print("size of validset:", len(dm.val_dataset))
-    print("size of testset:", len(dm.test_dataset))
+    print("size of trainset:", len(dm.train_samples))
+    print("size of validset:", len(dm.val_samples))
+    print("size of testset:", len(dm.test_samples))
+
+    img, target = next(iter(dm.train_dataloader()))
+    print(img.shape)
+    print(target.shape)
 
     # model
     model = DepthMap(**args.__dict__)
+    print("model instance created")
 
     # train
     trainer = pl.Trainer().from_argparse_args(args)
+    print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
