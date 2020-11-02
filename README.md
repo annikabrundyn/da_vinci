@@ -46,6 +46,13 @@ This is the UNet architecture that is used in the two different models
 
 # To train the left only view model
 e.g. using 1 gpu
+
 ```python
 python model.py --data_dir '/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data' --gpus 1 --frames_per_sample 5 --frames_to_drop 2 --batch_size 16 --lr 0.001
+```
+
+# Generating "ground truth" disparity maps
+
+```bash
+python generate_disparity.py --left_dir $LEFT_DIR --right_dir $RIGHT_DIR --output_dir $OUTPUT_DIR
 ```
