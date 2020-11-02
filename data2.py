@@ -11,7 +11,7 @@ import pytorch_lightning as pl
 from PIL import Image
 
 
-class DaVinciDataSet2(Dataset):
+class DaVinciDataSet(Dataset):
 
     def __init__(self,
                  data_dir: str,
@@ -76,7 +76,7 @@ class DaVinciDataSet2(Dataset):
         return image_tensor, target
 
 
-class DaVinciDataModule2(pl.LightningDataModule):
+class DaVinciDataModule(pl.LightningDataModule):
     def __init__(
             self,
             data_dir: str,
@@ -178,19 +178,19 @@ class DaVinciDataModule2(pl.LightningDataModule):
         random.shuffle(self.val_samples)
         random.shuffle(self.test_samples)
 
-        self.train_dataset = DaVinciDataSet2(data_dir=self.data_dir,
+        self.train_dataset = DaVinciDataSet(data_dir=self.data_dir,
                                             sample_list=self.train_samples,
                                             frames_per_sample=self.frames_per_sample,
                                             frames_to_drop=self.frames_to_drop,
                                             include_right_view=self.include_right_view)
 
-        self.val_dataset = DaVinciDataSet2(data_dir=self.data_dir,
+        self.val_dataset = DaVinciDataSet(data_dir=self.data_dir,
                                           sample_list=self.val_samples,
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
                                           include_right_view=self.include_right_view)
 
-        self.test_dataset = DaVinciDataSet2(data_dir=self.data_dir,
+        self.test_dataset = DaVinciDataSet(data_dir=self.data_dir,
                                            sample_list=self.test_samples,
                                            frames_per_sample=self.frames_per_sample,
                                            frames_to_drop=self.frames_to_drop,
@@ -218,7 +218,7 @@ class DaVinciDataModule2(pl.LightningDataModule):
         return loader
 
 
-# dm = DaVinciDataModule2('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
+# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
 #                         frames_per_sample=3, frames_to_drop=1)
 # dm.setup()
 # dm.train_dataset.__getitem__(0)
