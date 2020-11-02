@@ -1,5 +1,4 @@
-# da_vinci_depth
-
+# DaVinci Depth Map + Stereo View Prediction
 
 # Overview
 
