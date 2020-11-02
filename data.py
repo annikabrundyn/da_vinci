@@ -19,6 +19,7 @@ class DaVinciDataSet(Dataset):
                  frames_per_sample: int,
                  frames_to_drop: int,
                  include_right_view: bool = False, #whether to include right images
+                 extra_info: bool = False,
                  img_transform = None,
                  target_transform = None
                  ):
@@ -27,6 +28,7 @@ class DaVinciDataSet(Dataset):
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
+        self.extra_info = extra_info
 
         if not img_transform:
             self.img_transform = transforms.Compose([transforms.Grayscale(),
@@ -73,6 +75,10 @@ class DaVinciDataSet(Dataset):
         target = Image.open(target_path)
         target = self.target_transform(target)
 
+        if self.extra_info:
+            sample_info = {'image_set': image_set, 'frame_nums': frames}
+            return image_tensor, target, sample_info
+
         return image_tensor, target
 
 
@@ -83,6 +89,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             frames_per_sample: int,
             frames_to_drop: int,
             include_right_view: bool = False,
+            extra_info: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
             num_workers: int = 4,
@@ -95,6 +102,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
+        self.extra_info = extra_info
         self.val_split = val_split
         self.test_split = test_split
         self.batch_size = batch_size
@@ -182,19 +190,22 @@ class DaVinciDataModule(pl.LightningDataModule):
                                             sample_list=self.train_samples,
                                             frames_per_sample=self.frames_per_sample,
                                             frames_to_drop=self.frames_to_drop,
-                                            include_right_view=self.include_right_view)
+                                            include_right_view=self.include_right_view,
+                                            extra_info=self.extra_info)
 
         self.val_dataset = DaVinciDataSet(data_dir=self.data_dir,
                                           sample_list=self.val_samples,
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
-                                          include_right_view=self.include_right_view)
+                                          include_right_view=self.include_right_view,
+                                          extra_info=self.extra_info)
 
         self.test_dataset = DaVinciDataSet(data_dir=self.data_dir,
                                            sample_list=self.test_samples,
                                            frames_per_sample=self.frames_per_sample,
                                            frames_to_drop=self.frames_to_drop,
-                                           include_right_view=self.include_right_view)
+                                           include_right_view=self.include_right_view,
+                                           extra_info=self.extra_info)
 
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,
@@ -218,7 +229,8 @@ class DaVinciDataModule(pl.LightningDataModule):
         return loader
 
 
-# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-#                         frames_per_sample=3, frames_to_drop=1)
-# dm.setup()
-# dm.train_dataset.__getitem__(0)
+dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
+                        frames_per_sample=3, frames_to_drop=1, extra_info=True)
+dm.setup()
+dm.train_dataset.__getitem__(0)
+print("hi")

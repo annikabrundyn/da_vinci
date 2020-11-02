@@ -64,10 +64,10 @@ class DepthMap(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         img, target = batch
         pred = self(img)
-        if batch_idx % self.output_img_freq == 0:
-            self._log_images(img, target, pred, step_name='train')
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
+        if batch_idx % self.output_img_freq == 0:
+            self._log_images(img, target, pred, step_name='train')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -97,12 +97,13 @@ class DepthMap(pl.LightningModule):
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
 
-    def _matplotlib_imshow(self, img, inverse=True, cmap='magma'):
+    def _matplotlib_imshow(self, img, title, inverse=True, cmap='magma'):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
         fig = plt.figure()
         plt.imshow(npimg, cmap=cmap)
+        plt.title(title)
         return fig
 
     def _log_images(self, img, target, pred, step_name, nrow=1, limit=1):
@@ -118,8 +119,8 @@ class DepthMap(pl.LightningModule):
         self.logger.experiment.add_image(f'{step_name}_input_img', input_images, self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
-        color_target_dm = self._matplotlib_imshow(target)
-        color_pred_dm = self._matplotlib_imshow(pred)
+        color_target_dm = self._matplotlib_imshow(target, 'target')
+        color_pred_dm = self._matplotlib_imshow(pred, 'pred')
 
         self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
         self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
