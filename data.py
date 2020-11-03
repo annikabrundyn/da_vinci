@@ -76,10 +76,13 @@ class DaVinciDataSet(Dataset):
         target = self.target_transform(target)
 
         if self.extra_info:
-            sample_info = {'image_set': image_set, 'frame_nums': frames}
+            sample_info = {}
+            sample_info['image_set'] = image_set
+            sample_info['frame_nums'] = ", ".join(frames)
             return image_tensor, target, sample_info
 
-        return image_tensor, target
+        else:
+            return image_tensor, target
 
 
 class DaVinciDataModule(pl.LightningDataModule):

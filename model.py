@@ -62,7 +62,7 @@ class DepthMap(pl.LightningModule):
         return self.net(x)
 
     def training_step(self, batch, batch_idx):
-        img, target = batch
+        img, target, extra_info = batch
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
@@ -78,7 +78,7 @@ class DepthMap(pl.LightningModule):
         return loss_val
 
     def validation_step(self, batch, batch_idx):
-        img, target = batch
+        img, target, extra_info = batch
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
@@ -111,14 +111,14 @@ class DepthMap(pl.LightningModule):
         img = img[:limit]
         target = target[:limit]
         pred = pred[:limit]
-        #folder_name = extra_info['image_set'][0]
-        #frame_nums = extra_info['frame_nums'][0]
+        folder_name = extra_info['image_set'][0]
+        frame_nums = extra_info['frame_nums'][0]
 
         # Log input/original image
         img = img.permute(1, 0, 2, 3)
         input_images = torchvision.utils.make_grid(img, nrow=nrow, padding=3)
         self.logger.experiment.add_image(f'{step_name}/input_img', input_images, self.trainer.global_step)
-        #self.logger.experiment.add_text(f'{step_name}/input_img_path', str(frame_nums), self.trainer.global_step)
+        self.logger.experiment.add_text(f'{step_name}/input_img_path', frame_nums, self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
         color_target_dm = self._matplotlib_imshow(target, "target")
@@ -165,7 +165,7 @@ if __name__ == '__main__':
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=False,
-                           extra_info=False,
+                           extra_info=True,
                            batch_size=args.batch_size)
     dm.setup()
     print("dm setup")
@@ -175,9 +175,10 @@ if __name__ == '__main__':
     print("size of validset:", len(dm.val_samples))
     print("size of testset:", len(dm.test_samples))
 
-    img, target = next(iter(dm.train_dataloader()))
+    img, target, extra_info = next(iter(dm.train_dataloader()))
     print(img.shape)
     print(target.shape)
+    print(len(extra_info))
 
     # model
     model = DepthMap(**args.__dict__)
