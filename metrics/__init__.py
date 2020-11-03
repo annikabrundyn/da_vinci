@@ -1,1 +1,0 @@
-from metrics.fid import calculate_fid
