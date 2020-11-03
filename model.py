@@ -120,7 +120,7 @@ class DepthMap(pl.LightningModule):
         frame_nums = extra_info['frame_nums'][0]
 
         if self.include_right_view:
-            nrow = self.input_channels / 2
+            nrow = self.input_channels // 2
         else:
             nrow = 1
 
