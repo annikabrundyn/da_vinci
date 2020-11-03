@@ -111,7 +111,7 @@ class DepthMap(pl.LightningModule):
             nrow = self.input_channels
             ncol = 1
 
-        fig = plt.figure(figsize=(8, 8))
+        fig = plt.figure(figsize=(4, 10))
         grid = ImageGrid(fig, 111,
                          nrows_ncols=(nrow, ncol),
                          direction='column',
@@ -152,14 +152,14 @@ class DepthMap(pl.LightningModule):
         img = img.permute(1, 0, 2, 3)
 
         fig = self._matplotlib_imshow_input_imgs(img, folder_name, frame_nums)
-        self.logger.experiment.add_figure(f'{step_name}/input_images', fig, self.trainer.global_step)
+        self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
         color_target_dm = self._matplotlib_imshow_dm(target, "target")
         color_pred_dm = self._matplotlib_imshow_dm(pred, "prediction")
 
-        self.logger.experiment.add_figure(f'{step_name}/target_dm_color', color_target_dm, self.trainer.global_step)
-        self.logger.experiment.add_figure(f'{step_name}/pred_dm_color', color_pred_dm, self.trainer.global_step)
+        self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
+        self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
