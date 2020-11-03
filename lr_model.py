@@ -41,6 +41,7 @@ if __name__ == '__main__':
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=True,
+                           extra_info=True,
                            batch_size=args.batch_size)
     # have to run setup to do splits/sliding window/etc
     dm.setup()

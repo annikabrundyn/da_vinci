@@ -19,6 +19,7 @@ class DepthMap(pl.LightningModule):
             self,
             frames_per_sample: int,
             frames_to_drop: int,
+            include_right_view: bool = False,
             num_classes: int = 1,
             num_layers: int = 5,
             features_start: int = 64,
@@ -33,6 +34,7 @@ class DepthMap(pl.LightningModule):
 
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
+        self.include_right_view = include_right_view
         self.num_classes = num_classes
         self.num_layers = num_layers
         self.features_start = features_start
@@ -57,6 +59,9 @@ class DepthMap(pl.LightningModule):
             max_drop_frames = self.frames_per_sample - 2
             self.frames_to_drop = min(self.frames_to_drop, max_drop_frames)
             self.input_channels = self.frames_per_sample - self.frames_to_drop
+
+        if self.include_right_view:
+            self.input_channels = 2 * self.input_channels
 
     def forward(self, x):
         return self.net(x)
@@ -106,13 +111,18 @@ class DepthMap(pl.LightningModule):
         plt.title(title)
         return fig
 
-    def _log_images(self, img, target, pred, step_name, nrow=1, limit=1):
+    def _log_images(self, img, target, pred, step_name, limit=1):
         # TODO: Randomly select image from batch instead of first image?
         img = img[:limit]
         target = target[:limit]
         pred = pred[:limit]
         folder_name = extra_info['image_set'][0]
         frame_nums = extra_info['frame_nums'][0]
+
+        if self.include_right_view:
+            nrow = self.input_channels / 2
+        else:
+            nrow = 1
 
         # Log input/original image
         img = img.permute(1, 0, 2, 3)
@@ -164,7 +174,7 @@ if __name__ == '__main__':
     dm = DaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
-                           include_right_view=False,
+                           include_right_view=args.include_right_view,
                            extra_info=True,
                            batch_size=args.batch_size)
     dm.setup()
