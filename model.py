@@ -111,7 +111,7 @@ class DepthMap(pl.LightningModule):
             nrow = self.input_channels
             ncol = 1
 
-        fig = plt.figure(figsize=(4, 10))
+        fig = plt.figure(figsize=(12, 5))
         grid = ImageGrid(fig, 111,
                          nrows_ncols=(nrow, ncol),
                          direction='column',
