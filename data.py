@@ -78,7 +78,7 @@ class DaVinciDataSet(Dataset):
         if self.extra_info:
             sample_info = {}
             sample_info['image_set'] = image_set
-            sample_info['frame_nums'] = ", ".join(frames)
+            sample_info['frame_nums'] = " ".join(frames)
             return image_tensor, target, sample_info
 
         else:
@@ -233,10 +233,11 @@ class DaVinciDataModule(pl.LightningDataModule):
 
 
 # print("start")
-# dm = DaVinciDataModule('/opt/datastore', frames_per_sample=3, frames_to_drop=1, extra_info=False)
+# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data', frames_per_sample=3, frames_to_drop=1, extra_info=True, batch_size=2)
 # print("dm created")
 # dm.setup()
 # print("dm setup")
-# img, target = next(iter(dm.train_dataloader()))
+# dm.train_dataset.__getitem__(0)
+# img, target, extra = next(iter(dm.train_dataloader()))
 # print(img.shape)
 # print(target.shape)
