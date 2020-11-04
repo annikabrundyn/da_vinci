@@ -72,12 +72,18 @@ def process_frame_BM_postproc(
     wls_image = np.uint8(wls_image)
 
     # crop - https://stackoverflow.com/questions/13538748/crop-black-edges-with-opencv
-    _, thresh = cv2.threshold(wls_image, 1, 255, cv2.THRESH_BINARY)
-    contours, hierarchy = cv2.findContours(
-        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )[-2:]
-    cnt = contours[0]
-    x, y, w, h = cv2.boundingRect(cnt)
+    #_, thresh = cv2.threshold(wls_image, 1, 255, cv2.THRESH_BINARY)
+    #contours, hierarchy = cv2.findContours(
+    #    thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    #)[-2:]
+    #cnt = contours[0]
+    #x, y, w, h = cv2.boundingRect(cnt)
+    
+    # hardcode for consistency across images
+    x = 71
+    y = 7
+    w = 306
+    h = 178
     crop = wls_image[y : y + h, x : x + w]
 
     cv2.imwrite(os.path.join(output_dir, name + ".png"), crop)
