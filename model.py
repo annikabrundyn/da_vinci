@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 
-from unet import UNet
+from unet_depth import UNetDepth
 from data_v2 import DaVinciDataModule
 
 import numpy as np
@@ -43,14 +43,16 @@ class DepthMap(pl.LightningModule):
 
         self._calc_input_channels()
 
-        self.net = UNet(num_classes=num_classes,
-                        input_channels=self.input_channels,
-                        num_layers=self.num_layers,
-                        features_start=self.features_start,
-                        bilinear=self.bilinear)
+        self.net = UNetDepth(
+            num_classes=num_classes,
+            input_channels=self.input_channels,
+            num_layers=self.num_layers,
+            features_start=self.features_start,
+            bilinear=self.bilinear,
+        )
 
     def _calc_input_channels(self):
-        # calculate the input channels for UNet
+        # calculate the input channels for UNetDepth
         if self.frames_per_sample <= 2:
             self.input_channels = self.frames_per_sample
         else:
