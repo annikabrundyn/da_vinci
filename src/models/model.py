@@ -1,14 +1,12 @@
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-import torchvision
 
-from unet import UNet
-from data import DaVinciDataModule
+from src.models.unet import UNet
+from src.data.data import DaVinciDataModule
 
-import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
