@@ -111,6 +111,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
+    # helper
     def _read_image_list(self, filename):
         list_file = open(filename, 'r')
         img_list = []
@@ -123,6 +124,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             img_list.append(png_name)
         return img_list
 
+    # helper
     def _split_into_chunks(self, img_list, window_size, name):
         all_samples = []
         for i in range(0, len(img_list) - window_size, window_size):
@@ -132,6 +134,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                 all_samples.append((name, img_list[i: i+window_size]))
         return all_samples
 
+    # helper
     def _sliding_window(self, img_sets):
         # create samples containing k frames per sample and dropping some number of random frames
         split_samples = []
@@ -160,7 +163,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         return split_samples
 
     def setup(self):
-
+        # this function does the train/val/test splits - needs to be run first after instantiating dm
         train_img_list = self._read_image_list(os.path.join(self.data_dir, 'train.txt'))
         train_img_list = train_img_list[::-1]
         all_sets = self._split_into_chunks(train_img_list, window_size=1000, name='train')

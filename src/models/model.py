@@ -50,6 +50,9 @@ class DepthMap(pl.LightningModule):
                         features_start=self.features_start,
                         bilinear=self.bilinear)
 
+        # save hparams for lightning checkpoint
+        self.save_hyperparameters()
+
     def _calc_input_channels(self):
         # calculate the input channels for UNet
         if self.frames_per_sample <= 2:
