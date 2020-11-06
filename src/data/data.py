@@ -201,6 +201,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.val_sets = self.all_sets[train_len:train_len+val_len]
         self.test_sets = self.all_sets[-test_len:]
 
+        # create separate list of random images from validation set to predict on at the end of training
         self.vis_img_list_names = self._create_val_img_list(self.val_sets)
         self.vis_img_list = []
 
