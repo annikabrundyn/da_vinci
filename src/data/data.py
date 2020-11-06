@@ -97,7 +97,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             extra_info: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
-            num_workers: int = 4,
+            num_workers: int = 0,
             batch_size: int = 32,
             *args,
             **kwargs,
@@ -190,9 +190,9 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.val_samples = self._sliding_window(val_sets)
         self.test_samples = self._sliding_window(test_sets)
 
-        random.shuffle(self.train_samples)
-        random.shuffle(self.val_samples)
-        random.shuffle(self.test_samples)
+        self.train_samples = shuffle(self.train_samples, random_state=42)
+        self.val_samples = shuffle(self.val_samples, random_state=42)
+        self.test_samples = shuffle(self.test_samples, random_state=42)
 
         self.train_dataset = DaVinciDataSet(data_dir=self.data_dir,
                                             sample_list=self.train_samples,
