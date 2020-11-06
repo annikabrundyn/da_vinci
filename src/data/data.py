@@ -12,6 +12,7 @@ from PIL import Image
 
 from sklearn.utils import shuffle
 
+
 class DaVinciDataSet(Dataset):
 
     def __init__(self,
