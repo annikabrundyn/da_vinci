@@ -10,6 +10,7 @@ from torch.utils.data import random_split
 import pytorch_lightning as pl
 from PIL import Image
 
+from sklearn.utils import shuffle
 
 class DaVinciDataSet(Dataset):
 
@@ -173,7 +174,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         all_sets += self._split_into_chunks(test_img_list, window_size=1000, name='test')
 
         # shuffle all 41 sets of 1000 frames
-        random.shuffle(all_sets)
+        all_sets = shuffle(all_sets, random_state=42)
 
         # split train/val/test
         val_len = math.floor(self.val_split * len(all_sets))
@@ -236,11 +237,11 @@ class DaVinciDataModule(pl.LightningDataModule):
 
 
 # print("start")
-# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data', frames_per_sample=3, frames_to_drop=1, extra_info=True, batch_size=2)
-# print("dm created")
-# dm.setup()
-# print("dm setup")
-# dm.train_dataset.__getitem__(0)
-# img, target, extra = next(iter(dm.train_dataloader()))
-# print(img.shape)
-# print(target.shape)
+dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data', frames_per_sample=3, frames_to_drop=1, extra_info=True, batch_size=2)
+print("dm created")
+dm.setup()
+print("dm setup")
+dm.train_dataset.__getitem__(0)
+img, target, extra = next(iter(dm.train_dataloader()))
+print(img.shape)
+print(target.shape)

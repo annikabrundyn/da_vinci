@@ -14,5 +14,3 @@ dm = DaVinciDataModule(data_dir='/Users/annikabrundyn/Developer/da_vinci_depth/d
                        extra_info=True,
                        batch_size=32)
 dm.setup()
-
-print('hey')

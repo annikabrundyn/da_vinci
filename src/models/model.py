@@ -11,6 +11,13 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+
+class PredictImagesCallback(pl.Callback):
+    def on_train_end(self, trainer, pl_module):
+        img, target, extra_info = next(iter(trainer.val_dataloader))
+        print('done')
 
 
 class DepthMap(pl.LightningModule):
@@ -73,8 +80,8 @@ class DepthMap(pl.LightningModule):
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
-        if batch_idx % self.output_img_freq == 0:
-            self._log_images(img, target, pred, extra_info, step_name='train')
+        # if batch_idx % self.output_img_freq == 0:
+        #     self._log_images(img, target, pred, extra_info, step_name='train')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -90,8 +97,8 @@ class DepthMap(pl.LightningModule):
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
         # log predicted images
-        if batch_idx % self.output_img_freq == 0:
-            self._log_images(img, target, pred, extra_info, step_name='valid')
+        # if batch_idx % self.output_img_freq == 0:
+        #     self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -104,63 +111,62 @@ class DepthMap(pl.LightningModule):
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
 
-    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums):
-        if self.include_right_view:
-            nrow = self.input_channels // 2
-            ncol = 2
-        else:
-            nrow = self.input_channels
-            ncol = 1
+    # def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums):
+    #     if self.include_right_view:
+    #         nrow = self.input_channels // 2
+    #         ncol = 2
+    #     else:
+    #         nrow = self.input_channels
+    #         ncol = 1
+    #
+    #     fig = plt.figure(figsize=(10, 10))
+    #     grid = ImageGrid(fig, 111,
+    #                      nrows_ncols=(nrow, ncol),
+    #                      direction='column',
+    #                      axes_pad=0.3)
+    #
+    #     for ax, idx in zip(grid, range(self.input_channels)):
+    #         npimg = img[idx].squeeze().detach().cpu().numpy()
+    #         ax.imshow(npimg, cmap='gray')
+    #         ax.axis('off')
+    #         side = 'left'
+    #         if idx >= nrow:
+    #             side = 'right'
+    #             idx = idx - nrow
+    #         ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}")
+    #
+    #     return fig
+    #
+    # def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma'):
+    #     if inverse:
+    #         img = 1 - img
+    #     npimg = img.squeeze().detach().cpu().numpy()
+    #     fig = plt.figure()
+    #     plt.imshow(npimg, cmap=cmap)
+    #     plt.title(title)
+    #     return fig
 
-        fig = plt.figure(figsize=(10, 10))
-        grid = ImageGrid(fig, 111,
-                         nrows_ncols=(nrow, ncol),
-                         direction='column',
-                         axes_pad=0.3)
-
-        for ax, idx in zip(grid, range(self.input_channels)):
-            npimg = img[idx].squeeze().detach().cpu().numpy()
-            ax.imshow(npimg, cmap='gray')
-            ax.axis('off')
-            side = 'left'
-            if idx >= nrow:
-                side = 'right'
-                idx = idx - nrow
-            ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}")
-
-        return fig
-
-
-    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma'):
-        if inverse:
-            img = 1 - img
-        npimg = img.squeeze().detach().cpu().numpy()
-        fig = plt.figure()
-        plt.imshow(npimg, cmap=cmap)
-        plt.title(title)
-        return fig
-
-    def _log_images(self, img, target, pred, extra_info, step_name, limit=1):
-        # TODO: Randomly select image from batch instead of first image?
-        img = img[:limit]
-        target = target[:limit]
-        pred = pred[:limit]
-        folder_name = extra_info['image_set'][0]
-        frame_nums = extra_info['frame_nums'][0]
-        frame_nums = frame_nums.split()
-
-        # Log input/original image
-        img = img.permute(1, 0, 2, 3)
-
-        fig = self._matplotlib_imshow_input_imgs(img, folder_name, frame_nums)
-        self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
-
-        # Log colorized depth maps - using magma colormap
-        color_target_dm = self._matplotlib_imshow_dm(target, "target")
-        color_pred_dm = self._matplotlib_imshow_dm(pred, "prediction")
-
-        self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
-        self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
+    # def _log_images(self, img, target, pred, extra_info, step_name, limit=1):
+    #     # TODO: Randomly select image from batch instead of first image?
+    #     img = img[:limit]
+    #     target = target[:limit]
+    #     pred = pred[:limit]
+    #     folder_name = extra_info['image_set'][0]
+    #     frame_nums = extra_info['frame_nums'][0]
+    #     frame_nums = frame_nums.split()
+    #
+    #     # Log input/original image
+    #     img = img.permute(1, 0, 2, 3)
+    #
+    #     fig = self._matplotlib_imshow_input_imgs(img, folder_name, frame_nums)
+    #     self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
+    #
+    #     # Log colorized depth maps - using magma colormap
+    #     color_target_dm = self._matplotlib_imshow_dm(target, "target")
+    #     color_pred_dm = self._matplotlib_imshow_dm(pred, "prediction")
+    #
+    #     self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
+    #     self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -220,6 +226,9 @@ if __name__ == '__main__':
     print("model instance created")
 
     # train
-    trainer = pl.Trainer().from_argparse_args(args)
+    trainer = pl.Trainer().from_argparse_args(args, callbacks=[PredictImagesCallback(), EarlyStopping(monitor='val_loss')],
+                                            max_epochs=500)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
+
+    print("hi")
