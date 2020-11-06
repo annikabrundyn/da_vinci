@@ -1,10 +1,8 @@
 import os
-from PIL import Image
-from torchvision import transforms
-
 from src.data.data import DaVinciDataModule
 
 DATA_DIR = "/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data"
+
 
 def test_val_test_splits(request):
 
@@ -20,5 +18,6 @@ def test_val_test_splits(request):
                             include_right_view=True, extra_info=True)
     dm3.setup()
 
-
+    # test deterministic val split
+    assert dm1.val_sets == dm2.val_sets == dm3.val_sets
 

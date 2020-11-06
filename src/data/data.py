@@ -197,16 +197,16 @@ class DaVinciDataModule(pl.LightningDataModule):
         test_len = math.floor(self.test_split * len(self.all_sets))
         train_len = len(self.all_sets) - val_len - test_len
 
-        train_sets = self.all_sets[:train_len]
-        val_sets = self.all_sets[train_len:train_len+val_len]
-        test_sets = self.all_sets[-test_len:]
+        self.train_sets = self.all_sets[:train_len]
+        self.val_sets = self.all_sets[train_len:train_len+val_len]
+        self.test_sets = self.all_sets[-test_len:]
 
-        self.vis_img_list_names = self._create_val_img_list(val_sets)
+        self.vis_img_list_names = self._create_val_img_list(self.val_sets)
         self.vis_img_list = []
 
-        self.train_samples = self._sliding_window(train_sets)
-        self.val_samples = self._sliding_window(val_sets, val_set=True)
-        self.test_samples = self._sliding_window(test_sets)
+        self.train_samples = self._sliding_window(self.train_sets)
+        self.val_samples = self._sliding_window(self.val_sets, val_set=True)
+        self.test_samples = self._sliding_window(self.test_sets)
 
         self.train_samples = shuffle(self.train_samples, random_state=42)
         self.val_samples = shuffle(self.val_samples, random_state=42)
