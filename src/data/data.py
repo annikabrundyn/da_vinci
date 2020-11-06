@@ -13,7 +13,6 @@ from PIL import Image
 from sklearn.utils import shuffle
 import random
 
-VAL_IMG_LIST = [("train", "031240.png"), ("train", "000591.png"), ()]
 
 class DaVinciDataSet(Dataset):
 
@@ -165,6 +164,7 @@ class DaVinciDataModule(pl.LightningDataModule):
 
         return split_samples
 
+    # helper
     def _create_val_img_list(self, val_sets):
         vis_img_list_names = []
         random_seed_list = range(2020, 2020+self.num_pred_img_samples)
@@ -233,6 +233,13 @@ class DaVinciDataModule(pl.LightningDataModule):
                                            include_right_view=self.include_right_view,
                                            extra_info=self.extra_info)
 
+        self.vis_dataset = DaVinciDataSet(data_dir=self.data_dir,
+                                          sample_list=self.vis_img_list,
+                                          frames_per_sample=self.frames_per_sample,
+                                          frames_to_drop=self.frames_to_drop,
+                                          include_right_view=self.include_right_view,
+                                          extra_info=self.extra_info)
+
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,
                             batch_size=self.batch_size,
@@ -254,16 +261,19 @@ class DaVinciDataModule(pl.LightningDataModule):
                             num_workers=self.num_workers)
         return loader
 
+    def vis_img_dataloader(self):
+        loader = DataLoader(self.vis_dataset,
+                            batch_size=1,
+                            shuffle=False,
+                            num_workers=self.num_workers)
+        return loader
 
-print("start")
-dm1 = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-                        frames_per_sample=1, frames_to_drop=0, extra_info=True, batch_size=1)
-dm1.setup()
 
-dm2 = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-                        frames_per_sample=5, frames_to_drop=2, extra_info=True, batch_size=1)
-dm2.setup()
-
-img, target, extra = next(iter(dm.train_dataloader()))
-print(img.shape)
-print(target.shape)
+# print("start")
+# dm1 = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
+#                         frames_per_sample=1, frames_to_drop=0, extra_info=True, batch_size=1)
+# dm1.setup()
+#
+# dm2 = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
+#                         frames_per_sample=5, frames_to_drop=2, extra_info=True, batch_size=1)
+# dm2.setup()
