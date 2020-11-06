@@ -267,13 +267,3 @@ class DaVinciDataModule(pl.LightningDataModule):
                             shuffle=False,
                             num_workers=self.num_workers)
         return loader
-
-
-# print("start")
-# dm1 = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-#                         frames_per_sample=1, frames_to_drop=0, extra_info=True, batch_size=1)
-# dm1.setup()
-#
-# dm2 = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data',
-#                         frames_per_sample=5, frames_to_drop=2, extra_info=True, batch_size=1)
-# dm2.setup()
