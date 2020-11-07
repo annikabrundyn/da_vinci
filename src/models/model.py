@@ -1,5 +1,7 @@
 from argparse import ArgumentParser
 
+import os.path
+
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
@@ -157,7 +159,8 @@ class DepthMap(pl.LightningModule):
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}")
 
         if save_fig:
-            plt.savefig(f"./lightning_logs/{title}", bbox_inches='tight')
+            path = os.path.join(os.path.dirname(trainer.checkpoint_callback.dirpath), 'images', f"{title}.png")
+            plt.savefig(path, bbox_inches='tight')
             plt.close()
 
         return fig
@@ -171,7 +174,8 @@ class DepthMap(pl.LightningModule):
         plt.title(title)
 
         if save_fig:
-            plt.savefig(f"./lightning_logs/{title}", bbox_inches='tight')
+            path = os.path.join(os.path.dirname(trainer.checkpoint_callback.dirpath), 'images', f"{title}.png")
+            plt.savefig(path, bbox_inches='tight')
             plt.close()
 
         return fig
