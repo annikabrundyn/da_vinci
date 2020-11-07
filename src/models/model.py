@@ -158,6 +158,7 @@ class DepthMap(pl.LightningModule):
 
         if save_fig:
             plt.savefig(title, bbox_inches='tight')
+            plt.close()
 
         return fig
 
@@ -171,6 +172,7 @@ class DepthMap(pl.LightningModule):
 
         if save_fig:
             plt.savefig(title, bbox_inches='tight')
+            plt.close()
 
         return fig
 
