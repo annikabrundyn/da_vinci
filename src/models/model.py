@@ -64,9 +64,9 @@ class DepthMap(pl.LightningModule):
         if self.include_right_view:
             self.input_channels = 2 * self.input_channels
 
-    def _log_fid(self, pred, target):
+    def _log_fid(self, set_name, pred, target):
         fid_val = calculate_fid(pred, target, device=self.device)
-        self.log('train_fid', fid_val)
+        self.log(f"{set_name}_fid", fid_val)
 
     def forward(self, x):
         return self.net(x)
@@ -79,7 +79,7 @@ class DepthMap(pl.LightningModule):
         if batch_idx % self.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
         if batch_idx % self.fid_freq == 0:
-            self._log_fid(pred, target)
+            self._log_fid('train', pred, target)
 
 
         # metrics
@@ -101,7 +101,7 @@ class DepthMap(pl.LightningModule):
             self._log_images(img, target, pred, extra_info, step_name='valid')
         #log FID
         if batch_idx % self.fid_freq == 0:
-            self._log_fid(pred, target)
+            self._log_fid('valid', pred, target)
 
         # metrics
         ssim_val = ssim(pred, target)
