@@ -81,8 +81,6 @@ class DepthMap(pl.LightningModule):
         if batch_idx % self.fid_freq == 0:
             self._log_fid(pred, target)
 
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
 
         # metrics
         ssim_val = ssim(pred, target)
