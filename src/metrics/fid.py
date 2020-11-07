@@ -6,7 +6,7 @@ from PIL import Image
 from pytorch_fid.inception import InceptionV3
 from pytorch_fid.fid_score import calculate_frechet_distance
 
-def get_activations(batch, model, batch_size=16, dims=2048, device='cpu'):
+def get_activations(batch, model, dims=2048, device='cpu'):
     """Calculates the activations of the pool_3 layer for all images.
     Params:
     -- batch       :
@@ -47,7 +47,7 @@ def get_activations(batch, model, batch_size=16, dims=2048, device='cpu'):
 
     return pred_arr
 
-def calculate_activation_statistics(batch, model, batch_size=16, dims=2048, device='cpu'):
+def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
     """Calculation of the statistics used by the FID.
     Params:
     -- batch       :
@@ -63,12 +63,12 @@ def calculate_activation_statistics(batch, model, batch_size=16, dims=2048, devi
     -- sigma : The covariance matrix of the activations of the pool_3 layer of
                the inception model.
     """
-    act = get_activations(batch, model, batch_size, dims, device)
+    act = get_activations(batch, model, dims, device)
     mu = np.mean(act, axis=0)
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
 
-def calculate_fid(preds, truths, is_bw=True, batch_size=16, dims=2048, device='cpu'):
+def calculate_fid(preds, truths, is_bw=True, dims=2048, device='cpu'):
     """Calculates the FID of two paths"""
     if is_bw:
         preds = preds.repeat(1, 3, 1, 1)
@@ -78,9 +78,9 @@ def calculate_fid(preds, truths, is_bw=True, batch_size=16, dims=2048, device='c
 
     model = InceptionV3([block_idx]).to(device)
 
-    m1, s1 = calculate_activation_statistics(preds, model, batch_size,
+    m1, s1 = calculate_activation_statistics(preds, model,
                                          dims, device)
-    m2, s2 = calculate_activation_statistics(truths, model, batch_size,
+    m2, s2 = calculate_activation_statistics(truths, model,
                                          dims, device)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
 

@@ -65,7 +65,7 @@ class DepthMap(pl.LightningModule):
             self.input_channels = 2 * self.input_channels
 
     def _log_fid(self, pred, target):
-        fid_val = calculate_fid(pred, target, batch_size=16, device=self.device)
+        fid_val = calculate_fid(pred, target, device=self.device)
         self.log('train_fid', fid_val)
 
     def forward(self, x):
