@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 class DepthMap(pl.LightningModule):
     def __init__(
@@ -52,6 +53,9 @@ class DepthMap(pl.LightningModule):
                         features_start=self.features_start,
                         bilinear=self.bilinear)
 
+        # save hparams for lightning checkpoint
+        self.save_hyperparameters()
+
     def _calc_input_channels(self):
         # calculate the input channels for UNet
         if self.frames_per_sample <= 2:
@@ -76,11 +80,14 @@ class DepthMap(pl.LightningModule):
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
+        
+        # log images
         if batch_idx % self.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
+        
+        # log fid
         if batch_idx % self.fid_freq == 0:
             self._log_fid('train', pred, target)
-
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -96,9 +103,11 @@ class DepthMap(pl.LightningModule):
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
+        
         # log predicted images
         if batch_idx % self.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
+            
         # log FID
         if batch_idx % self.fid_freq == 0:
             self._log_fid('valid', pred, target)
@@ -139,7 +148,6 @@ class DepthMap(pl.LightningModule):
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}")
 
         return fig
-
 
     def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma'):
         if inverse:
@@ -233,3 +241,4 @@ if __name__ == '__main__':
     trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
+
