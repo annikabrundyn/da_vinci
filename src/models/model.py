@@ -99,7 +99,7 @@ class DepthMap(pl.LightningModule):
         # log predicted images
         if batch_idx % self.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
-        #log FID
+        # log FID
         if batch_idx % self.fid_freq == 0:
             self._log_fid('valid', pred, target)
 
