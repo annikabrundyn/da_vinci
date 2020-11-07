@@ -2,6 +2,13 @@
 
 # Overview
 
+### to install the project
+```bash
+cd da_vinci 
+pip install -e .   
+pip install -r requirements.txt
+```
+
 ### data.py
 
 This is where the DaVinciDataModule (dm) is defined. 
