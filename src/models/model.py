@@ -4,14 +4,14 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from src.models.unet import UNet
-from src.data.data import DaVinciDataModule
+from models.unet import UNet
+from metrics.fid import calculate_fid
+from data.data import DaVinciDataModule
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
-
 
 class DepthMap(pl.LightningModule):
     def __init__(
@@ -25,6 +25,7 @@ class DepthMap(pl.LightningModule):
             bilinear: bool = False,
             lr: float = 0.001,
             output_img_freq : int = 100,
+            fid_freq : int = 100,
             batch_size : int = 16,
             **kwargs
     ):
@@ -40,6 +41,7 @@ class DepthMap(pl.LightningModule):
         self.bilinear = bilinear
         self.lr = lr
         self.output_img_freq = output_img_freq
+        self.fid_freq = fid_freq
         self.batch_size = batch_size
 
         self._calc_input_channels()
@@ -62,6 +64,10 @@ class DepthMap(pl.LightningModule):
         if self.include_right_view:
             self.input_channels = 2 * self.input_channels
 
+    def _log_fid(self, pred, target):
+        fid_val = calculate_fid(pred, target, batch_size=16, device=self.device)
+        self.log('train_fid', fid_val)
+
     def forward(self, x):
         return self.net(x)
 
@@ -72,10 +78,16 @@ class DepthMap(pl.LightningModule):
         self.log('train_loss', loss_val)
         if batch_idx % self.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
+        if batch_idx % self.fid_freq == 0:
+            self._log_fid(pred, target)
+
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
 
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
+
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
 
@@ -89,6 +101,9 @@ class DepthMap(pl.LightningModule):
         # log predicted images
         if batch_idx % self.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
+        #log FID
+        if batch_idx % self.fid_freq == 0:
+            self._log_fid(pred, target)
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -100,6 +115,9 @@ class DepthMap(pl.LightningModule):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.lr)
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
+
+    def log_fid(self, fid_val):
+        self.log('val_fid', fid_val)
 
     def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums):
         if self.include_right_view:
@@ -217,6 +235,6 @@ if __name__ == '__main__':
     print("model instance created")
 
     # train
-    trainer = pl.Trainer().from_argparse_args(args)
+    trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
