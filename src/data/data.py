@@ -1,17 +1,13 @@
+import math
 import os
 import random
-import math
-
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
-from torch.utils.data import random_split
 
 import pytorch_lightning as pl
+import torch
 from PIL import Image
-
 from sklearn.utils import shuffle
-import random
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
 
 
 class DaVinciDataSet(Dataset):
@@ -22,6 +18,7 @@ class DaVinciDataSet(Dataset):
                  frames_per_sample: int,
                  frames_to_drop: int,
                  include_right_view: bool = False, #whether to include right images
+                 stack_horizontal: bool = False,
                  extra_info: bool = False,
                  img_transform = None,
                  target_transform = None
@@ -31,6 +28,7 @@ class DaVinciDataSet(Dataset):
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
+        self.stack_horizontal = stack_horizontal
         self.extra_info = extra_info
 
         if not img_transform:
@@ -66,12 +64,15 @@ class DaVinciDataSet(Dataset):
                 image = self.img_transform(image)
                 right_images.append(image)
 
-        # channels are the b/w input frames
-        image_tensor = torch.cat(images)
+        if self.stack_horizontal:
+            stack_dim = 2
+        elif not self.stack_horizontal:
+            stack_dim = 0
 
+        image_tensor = torch.cat(images, dim=stack_dim)
         if self.include_right_view:
-            right_image_tensor = torch.cat(right_images)
-            image_tensor = torch.cat((image_tensor, right_image_tensor), dim=0)
+            right_image_tensor = torch.cat(right_images, dim=stack_dim)
+            image_tensor = torch.cat((image_tensor, right_image_tensor), dim=stack_dim)
 
         # target is only the first frame
         target_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'disparity', "{:s}".format(frames[0]))
@@ -83,7 +84,6 @@ class DaVinciDataSet(Dataset):
             sample_info['image_set'] = image_set
             sample_info['frame_nums'] = " ".join(frames)
             return image_tensor, target, sample_info
-
         else:
             return image_tensor, target
 
@@ -95,6 +95,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             frames_per_sample: int,
             frames_to_drop: int,
             include_right_view: bool = False,
+            stack_horizontal: bool = False,
             extra_info: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
@@ -109,6 +110,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
+        self.stack_horizontal = stack_horizontal
         self.extra_info = extra_info
         self.val_split = val_split
         self.test_split = test_split
@@ -218,6 +220,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                             frames_per_sample=self.frames_per_sample,
                                             frames_to_drop=self.frames_to_drop,
                                             include_right_view=self.include_right_view,
+                                            stack_horizontal=self.stack_horizontal,
                                             extra_info=self.extra_info)
 
         self.val_dataset = DaVinciDataSet(data_dir=self.data_dir,
@@ -225,6 +228,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
                                           include_right_view=self.include_right_view,
+                                          stack_horizontal=self.stack_horizontal,
                                           extra_info=self.extra_info)
 
         self.test_dataset = DaVinciDataSet(data_dir=self.data_dir,
@@ -232,6 +236,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                            frames_per_sample=self.frames_per_sample,
                                            frames_to_drop=self.frames_to_drop,
                                            include_right_view=self.include_right_view,
+                                           stack_horizontal=self.stack_horizontal,
                                            extra_info=self.extra_info)
 
         self.vis_dataset = DaVinciDataSet(data_dir=self.data_dir,
@@ -239,6 +244,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
                                           include_right_view=self.include_right_view,
+                                          stack_horizontal=self.stack_horizontal,
                                           extra_info=self.extra_info)
 
     def train_dataloader(self):

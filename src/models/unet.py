@@ -15,6 +15,7 @@ class UNet(nn.Module):
             self,
             num_classes: int,
             input_channels: int,
+            num_stack_horizontal: int = 1,
             num_layers: int = 5,
             features_start: int = 64,
             bilinear: bool = False
@@ -39,7 +40,7 @@ class UNet(nn.Module):
         self.layers = nn.ModuleList(layers)
 
         # final layer to match the depth map dimensions
-        self.conv_reshape = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(3,11), stride=1, padding=1, dilation=8)
+        self.conv_reshape = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(3,11), stride=(1, num_stack_horizontal), padding=(1, num_stack_horizontal), dilation=(8, 8*num_stack_horizontal))
 
     def forward(self, x):
         xi = [self.layers[0](x)]
