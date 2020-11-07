@@ -114,9 +114,6 @@ class DepthMap(pl.LightningModule):
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
 
-    def log_fid(self, fid_val):
-        self.log('val_fid', fid_val)
-
     def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums):
         if self.include_right_view:
             nrow = self.input_channels // 2
