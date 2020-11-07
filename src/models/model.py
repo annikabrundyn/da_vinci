@@ -4,15 +4,15 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from src.models.unet import UNet
-from src.data.data import DaVinciDataModule
+from models.unet import UNet
+from metrics.fid import calculate_fid
+from data.data import DaVinciDataModule
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-
 
 class DepthMap(pl.LightningModule):
     def __init__(
@@ -26,6 +26,7 @@ class DepthMap(pl.LightningModule):
             bilinear: bool = False,
             lr: float = 0.001,
             output_img_freq : int = 100,
+            fid_freq : int = 100,
             batch_size : int = 16,
             **kwargs
     ):
@@ -41,6 +42,7 @@ class DepthMap(pl.LightningModule):
         self.bilinear = bilinear
         self.lr = lr
         self.output_img_freq = output_img_freq
+        self.fid_freq = fid_freq
         self.batch_size = batch_size
 
         self._calc_input_channels()
@@ -66,6 +68,10 @@ class DepthMap(pl.LightningModule):
         if self.include_right_view:
             self.input_channels = 2 * self.input_channels
 
+    def _log_fid(self, set_name, pred, target):
+        fid_val = calculate_fid(pred, target, device=self.device)
+        self.log(f"{set_name}_fid", fid_val)
+
     def forward(self, x):
         return self.net(x)
 
@@ -74,12 +80,19 @@ class DepthMap(pl.LightningModule):
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
-        # if batch_idx % self.output_img_freq == 0:
-        #     self._log_images(img, target, pred, extra_info, step_name='train')
+        
+        # log images
+        if batch_idx % self.output_img_freq == 0:
+            self._log_images(img, target, pred, extra_info, step_name='train')
+        
+        # log fid
+        if batch_idx % self.fid_freq == 0:
+            self._log_fid('train', pred, target)
 
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
+
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
 
@@ -90,9 +103,14 @@ class DepthMap(pl.LightningModule):
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
+        
         # log predicted images
-        # if batch_idx % self.output_img_freq == 0:
-        #     self._log_images(img, target, pred, extra_info, step_name='valid')
+        if batch_idx % self.output_img_freq == 0:
+            self._log_images(img, target, pred, extra_info, step_name='valid')
+            
+        # log FID
+        if batch_idx % self.fid_freq == 0:
+            self._log_fid('valid', pred, target)
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -220,8 +238,7 @@ if __name__ == '__main__':
     print("model instance created")
 
     # train
-    trainer = pl.Trainer().from_argparse_args(args, callbacks=[EarlyStopping(monitor='val_loss')],
-                                            max_epochs=500)
+    trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
