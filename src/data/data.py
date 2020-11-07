@@ -11,6 +11,7 @@ import pytorch_lightning as pl
 from PIL import Image
 
 from sklearn.utils import shuffle
+import random
 
 
 class DaVinciDataSet(Dataset):
@@ -97,8 +98,9 @@ class DaVinciDataModule(pl.LightningDataModule):
             extra_info: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
-            num_workers: int = 4,
+            num_workers: int = 0,
             batch_size: int = 32,
+            num_pred_img_samples: int = 15,
             *args,
             **kwargs,
     ):
@@ -112,6 +114,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.test_split = test_split
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.num_pred_img_samples = num_pred_img_samples
 
     # helper
     def _read_image_list(self, filename):
@@ -137,32 +140,44 @@ class DaVinciDataModule(pl.LightningDataModule):
         return all_samples
 
     # helper
-    def _sliding_window(self, img_sets):
+    def _sliding_window(self, img_sets, val_set=False):
         # create samples containing k frames per sample and dropping some number of random frames
         split_samples = []
         step_size = 1  # sample overlap size
 
-        if self.frames_per_sample > 1:
-            for (name, frame_list) in img_sets:
-                for i in range(0, len(frame_list)-self.frames_per_sample+1, step_size):
-                    frames = frame_list[i:i+self.frames_per_sample]
-                    # Randomly drop frames - only do this if we have 3 or more frames
-                    if self.frames_per_sample > 2:
-                        max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
-                        if self.frames_to_drop > max_frames_to_drop:
-                            #TODO: Add warning if user input more frames to drop than makes sense
-                            self.frames_to_drop = max_frames_to_drop
-                        for i in range(self.frames_to_drop):
-                            rand_idx = random.randint(1, len(frames) - 1)
-                            _ = frames.pop(rand_idx)
-                    split_samples += [(name, frames)]
+        for (name, frame_list) in img_sets:
+            for i in range(0, len(frame_list)-self.frames_per_sample+1, step_size):
+                frames = frame_list[i:i+self.frames_per_sample]
+                # Randomly drop frames - only do this if we have 3 or more frames
+                if self.frames_per_sample > 2:
+                    max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
+                    if self.frames_to_drop > max_frames_to_drop:
+                        #TODO: Add warning if user input more frames to drop than makes sense
+                        self.frames_to_drop = max_frames_to_drop
+                    for i in range(self.frames_to_drop):
+                        rand_idx = random.randint(1, len(frames) - 1)
+                        _ = frames.pop(rand_idx)
+                split_samples += [(name, frames)]
 
-        # only using single frame
-        else:
-            for (name, frame_list) in img_sets:
-                split_samples += [(name, [i]) for i in frame_list]
+                if val_set and (name, frames[0]) in self.vis_img_list_names:
+                    self.vis_img_list += [(name, frames)]
 
         return split_samples
+
+    # helper
+    def _create_val_img_list(self, val_sets):
+        vis_img_list_names = []
+        random_seed_list = range(2020, 2020+self.num_pred_img_samples)
+
+        for i in random_seed_list:
+            random.seed(i)
+            s = random.choice(val_sets)
+            name = s[0]
+            frame = random.choice(s[1])
+            vis_img_list_names.append((name, frame))
+
+        return vis_img_list_names
+
 
     def setup(self):
         # this function does the train/val/test splits - needs to be run first after instantiating dm
@@ -175,24 +190,28 @@ class DaVinciDataModule(pl.LightningDataModule):
         all_sets += self._split_into_chunks(test_img_list, window_size=1000, name='test')
 
         # shuffle all 41 sets of 1000 frames
-        all_sets = shuffle(all_sets, random_state=42)
+        self.all_sets = shuffle(all_sets, random_state=42)
 
         # split train/val/test
-        val_len = math.floor(self.val_split * len(all_sets))
-        test_len = math.floor(self.test_split * len(all_sets))
-        train_len = len(all_sets) - val_len - test_len
+        val_len = math.floor(self.val_split * len(self.all_sets))
+        test_len = math.floor(self.test_split * len(self.all_sets))
+        train_len = len(self.all_sets) - val_len - test_len
 
-        train_sets = all_sets[:train_len]
-        val_sets = all_sets[train_len:train_len+val_len]
-        test_sets = all_sets[-test_len:]
+        self.train_sets = self.all_sets[:train_len]
+        self.val_sets = self.all_sets[train_len:train_len+val_len]
+        self.test_sets = self.all_sets[-test_len:]
 
-        self.train_samples = self._sliding_window(train_sets)
-        self.val_samples = self._sliding_window(val_sets)
-        self.test_samples = self._sliding_window(test_sets)
+        # create separate list of random images from validation set to predict on at the end of training
+        self.vis_img_list_names = self._create_val_img_list(self.val_sets)
+        self.vis_img_list = []
 
-        random.shuffle(self.train_samples)
-        random.shuffle(self.val_samples)
-        random.shuffle(self.test_samples)
+        self.train_samples = self._sliding_window(self.train_sets)
+        self.val_samples = self._sliding_window(self.val_sets, val_set=True)
+        self.test_samples = self._sliding_window(self.test_sets)
+
+        self.train_samples = shuffle(self.train_samples, random_state=42)
+        self.val_samples = shuffle(self.val_samples, random_state=42)
+        self.test_samples = shuffle(self.test_samples, random_state=42)
 
         self.train_dataset = DaVinciDataSet(data_dir=self.data_dir,
                                             sample_list=self.train_samples,
@@ -215,6 +234,13 @@ class DaVinciDataModule(pl.LightningDataModule):
                                            include_right_view=self.include_right_view,
                                            extra_info=self.extra_info)
 
+        self.vis_dataset = DaVinciDataSet(data_dir=self.data_dir,
+                                          sample_list=self.vis_img_list,
+                                          frames_per_sample=self.frames_per_sample,
+                                          frames_to_drop=self.frames_to_drop,
+                                          include_right_view=self.include_right_view,
+                                          extra_info=self.extra_info)
+
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,
                             batch_size=self.batch_size,
@@ -236,13 +262,9 @@ class DaVinciDataModule(pl.LightningDataModule):
                             num_workers=self.num_workers)
         return loader
 
-
-# print("start")
-# dm = DaVinciDataModule('/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data', frames_per_sample=3, frames_to_drop=1, extra_info=True, batch_size=2)
-# print("dm created")
-# dm.setup()
-# print("dm setup")
-# dm.train_dataset.__getitem__(0)
-# img, target, extra = next(iter(dm.train_dataloader()))
-# print(img.shape)
-# print(target.shape)
+    def vis_img_dataloader(self):
+        loader = DataLoader(self.vis_dataset,
+                            batch_size=1,
+                            shuffle=False,
+                            num_workers=self.num_workers)
+        return loader
