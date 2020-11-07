@@ -260,7 +260,7 @@ if __name__ == '__main__':
     print("model instance created")
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args)
+    trainer = pl.Trainer(callbacks=[EarlyStopping(monitor='val_loss')]).from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
