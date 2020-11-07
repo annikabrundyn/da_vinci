@@ -4,15 +4,16 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from models.unet import UNet
-from metrics.fid import calculate_fid
-from data.data import DaVinciDataModule
+from src.models.unet import UNet
+from src.metrics.fid import calculate_fid
+from src.data.data import DaVinciDataModule
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
 
 class DepthMap(pl.LightningModule):
     def __init__(
@@ -241,4 +242,3 @@ if __name__ == '__main__':
     trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
-
