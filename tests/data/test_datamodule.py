@@ -1,7 +1,7 @@
 import os
 from src.data.data import DaVinciDataModule
 
-DATA_DIR = "/Users/annikabrundyn/Developer/da_vinci_depth/daVinci_data"
+DATA_DIR = "//daVinci_data"
 
 
 def test_val_test_splits(request):
