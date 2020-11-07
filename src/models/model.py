@@ -69,10 +69,6 @@ class DepthMap(pl.LightningModule):
         if self.include_right_view:
             self.input_channels = 2 * self.input_channels
 
-    def _log_fid(self, set_name, pred, target):
-        fid_val = calculate_fid(pred, target, device=self.device)
-        self.log(f"{set_name}_fid", fid_val)
-
     def forward(self, x):
         return self.net(x)
 
@@ -88,7 +84,7 @@ class DepthMap(pl.LightningModule):
         
         # log fid
         if batch_idx % self.fid_freq == 0:
-            self._log_fid('train', pred, target)
+            self._log_fid(pred, target, step_name='train')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -111,7 +107,7 @@ class DepthMap(pl.LightningModule):
             
         # log FID
         if batch_idx % self.fid_freq == 0:
-            self._log_fid('valid', pred, target)
+            self._log_fid(pred, target, step_name='valid')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -119,12 +115,24 @@ class DepthMap(pl.LightningModule):
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
 
+    def test_step(self, batch, batch_idx):
+        # batch size is 1 in the validation pred images
+        img, target, extra_info = batch
+        folder_name = extra_info['image_set'][0]
+        frame_nums = extra_info['frame_nums'][0]
+
+        pred = self(img)
+
+        self._matplotlib_imshow_input_imgs(img, folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
+        self._matplotlib_imshow_dm(target, title=f"target_{batch_idx}", save_fig=True)
+        self._matplotlib_imshow_dm(pred, title=f"prediction_{batch_idx}", save_fig=True)
+
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.lr)
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
 
-    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums):
+    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None):
         if self.include_right_view:
             nrow = self.input_channels // 2
             ncol = 2
@@ -148,15 +156,22 @@ class DepthMap(pl.LightningModule):
                 idx = idx - nrow
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}")
 
+        if save_fig:
+            plt.savefig(title, bbox_inches='tight')
+
         return fig
 
-    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma'):
+    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
         fig = plt.figure()
         plt.imshow(npimg, cmap=cmap)
         plt.title(title)
+
+        if save_fig:
+            plt.savefig(title, bbox_inches='tight')
+
         return fig
 
     def _log_images(self, img, target, pred, extra_info, step_name, limit=1):
@@ -181,6 +196,10 @@ class DepthMap(pl.LightningModule):
         self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
         self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
 
+    def _log_fid(self, pred, target, step_name):
+        fid_val = calculate_fid(pred, target, device=self.device)
+        self.log(f"{step_name}_fid", fid_val)
+
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
@@ -191,6 +210,7 @@ class DepthMap(pl.LightningModule):
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--output_img_freq", type=int, default=100)
+        parser.add_argument("--num_workers", type=int, default=8)
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
         parser.add_argument("--num_layers", type=int, default=5, help="number of layers on u-net")
         parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
@@ -220,7 +240,8 @@ if __name__ == '__main__':
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=args.include_right_view,
                            extra_info=True,
-                           batch_size=args.batch_size)
+                           batch_size=args.batch_size,
+                           num_workers=args.num_workers)
     dm.setup()
     print("dm setup")
 
@@ -242,3 +263,6 @@ if __name__ == '__main__':
     trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
+
+    # predict + save val images
+    trainer.test(model, dm.vis_img_dataloader())

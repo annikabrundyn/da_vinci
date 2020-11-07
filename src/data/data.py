@@ -98,7 +98,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             extra_info: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
-            num_workers: int = 0,
+            num_workers: int = 8,
             batch_size: int = 32,
             num_pred_img_samples: int = 15,
             *args,
