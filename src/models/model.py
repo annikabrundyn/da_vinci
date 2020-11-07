@@ -157,7 +157,7 @@ class DepthMap(pl.LightningModule):
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}")
 
         if save_fig:
-            plt.savefig(title, bbox_inches='tight')
+            plt.savefig(f"./lightning_logs/{title}", bbox_inches='tight')
             plt.close()
 
         return fig
@@ -171,7 +171,7 @@ class DepthMap(pl.LightningModule):
         plt.title(title)
 
         if save_fig:
-            plt.savefig(title, bbox_inches='tight')
+            plt.savefig(f"./lightning_logs/{title}", bbox_inches='tight')
             plt.close()
 
         return fig
