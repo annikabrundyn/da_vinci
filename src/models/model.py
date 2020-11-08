@@ -159,7 +159,7 @@ class DepthMap(pl.LightningModule):
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}")
 
         if save_fig:
-            path = os.path.join(os.path.dirname(trainer.checkpoint_callback.dirpath), 'images', f"{title}.png")
+            path = os.path.join(trainer.log_dir, f"{title}.png")
             plt.savefig(path, bbox_inches='tight')
             plt.close()
 
@@ -174,7 +174,7 @@ class DepthMap(pl.LightningModule):
         plt.title(title)
 
         if save_fig:
-            path = os.path.join(os.path.dirname(trainer.checkpoint_callback.dirpath), 'images', f"{title}.png")
+            path = os.path.join(trainer.log_dir, f"{title}.png")
             plt.savefig(path, bbox_inches='tight')
             plt.close()
 
