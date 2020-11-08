@@ -23,6 +23,7 @@ class DepthMap(pl.LightningModule):
             frames_per_sample: int,
             frames_to_drop: int,
             include_right_view: bool = False,
+            stack_horizontal: bool = False,
             num_classes: int = 1,
             num_layers: int = 5,
             features_start: int = 64,
@@ -39,6 +40,7 @@ class DepthMap(pl.LightningModule):
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
+        self.stack_horizontal = stack_horizontal
         self.num_classes = num_classes
         self.num_layers = num_layers
         self.features_start = features_start
@@ -50,8 +52,17 @@ class DepthMap(pl.LightningModule):
 
         self._calc_input_channels()
 
+        if self.stack_horizontal:
+            if self.include_right_view:
+                num_stack_horizontal = (self.frames_per_sample - self.frames_to_drop) * 2
+            else:
+                num_stack_horizontal = (self.frames_per_sample - self.frames_to_drop)
+        else:
+            num_stack_horizontal = 1
+            
         self.net = UNet(num_classes=num_classes,
                         input_channels=self.input_channels,
+                        num_stack_horizontal=num_stack_horizontal,
                         num_layers=self.num_layers,
                         features_start=self.features_start,
                         bilinear=self.bilinear)
@@ -61,15 +72,19 @@ class DepthMap(pl.LightningModule):
 
     def _calc_input_channels(self):
         # calculate the input channels for UNet
-        if self.frames_per_sample <= 2:
-            self.input_channels = self.frames_per_sample
-        else:
-            max_drop_frames = self.frames_per_sample - 2
-            self.frames_to_drop = min(self.frames_to_drop, max_drop_frames)
-            self.input_channels = self.frames_per_sample - self.frames_to_drop
+        # TODO: add support for color
+        if self.stack_horizontal:
+            self.input_channels=1
+        elif not self.stack_horizontal:
+            if self.frames_per_sample <= 2:
+                self.input_channels = self.frames_per_sample
+            else:
+                max_drop_frames = self.frames_per_sample - 2
+                self.frames_to_drop = min(self.frames_to_drop, max_drop_frames)
+                self.input_channels = self.frames_per_sample - self.frames_to_drop
 
-        if self.include_right_view:
-            self.input_channels = 2 * self.input_channels
+            if self.include_right_view:
+                self.input_channels = 2 * self.input_channels
 
     def forward(self, x):
         return self.net(x)
@@ -79,11 +94,11 @@ class DepthMap(pl.LightningModule):
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
-        
+
         # log images
         if batch_idx % self.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
-        
+
         # log fid
         if batch_idx % self.fid_freq == 0:
             self._log_fid(pred, target, step_name='train')
@@ -102,11 +117,11 @@ class DepthMap(pl.LightningModule):
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
-        
+
         # log predicted images
         if batch_idx % self.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
-            
+
         # log FID
         if batch_idx % self.fid_freq == 0:
             self._log_fid(pred, target, step_name='valid')
@@ -135,12 +150,16 @@ class DepthMap(pl.LightningModule):
         return [opt]
 
     def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None):
-        if self.include_right_view:
-            nrow = self.input_channels // 2
-            ncol = 2
-        else:
+        if self.stack_horizontal:
             nrow = self.input_channels
             ncol = 1
+        elif not self.stack_horizontal:
+            if self.include_right_view:
+                nrow = self.input_channels // 2
+                ncol = 2
+            else:
+                nrow = self.input_channels
+                ncol = 1
 
         fig = plt.figure(figsize=(10, 10))
         grid = ImageGrid(fig, 111,
@@ -210,9 +229,10 @@ class DepthMap(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_dir", type=str, help="path to davinci data")
-        parser.add_argument("--frames_per_sample", type=int, help="number of frames to include in each sample")
-        parser.add_argument("--frames_to_drop", type=int, help="number of frames to randomly drop in each sample")
-        parser.add_argument("--include_right_view", type=bool, default=False, help="include left and right view")
+        parser.add_argument("--frames_per_sample", type=int, default=1, help="number of frames to include in each sample")
+        parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
+        parser.add_argument("--include_right_view", action='store_true', default=False, help="include left and right view")
+        parser.add_argument("--stack_horizontal", action='store_true', default=False, help="stacks input views horizontally")
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--output_img_freq", type=int, default=100)
@@ -245,6 +265,7 @@ if __name__ == '__main__':
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=args.include_right_view,
+                           stack_horizontal=args.stack_horizontal,
                            extra_info=True,
                            batch_size=args.batch_size,
                            num_workers=args.num_workers)
