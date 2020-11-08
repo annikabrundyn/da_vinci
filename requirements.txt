@@ -1,7 +1,8 @@
 matplotlib==3.3.2
-pytorch-lightning==1.0.4
+#pytorch-lightning==1.0.4
 torch==1.7.0
 torchvision==0.8.1
 scikit-learn==0.23.2
 pytorch-fid==0.1.1
 pytest==6.1.2
+git+git://github.com/PytorchLightning/pytorch-lightning.git@master
