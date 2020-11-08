@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 
 import os.path
+import numpy as np
 
 import pytorch_lightning as pl
 import torch
@@ -24,6 +25,7 @@ class DepthMap(pl.LightningModule):
             frames_to_drop: int,
             include_right_view: bool = False,
             stack_horizontal: bool = False,
+            color_input: bool = False,
             num_classes: int = 1,
             num_layers: int = 5,
             features_start: int = 64,
@@ -41,6 +43,7 @@ class DepthMap(pl.LightningModule):
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
+        self.color_input = color_input
         self.num_classes = num_classes
         self.num_layers = num_layers
         self.features_start = features_start
@@ -59,7 +62,7 @@ class DepthMap(pl.LightningModule):
                 num_stack_horizontal = (self.frames_per_sample - self.frames_to_drop)
         else:
             num_stack_horizontal = 1
-            
+
         self.net = UNet(num_classes=num_classes,
                         input_channels=self.input_channels,
                         num_stack_horizontal=num_stack_horizontal,
@@ -72,7 +75,6 @@ class DepthMap(pl.LightningModule):
 
     def _calc_input_channels(self):
         # calculate the input channels for UNet
-        # TODO: add support for color
         if self.stack_horizontal:
             self.input_channels=1
         elif not self.stack_horizontal:
@@ -85,6 +87,9 @@ class DepthMap(pl.LightningModule):
 
             if self.include_right_view:
                 self.input_channels = 2 * self.input_channels
+
+        if self.color_input:
+            self.input_channels = self.input_channels * 3
 
     def forward(self, x):
         return self.net(x)
@@ -167,9 +172,20 @@ class DepthMap(pl.LightningModule):
                          direction='column',
                          axes_pad=0.3)
 
-        for ax, idx in zip(grid, range(self.input_channels)):
-            npimg = img[idx].squeeze().detach().cpu().numpy()
-            ax.imshow(npimg, cmap='gray')
+        if self.color_input:
+            range_inputs = range(self.input_channels // 3)
+        else:
+            range_inputs = range(self.input_channels)
+
+        for ax, idx in zip(grid, range_inputs):
+            if self.color_input:
+                # select 3 channels for color inputs
+                npimg = img[3*idx:3*(idx+1)].squeeze().detach().cpu().numpy()
+                npimg = np.transpose(npimg, (1, 2, 0))
+                ax.imshow(npimg)
+            else:
+                npimg = img[idx].squeeze().detach().cpu().numpy()
+                ax.imshow(npimg, cmap='gray')
             ax.axis('off')
             side = 'left'
             if idx >= nrow:
@@ -233,6 +249,7 @@ class DepthMap(pl.LightningModule):
         parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
         parser.add_argument("--include_right_view", action='store_true', default=False, help="include left and right view")
         parser.add_argument("--stack_horizontal", action='store_true', default=False, help="stacks input views horizontally")
+        parser.add_argument("--color_input", action='store_true', default=False, help="use color inputs instead of bw")
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--output_img_freq", type=int, default=100)
@@ -266,6 +283,7 @@ if __name__ == '__main__':
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=args.include_right_view,
                            stack_horizontal=args.stack_horizontal,
+                           color_input=args.color_input,
                            extra_info=True,
                            batch_size=args.batch_size,
                            num_workers=args.num_workers)
