@@ -33,25 +33,16 @@ class DepthMap(pl.LightningModule):
             lr: float = 0.001,
             output_img_freq : int = 100,
             fid_freq : int = 100,
-            batch_size : int = 16,
             **kwargs
     ):
 
         super().__init__()
-
+        self.save_hyperparameters()
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
         self.color_input = color_input
-        self.num_classes = num_classes
-        self.num_layers = num_layers
-        self.features_start = features_start
-        self.bilinear = bilinear
-        self.lr = lr
-        self.output_img_freq = output_img_freq
-        self.fid_freq = fid_freq
-        self.batch_size = batch_size
 
         self._calc_input_channels()
 
@@ -63,15 +54,13 @@ class DepthMap(pl.LightningModule):
         else:
             num_stack_horizontal = 1
 
-        self.net = UNet(num_classes=num_classes,
+        self.net = UNet(num_classes=self.hparams.num_classes,
                         input_channels=self.input_channels,
                         num_stack_horizontal=num_stack_horizontal,
-                        num_layers=self.num_layers,
-                        features_start=self.features_start,
-                        bilinear=self.bilinear)
+                        num_layers=self.hparams.num_layers,
+                        features_start=self.hparams.features_start,
+                        bilinear=self.hparams.bilinear)
 
-        # save hparams for lightning checkpoint
-        self.save_hyperparameters()
 
     def _calc_input_channels(self):
         # calculate the input channels for UNet
@@ -101,11 +90,11 @@ class DepthMap(pl.LightningModule):
         self.log('train_loss', loss_val)
 
         # log images
-        if batch_idx % self.output_img_freq == 0:
+        if batch_idx % self.hparams.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
 
         # log fid
-        if batch_idx % self.fid_freq == 0:
+        if batch_idx % self.hparams.fid_freq == 0:
             self._log_fid(pred, target, step_name='train')
 
         # metrics
@@ -124,11 +113,11 @@ class DepthMap(pl.LightningModule):
         self.log('valid_loss', loss_val)
 
         # log predicted images
-        if batch_idx % self.output_img_freq == 0:
+        if batch_idx % self.hparams.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # log FID
-        if batch_idx % self.fid_freq == 0:
+        if batch_idx % self.hparams.fid_freq == 0:
             self._log_fid(pred, target, step_name='valid')
 
         # metrics
@@ -150,7 +139,7 @@ class DepthMap(pl.LightningModule):
         self._matplotlib_imshow_dm(pred, title=f"prediction_{batch_idx}", save_fig=True)
 
     def configure_optimizers(self):
-        opt = torch.optim.Adam(self.net.parameters(), lr=self.lr)
+        opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
 
