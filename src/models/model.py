@@ -135,9 +135,9 @@ class DepthMap(pl.LightningModule):
 
         pred = self(img)
 
-        self._matplotlib_imshow_input_imgs(img, folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
-        self._matplotlib_imshow_dm(target, title=f"target_{batch_idx}", save_fig=True)
-        self._matplotlib_imshow_dm(pred, title=f"prediction_{batch_idx}", save_fig=True)
+        self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
+        self._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True)
+        self._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True)
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
@@ -145,6 +145,14 @@ class DepthMap(pl.LightningModule):
         return [opt]
 
     def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None):
+        """Summary
+
+        Args:
+            img (tensor): (num_channels, H, W)
+
+        Returns:
+            TYPE: fig
+        """
         if self.stack_horizontal:
             nrow = self.input_channels
             ncol = 1
@@ -181,7 +189,7 @@ class DepthMap(pl.LightningModule):
             if idx >= nrow:
                 side = 'right'
                 idx = idx - nrow
-            ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}")
+            ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}/include_right_view:{self.include_right_view}")
 
         if save_fig:
             path = os.path.join(trainer.log_dir, f"{title}.png")
@@ -214,10 +222,7 @@ class DepthMap(pl.LightningModule):
         frame_nums = extra_info['frame_nums'][0]
         frame_nums = frame_nums.split()
 
-        # Log input/original image
-        img = img.permute(1, 0, 2, 3)
-
-        fig = self._matplotlib_imshow_input_imgs(img, folder_name, frame_nums)
+        fig = self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums)
         self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
