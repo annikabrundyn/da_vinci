@@ -37,12 +37,14 @@ class DepthMap(pl.LightningModule):
     ):
 
         super().__init__()
-        self.save_hyperparameters()
+
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
         self.color_input = color_input
+
+        self.save_hyperparameters()
 
         self._calc_input_channels()
 
