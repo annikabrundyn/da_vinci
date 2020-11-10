@@ -35,7 +35,6 @@ class DepthMap(pl.LightningModule):
             fid_freq : int = 100,
             **kwargs
     ):
-
         super().__init__()
 
         self.frames_per_sample = frames_per_sample
