@@ -16,6 +16,22 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import Callback
+
+
+class SavePredImgCallback(Callback):
+    def __init__(self, dl, epoch_logging_freq: int = 2):
+        # save every 50 epochs
+        self.epoch_logging_freq = epoch_logging_freq
+        self.dl = dl
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        if trainer.current_epoch % self.epoch_logging_freq != 0:
+            return
+
+        for img, target, extra in self.dl:
+            pred = pl_module(img)
+            print(pred.shape)
 
 
 class DepthMap(pl.LightningModule):
@@ -300,7 +316,7 @@ if __name__ == '__main__':
     print("model instance created")
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[EarlyStopping(monitor='valid_loss')])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
