@@ -49,6 +49,12 @@ def x_trans_slice(img_slice, x_vox_trans):
 def calc_mae_translation(img, target, mae_list, args):
     index = args[0]
     translation = args[1]
+
+    img = img.numpy()
+    target = target.numpy()
+    img = img.transpose(1, 2, 0)
+    target = target.transpose(1, 2, 0)
+
     # Make the translated image Y_t
     shifted = x_trans_slice(img, translation)
     # Calculate the mismatch
@@ -74,11 +80,6 @@ class BaselineModel:
             for batch_idx, batch in enumerate(tqdm(dataloader)):
                 imgs, targets = batch
                 for img, target in zip(imgs, targets):
-                    img = img.numpy()
-                    target = target.numpy()
-                    img = img.transpose(1, 2, 0)
-                    target = target.transpose(1, 2, 0)
-
                     func = partial(calc_mae_translation, img, target, mae_list)
                     p.map(func, enumerate(translations))
         p.close()
