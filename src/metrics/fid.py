@@ -70,7 +70,7 @@ def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
 
 def calculate_fid(preds, truths, is_color_input=False, dims=2048, device='cpu'):
     """Calculates the FID of two paths"""
-    if is_color_input:
+    if not is_color_input:
         preds = preds.repeat(1, 3, 1, 1)
         truths = truths.repeat(1, 3, 1, 1)
 
