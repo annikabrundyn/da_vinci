@@ -19,7 +19,7 @@ class DaVinciDataSet(Dataset):
                  frames_to_drop: int,
                  include_right_view: bool = False, #whether to include right images
                  stack_horizontal: bool = False,
-                 color_input: bool = False,
+                 is_color_input: bool = False,
                  extra_info: bool = False,
                  img_transform = None,
                  target_transform = None
@@ -30,11 +30,11 @@ class DaVinciDataSet(Dataset):
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
-        self.color_input = color_input
+        self.is_color_input = is_color_input
         self.extra_info = extra_info
 
         if not img_transform:
-            if self.color_input:
+            if self.is_color_input:
                 self.img_transform = transforms.Compose([transforms.ToTensor()])
             else:
                 self.img_transform = transforms.Compose([transforms.Grayscale(),
@@ -101,7 +101,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             frames_to_drop: int,
             include_right_view: bool = False,
             stack_horizontal: bool = False,
-            color_input: bool = False,
+            is_color_input: bool = False,
             extra_info: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
@@ -117,7 +117,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
-        self.color_input = color_input
+        self.is_color_input = is_color_input
         self.extra_info = extra_info
         self.val_split = val_split
         self.test_split = test_split
@@ -228,7 +228,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                             frames_to_drop=self.frames_to_drop,
                                             include_right_view=self.include_right_view,
                                             stack_horizontal=self.stack_horizontal,
-                                            color_input=self.color_input,
+                                            is_color_input=self.is_color_input,
                                             extra_info=self.extra_info)
 
         self.val_dataset = DaVinciDataSet(data_dir=self.data_dir,
@@ -237,7 +237,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                           frames_to_drop=self.frames_to_drop,
                                           include_right_view=self.include_right_view,
                                           stack_horizontal=self.stack_horizontal,
-                                          color_input=self.color_input,
+                                          is_color_input=self.is_color_input,
                                           extra_info=self.extra_info)
 
         self.test_dataset = DaVinciDataSet(data_dir=self.data_dir,
@@ -246,7 +246,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                            frames_to_drop=self.frames_to_drop,
                                            include_right_view=self.include_right_view,
                                            stack_horizontal=self.stack_horizontal,
-                                           color_input=self.color_input,
+                                           is_color_input=self.is_color_input,
                                            extra_info=self.extra_info)
 
         self.vis_dataset = DaVinciDataSet(data_dir=self.data_dir,
@@ -255,7 +255,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                           frames_to_drop=self.frames_to_drop,
                                           include_right_view=self.include_right_view,
                                           stack_horizontal=self.stack_horizontal,
-                                          color_input=self.color_input,
+                                          is_color_input=self.is_color_input,
                                           extra_info=self.extra_info)
 
     def train_dataloader(self):
