@@ -10,15 +10,14 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
-
 class BaselineDaVinciDataSet(Dataset):
-
-    def __init__(self,
-                 data_dir: str,
-                 sample_list: list,
-                 img_transform = None,
-                 target_transform = None
-                 ):
+    def __init__(
+        self,
+        data_dir: str,
+        sample_list: list,
+        img_transform=None,
+        target_transform=None,
+    ):
         self.data_dir = data_dir
         self.sample_list = sample_list
 
@@ -40,31 +39,34 @@ class BaselineDaVinciDataSet(Dataset):
         assert len(frame) == 1
         frame = frame[0]
 
-        img_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'image_0', "{:s}".format(frame))
+        img_path = os.path.join(
+            self.data_dir, "{:s}".format(image_set), "image_0", "{:s}".format(frame)
+        )
         image = Image.open(img_path)
         image = self.img_transform(image)
 
         # target is only the first frame
-        target_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'image_1', "{:s}".format(frame))
+        target_path = os.path.join(
+            self.data_dir, "{:s}".format(image_set), "image_1", "{:s}".format(frame)
+        )
         target = Image.open(target_path)
         target = self.target_transform(target)
-
 
         return image, target
 
 
 class BaselineDaVinciDataModule(pl.LightningDataModule):
     def __init__(
-            self,
-            data_dir: str,
-            frames_per_sample: int = 1,
-            val_split: float = 0.2,
-            test_split: float = 0.1,
-            num_workers: int = 16,
-            batch_size: int = 16,
-            num_pred_img_samples: int = 15,
-            *args,
-            **kwargs,
+        self,
+        data_dir: str,
+        frames_per_sample: int = 1,
+        val_split: float = 0.2,
+        test_split: float = 0.1,
+        num_workers: int = 16,
+        batch_size: int = 16,
+        num_pred_img_samples: int = 15,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.data_dir = data_dir if data_dir is not None else os.getcwd()
@@ -77,7 +79,7 @@ class BaselineDaVinciDataModule(pl.LightningDataModule):
 
     # helper
     def _read_image_list(self, filename):
-        list_file = open(filename, 'r')
+        list_file = open(filename, "r")
         img_list = []
         while True:
             next_line = list_file.readline()
@@ -92,10 +94,10 @@ class BaselineDaVinciDataModule(pl.LightningDataModule):
     def _split_into_chunks(self, img_list, window_size, name):
         all_samples = []
         for i in range(0, len(img_list) - window_size, window_size):
-            if i + 2*window_size > len(img_list):  #if its the last sample
+            if i + 2 * window_size > len(img_list):  # if its the last sample
                 all_samples.append((name, img_list[i:]))
             else:
-                all_samples.append((name, img_list[i: i+window_size]))
+                all_samples.append((name, img_list[i : i + window_size]))
         return all_samples
 
     # helper
@@ -105,13 +107,15 @@ class BaselineDaVinciDataModule(pl.LightningDataModule):
         step_size = 1  # sample overlap size
 
         for (name, frame_list) in img_sets:
-            for i in range(0, len(frame_list)-self.frames_per_sample+1, step_size):
-                frames = frame_list[i:i+self.frames_per_sample]
+            for i in range(0, len(frame_list) - self.frames_per_sample + 1, step_size):
+                frames = frame_list[i : i + self.frames_per_sample]
                 # Randomly drop frames - only do this if we have 3 or more frames
                 if self.frames_per_sample > 2:
-                    max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
+                    max_frames_to_drop = (
+                        self.frames_per_sample - 2
+                    )  # cant drop more than this
                     if self.frames_to_drop > max_frames_to_drop:
-                        #TODO: Add warning if user input more frames to drop than makes sense
+                        # TODO: Add warning if user input more frames to drop than makes sense
                         self.frames_to_drop = max_frames_to_drop
                     for i in range(self.frames_to_drop):
                         rand_idx = random.randint(1, len(frames) - 1)
@@ -126,7 +130,7 @@ class BaselineDaVinciDataModule(pl.LightningDataModule):
     # helper
     def _create_val_img_list(self, val_sets):
         vis_img_list_names = []
-        random_seed_list = range(2020, 2020+self.num_pred_img_samples)
+        random_seed_list = range(2020, 2020 + self.num_pred_img_samples)
 
         for i in random_seed_list:
             random.seed(i)
@@ -137,16 +141,19 @@ class BaselineDaVinciDataModule(pl.LightningDataModule):
 
         return vis_img_list_names
 
-
     def setup(self):
         # this function does the train/val/test splits - needs to be run first after instantiating dm
-        train_img_list = self._read_image_list(os.path.join(self.data_dir, 'train.txt'))
+        train_img_list = self._read_image_list(os.path.join(self.data_dir, "train.txt"))
         train_img_list = train_img_list[::-1]
-        all_sets = self._split_into_chunks(train_img_list, window_size=1000, name='train')
+        all_sets = self._split_into_chunks(
+            train_img_list, window_size=1000, name="train"
+        )
 
-        test_img_list = self._read_image_list(os.path.join(self.data_dir, 'test.txt'))
+        test_img_list = self._read_image_list(os.path.join(self.data_dir, "test.txt"))
         test_img_list = test_img_list[::-1]
-        all_sets += self._split_into_chunks(test_img_list, window_size=1000, name='test')
+        all_sets += self._split_into_chunks(
+            test_img_list, window_size=1000, name="test"
+        )
 
         # shuffle all 41 sets of 1000 frames
         self.all_sets = shuffle(all_sets, random_state=42)
@@ -157,7 +164,7 @@ class BaselineDaVinciDataModule(pl.LightningDataModule):
         train_len = len(self.all_sets) - val_len - test_len
 
         self.train_sets = self.all_sets[:train_len]
-        self.val_sets = self.all_sets[train_len:train_len+val_len]
+        self.val_sets = self.all_sets[train_len : train_len + val_len]
         self.test_sets = self.all_sets[-test_len:]
 
         # create separate list of random images from validation set to predict on at the end of training
@@ -172,42 +179,51 @@ class BaselineDaVinciDataModule(pl.LightningDataModule):
         self.val_samples = shuffle(self.val_samples, random_state=42)
         self.test_samples = shuffle(self.test_samples, random_state=42)
 
-        self.train_dataset = BaselineDaVinciDataSet(data_dir=self.data_dir,
-                                            sample_list=self.train_samples)
+        self.train_dataset = BaselineDaVinciDataSet(
+            data_dir=self.data_dir, sample_list=self.train_samples
+        )
 
-        self.val_dataset = BaselineDaVinciDataSet(data_dir=self.data_dir,
-                                          sample_list=self.val_samples)
+        self.val_dataset = BaselineDaVinciDataSet(
+            data_dir=self.data_dir, sample_list=self.val_samples
+        )
 
-        self.test_dataset = BaselineDaVinciDataSet(data_dir=self.data_dir,
-                                           sample_list=self.test_samples)
+        self.test_dataset = BaselineDaVinciDataSet(
+            data_dir=self.data_dir, sample_list=self.test_samples
+        )
 
-        self.vis_dataset = BaselineDaVinciDataSet(data_dir=self.data_dir,
-                                          sample_list=self.vis_img_list)
+        self.vis_dataset = BaselineDaVinciDataSet(
+            data_dir=self.data_dir, sample_list=self.vis_img_list
+        )
 
     def train_dataloader(self):
-        loader = DataLoader(self.train_dataset,
-                            batch_size=self.batch_size,
-                            shuffle=True,
-                            num_workers=self.num_workers)
+        loader = DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+        )
         return loader
 
     def val_dataloader(self):
-        loader = DataLoader(self.val_dataset,
-                            batch_size=self.batch_size,
-                            shuffle=False,
-                            num_workers=self.num_workers)
+        loader = DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
         return loader
 
     def test_dataloader(self):
-        loader = DataLoader(self.test_dataset,
-                            batch_size=self.batch_size,
-                            shuffle=False,
-                            num_workers=self.num_workers)
+        loader = DataLoader(
+            self.test_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
         return loader
 
     def vis_img_dataloader(self):
-        loader = DataLoader(self.vis_dataset,
-                            batch_size=1,
-                            shuffle=False,
-                            num_workers=self.num_workers)
+        loader = DataLoader(
+            self.vis_dataset, batch_size=1, shuffle=False, num_workers=self.num_workers
+        )
         return loader

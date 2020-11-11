@@ -10,10 +10,12 @@ from argparse import ArgumentParser
 from data.baseline_dataset import BaselineDaVinciDataModule
 from torch.utils.data import DataLoader
 
+
 def mean_abs_mismatch(slice0, slice1):
     """ Mean absoute difference between images
     """
     return np.mean(np.abs(slice0 - slice1))
+
 
 def x_trans_slice(img_slice, x_vox_trans):
     """ Return copy of `img_slice` translated by `x_vox_trans` voxels
@@ -43,6 +45,7 @@ def x_trans_slice(img_slice, x_vox_trans):
         trans_slice[:, x_vox_trans:, :] = img_slice[:, :-x_vox_trans, :]
     return trans_slice
 
+
 def calc_mae_translation(img, target, mae_list, args):
     index = args[0]
     translation = args[1]
@@ -51,6 +54,7 @@ def calc_mae_translation(img, target, mae_list, args):
     # Calculate the mismatch
     mae = mean_abs_mismatch(shifted, target)
     mae_list[index] += mae
+
 
 class BaselineModel:
     INPUT_IMG_WIDTH = 384
@@ -72,8 +76,8 @@ class BaselineModel:
                 for img, target in zip(imgs, targets):
                     img = img.numpy()
                     target = target.numpy()
-                    img = img.transpose(1,2,0)
-                    target = target.transpose(1,2,0)
+                    img = img.transpose(1, 2, 0)
+                    target = target.transpose(1, 2, 0)
 
                     func = partial(calc_mae_translation, img, target, mae_list)
                     p.map(func, enumerate(translations))
@@ -119,8 +123,7 @@ if __name__ == "__main__":
     min_mae = model.fit(dm.val_dataloader())
     global_disparity = model.global_disparity
 
-    with open('baseline_results.txt', 'w') as f:
-        sys.stdout = f # Change the standard output to the file we created.
+    with open("baseline_results.txt", "w") as f:
+        sys.stdout = f  # Change the standard output to the file we created.
         print(f"min mae: {min_mae}")
         print(f"best global disparity: {global_disparity}")
-
