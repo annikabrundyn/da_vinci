@@ -1,5 +1,5 @@
 import os
-from src.data.data import DaVinciDataModule
+from data.data import DaVinciDataModule
 
 DATA_DIR = "//daVinci_data"
 

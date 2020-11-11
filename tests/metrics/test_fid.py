@@ -2,7 +2,7 @@ import os
 from PIL import Image
 from torchvision import transforms
 
-from src.metrics.fid import calculate_fid
+from metrics.fid import calculate_fid
 
 FIXTURES_DIR = "test_fid_fixtures"
 

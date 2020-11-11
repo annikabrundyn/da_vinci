@@ -10,6 +10,6 @@ setup(
     author_email='',
     # REPLACE WITH YOUR OWN GITHUB PROJECT LINK
     url='https://github.com/annikabrundyn/da_vinci',
-    install_requires=['pytorch-lightning'],
-    packages=find_packages(),
+    package_dir={"": "src"},
+    packages=find_packages("src"),
 )
