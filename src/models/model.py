@@ -29,9 +29,19 @@ class SavePredImgCallback(Callback):
         if trainer.current_epoch % self.epoch_logging_freq != 0:
             return
 
+        batch_idx = 0
+
         for img, target, extra in self.dl:
+
+            folder_name = extra_info['image_set'][0]
+            frame_nums = extra_info['frame_nums'][0]
+
             pred = pl_module(img)
+
+            pl_module._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
+
             print(pred.shape)
+            batch_idx += 1
 
 
 class DepthMap(pl.LightningModule):
@@ -143,17 +153,17 @@ class DepthMap(pl.LightningModule):
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
 
-    def test_step(self, batch, batch_idx):
-        # batch size is 1 in the validation pred images
-        img, target, extra_info = batch
-        folder_name = extra_info['image_set'][0]
-        frame_nums = extra_info['frame_nums'][0]
-
-        pred = self(img)
-
-        self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
-        self._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True)
-        self._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True)
+    # def test_step(self, batch, batch_idx):
+    #     # batch size is 1 in the validation pred images
+    #     img, target, extra_info = batch
+    #     folder_name = extra_info['image_set'][0]
+    #     frame_nums = extra_info['frame_nums'][0]
+    #
+    #     pred = self(img)
+    #
+    #     self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
+    #     self._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True)
+    #     self._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True)
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
@@ -208,8 +218,13 @@ class DepthMap(pl.LightningModule):
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}/include_right_view:{self.include_right_view}")
 
         if save_fig:
-            path = os.path.join(trainer.log_dir, f"{title}.png")
-            plt.savefig(path, bbox_inches='tight')
+            dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}")
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            img_path = os.path.join(dir_path, f"{title}.png")
+
+            plt.savefig(img_path, bbox_inches='tight')
             plt.close()
 
         return fig
