@@ -81,7 +81,6 @@ class BaselineModel:
 
                     func = partial(calc_mae_translation, img, target, mae_list)
                     p.map(func, enumerate(translations))
-                break
         p.close()
         p.join()
 
