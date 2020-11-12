@@ -339,4 +339,4 @@ if __name__ == '__main__':
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
     # predict + save val images
-    trainer.test(model, dm.vis_img_dataloader())
+    # trainer.test(model, dm.vis_img_dataloader())
