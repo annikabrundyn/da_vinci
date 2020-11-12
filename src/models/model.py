@@ -20,7 +20,7 @@ from pytorch_lightning.callbacks import Callback
 
 
 class SavePredImgCallback(Callback):
-    def __init__(self, dl, epoch_logging_freq: int = 2):
+    def __init__(self, dl, epoch_logging_freq: int = 50):
         # save every 50 epochs
         self.epoch_logging_freq = epoch_logging_freq
         self.dl = dl
