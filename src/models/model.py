@@ -30,7 +30,6 @@ class SavePredImgCallback(Callback):
             return
 
         batch_idx = 0
-
         for img, target, extra in self.dl:
 
             folder_name = extra_info['image_set'][0]
@@ -39,8 +38,9 @@ class SavePredImgCallback(Callback):
             pred = pl_module(img)
 
             pl_module._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
+            pl_module._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True, location="target")
+            pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, location="pred")
 
-            print(pred.shape)
             batch_idx += 1
 
 
@@ -218,18 +218,17 @@ class DepthMap(pl.LightningModule):
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}/include_right_view:{self.include_right_view}")
 
         if save_fig:
-            dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}")
+            dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", "input")
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
             img_path = os.path.join(dir_path, f"{title}.png")
-
             plt.savefig(img_path, bbox_inches='tight')
             plt.close()
 
         return fig
 
-    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False):
+    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False, location=None):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
@@ -238,8 +237,12 @@ class DepthMap(pl.LightningModule):
         plt.title(title)
 
         if save_fig:
-            path = os.path.join(trainer.log_dir, f"{title}.png")
-            plt.savefig(path, bbox_inches='tight')
+            dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", location)
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            img_path = os.path.join(dir_path, f"{title}.png")
+            plt.savefig(img_path, bbox_inches='tight')
             plt.close()
 
         return fig
