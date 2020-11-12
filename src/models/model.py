@@ -16,6 +16,32 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import Callback
+
+
+class SavePredImgCallback(Callback):
+    def __init__(self, dl, epoch_logging_freq: int = 50):
+        # save every 50 epochs
+        self.epoch_logging_freq = epoch_logging_freq
+        self.dl = dl
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        if trainer.current_epoch % self.epoch_logging_freq != 0:
+            return
+
+        batch_idx = 0
+        for img, target, extra in self.dl:
+            img, target, extra = img.to(pl_module.device), target.to(pl_module.device), extra.to(pl_module.device)
+            folder_name = extra_info['image_set'][0]
+            frame_nums = extra_info['frame_nums'][0]
+
+            pred = pl_module(img)
+
+            pl_module._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
+            pl_module._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True, location="target")
+            pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, location="pred")
+
+            batch_idx += 1
 
 
 class DepthMap(pl.LightningModule):
@@ -127,17 +153,17 @@ class DepthMap(pl.LightningModule):
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
 
-    def test_step(self, batch, batch_idx):
-        # batch size is 1 in the validation pred images
-        img, target, extra_info = batch
-        folder_name = extra_info['image_set'][0]
-        frame_nums = extra_info['frame_nums'][0]
-
-        pred = self(img)
-
-        self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
-        self._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True)
-        self._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True)
+    # def test_step(self, batch, batch_idx):
+    #     # batch size is 1 in the validation pred images
+    #     img, target, extra_info = batch
+    #     folder_name = extra_info['image_set'][0]
+    #     frame_nums = extra_info['frame_nums'][0]
+    #
+    #     pred = self(img)
+    #
+    #     self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
+    #     self._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True)
+    #     self._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True)
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
@@ -192,13 +218,17 @@ class DepthMap(pl.LightningModule):
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}/include_right_view:{self.include_right_view}")
 
         if save_fig:
-            path = os.path.join(trainer.log_dir, f"{title}.png")
-            plt.savefig(path, bbox_inches='tight')
+            dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", "input")
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            img_path = os.path.join(dir_path, f"{title}.png")
+            plt.savefig(img_path, bbox_inches='tight')
             plt.close()
 
         return fig
 
-    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False):
+    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False, location=None):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
@@ -207,8 +237,12 @@ class DepthMap(pl.LightningModule):
         plt.title(title)
 
         if save_fig:
-            path = os.path.join(trainer.log_dir, f"{title}.png")
-            plt.savefig(path, bbox_inches='tight')
+            dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", location)
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            img_path = os.path.join(dir_path, f"{title}.png")
+            plt.savefig(img_path, bbox_inches='tight')
             plt.close()
 
         return fig
@@ -300,9 +334,9 @@ if __name__ == '__main__':
     print("model instance created")
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[EarlyStopping(monitor='valid_loss')])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
     # predict + save val images
-    trainer.test(model, dm.vis_img_dataloader())
+    # trainer.test(model, dm.vis_img_dataloader())
