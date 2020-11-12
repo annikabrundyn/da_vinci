@@ -31,7 +31,7 @@ class SavePredImgCallback(Callback):
 
         batch_idx = 0
         for img, target, extra in self.dl:
-            img, target, extra = img.cuda(), target.cuda(), extra.cuda()
+            img, target, extra = img.to(pl_module.device), target.to(pl_module.device), extra.to(pl_module.device)
             folder_name = extra_info['image_set'][0]
             frame_nums = extra_info['frame_nums'][0]
 
