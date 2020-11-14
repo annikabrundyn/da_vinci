@@ -120,8 +120,8 @@ class DepthMap(pl.LightningModule):
             self._log_images(img, target, pred, extra_info, step_name='train')
 
         # log fid
-        if batch_idx % self.hparams.fid_freq == 0:
-            self._log_fid(pred, target, step_name='train')
+        # if batch_idx % self.hparams.fid_freq == 0:
+        #     self._log_fid(pred, target, step_name='train')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -143,8 +143,8 @@ class DepthMap(pl.LightningModule):
             self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # log FID
-        if batch_idx % self.hparams.fid_freq == 0:
-            self._log_fid(pred, target, step_name='valid')
+        # if batch_idx % self.hparams.fid_freq == 0:
+        #     self._log_fid(pred, target, step_name='valid')
 
         # metrics
         ssim_val = ssim(pred, target)
