@@ -137,7 +137,7 @@ class DepthMap(pl.LightningModule):
         img, target, extra_info = batch
         pred = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
-        self.log('valid_loss', loss_val, on_step=True, on_epoch=True)
+        self.log('valid_loss', loss_val)
 
         # log predicted images
         if batch_idx % self.hparams.output_img_freq == 0:
@@ -150,8 +150,8 @@ class DepthMap(pl.LightningModule):
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-        self.log('valid_ssim', ssim_val, on_step=True, on_epoch=True)
-        self.log('valid_psnr', psnr_val, on_step=True, on_epoch=True)
+        self.log('valid_ssim', ssim_val)
+        self.log('valid_psnr', psnr_val)
 
     # def test_step(self, batch, batch_idx):
     #     # batch size is 1 in the validation pred images
