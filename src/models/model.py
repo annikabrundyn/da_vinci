@@ -116,11 +116,11 @@ class DepthMap(pl.LightningModule):
         self.log('train_loss', loss_val)
 
         # log images
-        if batch_idx % self.hparams.output_img_freq == 0:
+        if self.global_step % self.hparams.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
 
         # log fid
-        # if batch_idx % self.hparams.fid_freq == 0:
+        # if self.global_step % self.hparams.fid_freq == 0:
         #     self._log_fid(pred, target, step_name='train')
 
         # metrics
@@ -139,11 +139,11 @@ class DepthMap(pl.LightningModule):
         self.log('valid_loss', loss_val)
 
         # log predicted images
-        if batch_idx % self.hparams.output_img_freq == 0:
+        if self.global_step % self.hparams.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # log FID
-        # if batch_idx % self.hparams.fid_freq == 0:
+        # if self.global_step % self.hparams.fid_freq == 0:
         #     self._log_fid(pred, target, step_name='valid')
 
         # metrics
