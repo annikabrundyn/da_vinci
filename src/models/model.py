@@ -27,20 +27,20 @@ class SavePredImgCallback(Callback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         print('a')
-        # if trainer.current_epoch % self.epoch_logging_freq == 0:
-        #     batch_idx = 0
-        #     for img, target, extra in self.dl:
-        #         img, target = img.to(pl_module.device), target.to(pl_module.device)
-        #         folder_name = extra_info['image_set'][0]
-        #         frame_nums = extra_info['frame_nums'][0]
-        #
-        #         pred = pl_module(img)
-        #
-        #         pl_module._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
-        #         pl_module._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True, location="target")
-        #         pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, location="pred")
-        #
-        #         batch_idx += 1
+        if trainer.current_epoch % self.epoch_logging_freq == 0:
+            batch_idx = 0
+            for img, target, extra in self.dl:
+                img, target = img.to(pl_module.device), target.to(pl_module.device)
+                folder_name = extra_info['image_set'][0]
+                frame_nums = extra_info['frame_nums'][0]
+
+                pred = pl_module(img)
+
+                pl_module._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
+                pl_module._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True, location="target")
+                pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, location="pred")
+
+                batch_idx += 1
 
 
 class DepthMap(pl.LightningModule):
