@@ -116,8 +116,8 @@ class DepthMap(pl.LightningModule):
         self.log('train_loss', loss_val)
 
         # log images
-        if self.global_step % self.hparams.output_img_freq == 0:
-            self._log_images(img, target, pred, extra_info, step_name='train')
+        # if self.global_step % self.hparams.output_img_freq == 0:
+            # self._log_images(img, target, pred, extra_info, step_name='train')
 
         # log fid
         # if self.global_step % self.hparams.fid_freq == 0:
@@ -129,6 +129,7 @@ class DepthMap(pl.LightningModule):
 
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
+        self.log('train_annika', self.global_step)
 
         return loss_val
 
@@ -139,8 +140,8 @@ class DepthMap(pl.LightningModule):
         self.log('valid_loss', loss_val)
 
         # log predicted images
-        if self.global_step % self.hparams.output_img_freq == 0:
-            self._log_images(img, target, pred, extra_info, step_name='valid')
+        # if self.global_step % self.hparams.output_img_freq == 0:
+        #     self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # log FID
         # if self.global_step % self.hparams.fid_freq == 0:
@@ -151,6 +152,7 @@ class DepthMap(pl.LightningModule):
         psnr_val = psnr(pred, target)
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
+        self.log('valid_annika', self.global_step)
 
     # def test_step(self, batch, batch_idx):
     #     # batch size is 1 in the validation pred images
@@ -333,8 +335,8 @@ if __name__ == '__main__':
     print("model instance created")
 
     # train
-    #trainer = pl.Trainer.from_argparse_args(args)
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
+    trainer = pl.Trainer.from_argparse_args(args)
+    # trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
