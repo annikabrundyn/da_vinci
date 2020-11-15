@@ -56,8 +56,8 @@ class DepthMap(pl.LightningModule):
             features_start: int = 64,
             bilinear: bool = False,
             lr: float = 0.001,
-            output_img_freq : int = 100,
-            fid_freq : int = 100,
+            output_img_freq : int = 500,
+            fid_freq : int = 500,
             **kwargs
     ):
         super().__init__()
@@ -129,7 +129,6 @@ class DepthMap(pl.LightningModule):
 
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
-        self.log('train_annika', self.global_step)
 
         return loss_val
 
@@ -152,7 +151,6 @@ class DepthMap(pl.LightningModule):
         psnr_val = psnr(pred, target)
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
-        self.log('valid_annika', self.global_step)
 
     # def test_step(self, batch, batch_idx):
     #     # batch size is 1 in the validation pred images
@@ -219,7 +217,9 @@ class DepthMap(pl.LightningModule):
             ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx]}/include_right_view:{self.include_right_view}")
 
         if save_fig:
-            dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", "input")
+            dir = trainer.checkpoint_callback.dirpath
+            dir = os.path.split(dir)[0]
+            dir_path = os.path.join(dir, f"epoch_{self.current_epoch}", "input")
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
@@ -238,7 +238,10 @@ class DepthMap(pl.LightningModule):
         plt.title(title)
 
         if save_fig:
-            dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", location)
+            #dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", location)
+            dir = trainer.checkpoint_callback.dirpath
+            dir = os.path.split(dir)[0]
+            dir_path = os.path.join(dir, f"epoch_{self.current_epoch}", location)
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
