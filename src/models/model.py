@@ -333,6 +333,7 @@ if __name__ == '__main__':
     # model
     model = DepthMap(**args.__dict__)
     print("model instance created")
+    print('lightning version', pl.__version__)
 
     # train
     trainer = pl.Trainer.from_argparse_args(args)
