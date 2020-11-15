@@ -336,8 +336,7 @@ if __name__ == '__main__':
     print('lightning version', pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args)
-    # trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
