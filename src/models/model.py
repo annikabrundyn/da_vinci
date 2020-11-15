@@ -120,8 +120,8 @@ class DepthMap(pl.LightningModule):
             self._log_images(img, target, pred, extra_info, step_name='train')
 
         # log fid
-        # if self.global_step % self.hparams.fid_freq == 0:
-        #     self._log_fid(pred, target, step_name='train')
+        if self.global_step % self.hparams.fid_freq == 0:
+            self._log_fid(pred, target, step_name='train')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -129,6 +129,7 @@ class DepthMap(pl.LightningModule):
 
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
+        self.log('train_annika', self.global_step)
 
         return loss_val
 
@@ -143,14 +144,15 @@ class DepthMap(pl.LightningModule):
             self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # log FID
-        # if self.global_step % self.hparams.fid_freq == 0:
-        #     self._log_fid(pred, target, step_name='valid')
+        if self.global_step % self.hparams.fid_freq == 0:
+            self._log_fid(pred, target, step_name='valid')
 
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
+        self.log('valid_annika', self.global_step)
 
     # def test_step(self, batch, batch_idx):
     #     # batch size is 1 in the validation pred images
@@ -331,10 +333,11 @@ if __name__ == '__main__':
     # model
     model = DepthMap(**args.__dict__)
     print("model instance created")
+    print('lightning version', pl.__version__)
 
     # train
-    #trainer = pl.Trainer.from_argparse_args(args)
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
+    trainer = pl.Trainer.from_argparse_args(args)
+    # trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
