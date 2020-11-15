@@ -126,7 +126,6 @@ class DepthMap(pl.LightningModule):
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
 
