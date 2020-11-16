@@ -50,7 +50,7 @@ class DepthMap(pl.LightningModule):
             frames_to_drop: int,
             include_right_view: bool = False,
             stack_horizontal: bool = False,
-            color_input: bool = False,
+            is_color_input: bool = False,
             num_classes: int = 1,
             num_layers: int = 5,
             features_start: int = 64,
@@ -66,7 +66,7 @@ class DepthMap(pl.LightningModule):
         self.frames_to_drop = frames_to_drop
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
-        self.color_input = color_input
+        self.is_color_input = is_color_input
 
         self.save_hyperparameters()
 
@@ -103,7 +103,7 @@ class DepthMap(pl.LightningModule):
             if self.include_right_view:
                 self.input_channels = 2 * self.input_channels
 
-        if self.color_input:
+        if self.is_color_input:
             self.input_channels = self.input_channels * 3
 
     def forward(self, x):
@@ -194,13 +194,13 @@ class DepthMap(pl.LightningModule):
                          direction='column',
                          axes_pad=0.3)
 
-        if self.color_input:
+        if self.is_color_input:
             range_inputs = range(self.input_channels // 3)
         else:
             range_inputs = range(self.input_channels)
 
         for ax, idx in zip(grid, range_inputs):
-            if self.color_input:
+            if self.is_color_input:
                 # select 3 channels for color inputs
                 npimg = img[3*idx:3*(idx+1)].squeeze().detach().cpu().numpy()
                 npimg = np.transpose(npimg, (1, 2, 0))
@@ -270,7 +270,7 @@ class DepthMap(pl.LightningModule):
         self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
 
     def _log_fid(self, pred, target, step_name):
-        fid_val = calculate_fid(pred, target, device=self.device)
+        fid_val = calculate_fid(pred, target, is_color_input=self.is_color_input, device=self.device)
         self.log(f"{step_name}_fid", fid_val)
 
     @staticmethod
@@ -281,7 +281,7 @@ class DepthMap(pl.LightningModule):
         parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
         parser.add_argument("--include_right_view", action='store_true', default=False, help="include left and right view")
         parser.add_argument("--stack_horizontal", action='store_true', default=False, help="stacks input views horizontally")
-        parser.add_argument("--color_input", action='store_true', default=False, help="use color inputs instead of bw")
+        parser.add_argument("--is_color_input", action='store_true', default=False, help="use color inputs instead of bw")
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--output_img_freq", type=int, default=100)
@@ -315,7 +315,7 @@ if __name__ == '__main__':
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=args.include_right_view,
                            stack_horizontal=args.stack_horizontal,
-                           color_input=args.color_input,
+                           is_color_input=args.is_color_input,
                            extra_info=True,
                            batch_size=args.batch_size,
                            num_workers=args.num_workers)
