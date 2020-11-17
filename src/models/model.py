@@ -7,9 +7,9 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from src.models.unet import UNet
-from src.metrics.fid import calculate_fid
-from src.data.data import DaVinciDataModule
+from models.unet import UNet
+from metrics.fid import calculate_fid
+from data.data import DaVinciDataModule
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
