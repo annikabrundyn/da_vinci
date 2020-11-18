@@ -241,7 +241,7 @@ class Model(pl.LightningModule):
 
     def _log_fid(self, pred, target, step_name):
         fid_val = calculate_fid(pred, target, is_color=self.is_color_output, device=self.device)
-        self.log(f"{step_name}_fid", fid_val)
+        self.logger.experiment.add_scalar(f"{step_name}_fid", fid_val, self.trainer.global_step)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -255,6 +255,7 @@ class Model(pl.LightningModule):
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--output_img_freq", type=int, default=100)
+        parser.add_argument("--fid_freq", type=int, default=500)
         parser.add_argument("--num_workers", type=int, default=8)
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
         parser.add_argument("--num_layers", type=int, default=5, help="number of layers on u-net")
