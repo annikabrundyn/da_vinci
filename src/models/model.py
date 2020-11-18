@@ -1,49 +1,18 @@
+import os.path
 from argparse import ArgumentParser
 
-import os.path
+import matplotlib.pyplot as plt
 import numpy as np
-
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-
-from src.models.unet import UNet
-from src.metrics.fid import calculate_fid
-from src.data.data import DaVinciDataModule
-
-import matplotlib.pyplot as plt
+from metrics.fid import calculate_fid
+from models.unet import UNet
 from mpl_toolkits.axes_grid1 import ImageGrid
-
 from pytorch_lightning.metrics.functional import ssim, psnr
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from pytorch_lightning.callbacks import Callback
 
 
-class SavePredImgCallback(Callback):
-    def __init__(self, dl, epoch_logging_freq: int = 50):
-        # save every 50 epochs
-        self.epoch_logging_freq = epoch_logging_freq
-        self.dl = dl
-
-    def on_validation_epoch_end(self, trainer, pl_module):
-        print('a')
-        if trainer.current_epoch % self.epoch_logging_freq == 0:
-            batch_idx = 0
-            for img, target, extra in self.dl:
-                img, target = img.to(pl_module.device), target.to(pl_module.device)
-                folder_name = extra_info['image_set'][0]
-                frame_nums = extra_info['frame_nums'][0]
-
-                pred = pl_module(img)
-
-                pl_module._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
-                pl_module._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True, location="target")
-                pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, location="pred")
-
-                batch_idx += 1
-
-
-class DepthMap(pl.LightningModule):
+class Model(pl.LightningModule):
     def __init__(
             self,
             frames_per_sample: int,
@@ -51,6 +20,7 @@ class DepthMap(pl.LightningModule):
             include_right_view: bool = False,
             stack_horizontal: bool = False,
             is_color_input: bool = False,
+            is_color_output: bool = False,
             num_classes: int = 1,
             num_layers: int = 5,
             features_start: int = 64,
@@ -67,7 +37,7 @@ class DepthMap(pl.LightningModule):
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
         self.is_color_input = is_color_input
-
+        self.is_color_output = is_color_output
         self.save_hyperparameters()
 
         self._calc_input_channels()
@@ -79,10 +49,10 @@ class DepthMap(pl.LightningModule):
                 num_stack_horizontal = (self.frames_per_sample - self.frames_to_drop)
         else:
             num_stack_horizontal = 1
-
+        self.num_stack_horizontal = num_stack_horizontal
         self.net = UNet(num_classes=self.hparams.num_classes,
                         input_channels=self.input_channels,
-                        num_stack_horizontal=num_stack_horizontal,
+                        num_stack_horizontal=self.num_stack_horizontal,
                         num_layers=self.hparams.num_layers,
                         features_start=self.hparams.features_start,
                         bilinear=self.hparams.bilinear)
@@ -168,7 +138,7 @@ class DepthMap(pl.LightningModule):
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
 
-    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None):
+    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None, trainer=None):
         """Summary
 
         Args:
@@ -228,7 +198,7 @@ class DepthMap(pl.LightningModule):
 
         return fig
 
-    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False, location=None):
+    def _matplotlib_imshow_target(self, img, title, inverse=True, cmap='magma', save_fig=False, location=None, trainer=None):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
@@ -263,14 +233,14 @@ class DepthMap(pl.LightningModule):
         self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
-        color_target_dm = self._matplotlib_imshow_dm(target, "target")
-        color_pred_dm = self._matplotlib_imshow_dm(pred, "prediction")
+        color_target_dm = self._matplotlib_imshow_target(target, "target")
+        color_pred_dm = self._matplotlib_imshow_target(pred, "prediction")
 
         self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
         self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
 
     def _log_fid(self, pred, target, step_name):
-        fid_val = calculate_fid(pred, target, is_color_input=self.is_color_input, device=self.device)
+        fid_val = calculate_fid(pred, target, is_color=self.is_color_output, device=self.device)
         self.log(f"{step_name}_fid", fid_val)
 
     @staticmethod
@@ -293,54 +263,3 @@ class DepthMap(pl.LightningModule):
                             help="whether to use bilinear interpolation or transposed")
 
         return parser
-
-
-if __name__ == '__main__':
-    # sets seed for numpy, torch, python.random and PYTHONHASHSEED
-    print("start")
-    pl.seed_everything(42)
-
-    parser = ArgumentParser()
-
-    # trainer args
-    parser = pl.Trainer.add_argparse_args(parser)
-
-    # model args
-    parser = DepthMap.add_model_specific_args(parser)
-    args = parser.parse_args()
-
-    # data
-    dm = DaVinciDataModule(args.data_dir,
-                           frames_per_sample=args.frames_per_sample,
-                           frames_to_drop=args.frames_to_drop,
-                           include_right_view=args.include_right_view,
-                           stack_horizontal=args.stack_horizontal,
-                           is_color_input=args.is_color_input,
-                           extra_info=True,
-                           batch_size=args.batch_size,
-                           num_workers=args.num_workers)
-    dm.setup()
-    print("dm setup")
-
-    # sanity check
-    print("size of trainset:", len(dm.train_samples))
-    print("size of validset:", len(dm.val_samples))
-    print("size of testset:", len(dm.test_samples))
-
-    img, target, extra_info = next(iter(dm.train_dataloader()))
-    print(img.shape)
-    print(target.shape)
-    print(len(extra_info))
-
-    # model
-    model = DepthMap(**args.__dict__)
-    print("model instance created")
-    print('lightning version', pl.__version__)
-
-    # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
-    print("trainer created")
-    trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
-
-    # predict + save val images
-    # trainer.test(model, dm.vis_img_dataloader())

@@ -11,18 +11,18 @@ from torchvision import transforms
 
 
 class DaVinciDataSet(Dataset):
-
     def __init__(self,
                  data_dir: str,
                  sample_list: list,
                  frames_per_sample: int,
                  frames_to_drop: int,
-                 include_right_view: bool = False, #whether to include right images
+                 include_right_view: bool = False,  # whether to include right images
                  stack_horizontal: bool = False,
                  is_color_input: bool = False,
                  extra_info: bool = False,
-                 img_transform = None,
-                 target_transform = None
+                 img_transform=None,
+                 target_transform=None,
+                 target_dir='disparity'
                  ):
         self.data_dir = data_dir
         self.sample_list = sample_list
@@ -32,6 +32,7 @@ class DaVinciDataSet(Dataset):
         self.stack_horizontal = stack_horizontal
         self.is_color_input = is_color_input
         self.extra_info = extra_info
+        self.target_dir = target_dir
 
         if not img_transform:
             if self.is_color_input:
@@ -80,7 +81,7 @@ class DaVinciDataSet(Dataset):
             image_tensor = torch.cat((image_tensor, right_image_tensor), dim=stack_dim)
 
         # target is only the first frame
-        target_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'disparity', "{:s}".format(frames[0]))
+        target_path = os.path.join(self.data_dir, "{:s}".format(image_set), self.target_dir, "{:s}".format(frames[0]))
         target = Image.open(target_path)
         target = self.target_transform(target)
 
@@ -142,10 +143,10 @@ class DaVinciDataModule(pl.LightningDataModule):
     def _split_into_chunks(self, img_list, window_size, name):
         all_samples = []
         for i in range(0, len(img_list) - window_size, window_size):
-            if i + 2*window_size > len(img_list):  #if its the last sample
+            if i + 2 * window_size > len(img_list):  # if its the last sample
                 all_samples.append((name, img_list[i:]))
             else:
-                all_samples.append((name, img_list[i: i+window_size]))
+                all_samples.append((name, img_list[i: i + window_size]))
         return all_samples
 
     # helper
@@ -155,13 +156,13 @@ class DaVinciDataModule(pl.LightningDataModule):
         step_size = 1  # sample overlap size
 
         for (name, frame_list) in img_sets:
-            for i in range(0, len(frame_list)-self.frames_per_sample+1, step_size):
-                frames = frame_list[i:i+self.frames_per_sample]
+            for i in range(0, len(frame_list) - self.frames_per_sample + 1, step_size):
+                frames = frame_list[i:i + self.frames_per_sample]
                 # Randomly drop frames - only do this if we have 3 or more frames
                 if self.frames_per_sample > 2:
                     max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
                     if self.frames_to_drop > max_frames_to_drop:
-                        #TODO: Add warning if user input more frames to drop than makes sense
+                        # TODO: Add warning if user input more frames to drop than makes sense
                         self.frames_to_drop = max_frames_to_drop
                     for i in range(self.frames_to_drop):
                         rand_idx = random.randint(1, len(frames) - 1)
@@ -176,7 +177,7 @@ class DaVinciDataModule(pl.LightningDataModule):
     # helper
     def _create_val_img_list(self, val_sets):
         vis_img_list_names = []
-        random_seed_list = range(2020, 2020+self.num_pred_img_samples)
+        random_seed_list = range(2020, 2020 + self.num_pred_img_samples)
 
         for i in random_seed_list:
             random.seed(i)
@@ -186,7 +187,6 @@ class DaVinciDataModule(pl.LightningDataModule):
             vis_img_list_names.append((name, frame))
 
         return vis_img_list_names
-
 
     def setup(self):
         # this function does the train/val/test splits - needs to be run first after instantiating dm
@@ -207,7 +207,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         train_len = len(self.all_sets) - val_len - test_len
 
         self.train_sets = self.all_sets[:train_len]
-        self.val_sets = self.all_sets[train_len:train_len+val_len]
+        self.val_sets = self.all_sets[train_len:train_len + val_len]
         self.test_sets = self.all_sets[-test_len:]
 
         # create separate list of random images from validation set to predict on at the end of training
@@ -222,7 +222,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.val_samples = shuffle(self.val_samples, random_state=42)
         self.test_samples = shuffle(self.test_samples, random_state=42)
 
-        self.train_dataset = DaVinciDataSet(data_dir=self.data_dir,
+        self.train_dataset = self.dataset(data_dir=self.data_dir,
                                             sample_list=self.train_samples,
                                             frames_per_sample=self.frames_per_sample,
                                             frames_to_drop=self.frames_to_drop,
@@ -231,7 +231,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                             is_color_input=self.is_color_input,
                                             extra_info=self.extra_info)
 
-        self.val_dataset = DaVinciDataSet(data_dir=self.data_dir,
+        self.val_dataset = self.dataset(data_dir=self.data_dir,
                                           sample_list=self.val_samples,
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
@@ -240,7 +240,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                           is_color_input=self.is_color_input,
                                           extra_info=self.extra_info)
 
-        self.test_dataset = DaVinciDataSet(data_dir=self.data_dir,
+        self.test_dataset = self.dataset(data_dir=self.data_dir,
                                            sample_list=self.test_samples,
                                            frames_per_sample=self.frames_per_sample,
                                            frames_to_drop=self.frames_to_drop,
@@ -249,7 +249,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                            is_color_input=self.is_color_input,
                                            extra_info=self.extra_info)
 
-        self.vis_dataset = DaVinciDataSet(data_dir=self.data_dir,
+        self.vis_dataset = self.dataset(data_dir=self.data_dir,
                                           sample_list=self.vis_img_list,
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
