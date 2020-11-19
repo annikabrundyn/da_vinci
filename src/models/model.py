@@ -6,7 +6,6 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-from metrics.fid import calculate_fid
 from models.unet import UNet
 from mpl_toolkits.axes_grid1 import ImageGrid
 from pytorch_lightning.metrics.functional import ssim, psnr
@@ -27,7 +26,6 @@ class Model(pl.LightningModule):
             bilinear: bool = False,
             lr: float = 0.001,
             output_img_freq : int = 500,
-            fid_freq : int = 500,
             **kwargs
     ):
         super().__init__()
@@ -89,10 +87,6 @@ class Model(pl.LightningModule):
         if self.global_step % self.hparams.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
 
-        # log fid
-        if self.global_step % self.hparams.fid_freq == 0:
-            self._log_fid(pred, target, step_name='train')
-
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
@@ -110,10 +104,6 @@ class Model(pl.LightningModule):
         # log predicted images
         if self.global_step % self.hparams.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
-
-        # log FID
-        if self.global_step % self.hparams.fid_freq == 0:
-            self._log_fid(pred, target, step_name='valid')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -243,10 +233,6 @@ class Model(pl.LightningModule):
         self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
         self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
 
-    def _log_fid(self, pred, target, step_name):
-        fid_val = calculate_fid(pred, target, is_color=self.is_color_output, device=self.device)
-        self.logger.experiment.add_scalar(f"{step_name}_fid", fid_val, self.trainer.global_step)
-
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
@@ -259,7 +245,6 @@ class Model(pl.LightningModule):
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--output_img_freq", type=int, default=100)
-        parser.add_argument("--fid_freq", type=int, default=500)
         parser.add_argument("--num_workers", type=int, default=8)
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
         parser.add_argument("--num_layers", type=int, default=5, help="number of layers on u-net")

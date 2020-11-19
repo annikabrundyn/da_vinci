@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 from mpl_toolkits.axes_grid1 import ImageGrid
+from models.callbacks.save_pred_img_callback import SavePredImgCallback
+from models.callbacks.fid_callback import FidCallback
+
 
 class LeftRightDepthMap(Model):
     def __init__(
@@ -24,7 +27,6 @@ class LeftRightDepthMap(Model):
             bilinear: bool = False,
             lr: float = 0.001,
             output_img_freq : int = 500,
-            fid_freq : int = 500,
             **kwargs
     ):
         super().__init__(frames_per_sample,
@@ -39,7 +41,6 @@ class LeftRightDepthMap(Model):
                          bilinear,
                          lr,
                          output_img_freq,
-                         fid_freq,
                          **kwargs)
 
     def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None, trainer=None):
@@ -135,5 +136,6 @@ if __name__ == '__main__':
     model = LeftRightDepthMap(**args.__dict__)
 
     # train
-    trainer = pl.Trainer().from_argparse_args(args)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader()),FidCallback(dm.train_dataloader(),dm.valid_dataloader())])
+    print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

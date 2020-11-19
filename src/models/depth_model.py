@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 from data.depth_data import DepthDaVinciDataModule
 from models.model import Model
 from models.callbacks.save_pred_img_callback import SavePredImgCallback
+from models.callbacks.fid_callback import FidCallback
 
 
 class DepthModel(Model):
@@ -21,7 +22,6 @@ class DepthModel(Model):
             bilinear: bool = False,
             lr: float = 0.001,
             output_img_freq: int = 500,
-            fid_freq: int = 500,
             *args,
             **kwargs
     ):
@@ -37,7 +37,6 @@ class DepthModel(Model):
                          bilinear,
                          lr,
                          output_img_freq,
-                         fid_freq,
                          *args,
                          **kwargs)
 
@@ -84,7 +83,7 @@ if __name__ == '__main__':
     print('lightning version', pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader()),FidCallback(dm.train_dataloader(),dm.valid_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 
