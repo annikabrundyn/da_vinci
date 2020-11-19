@@ -2,6 +2,7 @@ import pytest
 import pytorch_lightning as pl
 from data.right_data import RightDaVinciDataModule
 from models.callbacks.save_pred_img_callback import SavePredImgCallback
+from models.callbacks.fid_callback import FidCallback
 from models.right_model import RightModel
 
 
@@ -20,5 +21,5 @@ def test_right_model(seed_everything, data_dir, frames_per_sample, frames_to_dro
     model = RightModel(frames_per_sample, frames_to_drop)
 
     # train
-    trainer = pl.Trainer(fast_dev_run=True, callbacks=[SavePredImgCallback(dm.vis_img_dataloader())])
+    trainer = pl.Trainer(fast_dev_run=True, callbacks=[SavePredImgCallback(dm.vis_img_dataloader()),FidCallback(dm.train_dataloader(),dm.val_dataloader())])
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
