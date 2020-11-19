@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
-from data.depth_data import DepthDaVinciDataSet
+from data.depth_data import DepthDaVinciDataModule
 from models.model import Model
 from models.callbacks.save_pred_img_callback import SavePredImgCallback
 
@@ -22,6 +22,7 @@ class DepthModel(Model):
             lr: float = 0.001,
             output_img_freq: int = 500,
             fid_freq: int = 500,
+            *args,
             **kwargs
     ):
         super().__init__(frames_per_sample,
@@ -37,6 +38,7 @@ class DepthModel(Model):
                          lr,
                          output_img_freq,
                          fid_freq,
+                         *args,
                          **kwargs)
 
 if __name__ == '__main__':
@@ -54,7 +56,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # data
-    dm = DepthDaVinciDataSet(args.data_dir,
+    dm = DepthDaVinciDataModule(args.data_dir,
                              frames_per_sample=args.frames_per_sample,
                              frames_to_drop=args.frames_to_drop,
                              include_right_view=args.include_right_view,
@@ -77,7 +79,7 @@ if __name__ == '__main__':
     print(len(extra_info))
 
     # model
-    model = DepthMap(**args.__dict__)
+    model = DepthModel(**args.__dict__)
     print("model instance created")
     print('lightning version', pl.__version__)
 

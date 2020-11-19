@@ -147,11 +147,15 @@ class Model(pl.LightningModule):
         Returns:
             TYPE: fig
         """
+
         if self.stack_horizontal:
             nrow = self.input_channels
             ncol = 1
         elif not self.stack_horizontal:
-            if self.include_right_view:
+            if self.is_color_input and self.include_right_view:
+                nrow = (self.input_channels // 3) // 2
+                ncol = 2
+            elif self.include_right_view:
                 nrow = self.input_channels // 2
                 ncol = 2
             else:
