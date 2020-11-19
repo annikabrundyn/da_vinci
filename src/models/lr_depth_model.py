@@ -1,11 +1,13 @@
-from argparse import ArgumentParser
-
-import pytorch_lightning as pl
-
-from models.unet import UNet
 from data.data import DaVinciDataModule
 from models.model import Model
 
+import os.path
+from argparse import ArgumentParser
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pytorch_lightning as pl
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 class LeftRightDepthMap(Model):
     def __init__(
@@ -39,6 +41,66 @@ class LeftRightDepthMap(Model):
                          output_img_freq,
                          fid_freq,
                          **kwargs)
+
+    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None, trainer=None):
+        """Summary
+
+        Args:
+            img (tensor): (num_channels, H, W)
+
+        Returns:
+            TYPE: fig
+        """
+        if self.stack_horizontal:
+            nrow = self.input_channels
+            ncol = 1
+        elif not self.stack_horizontal:
+            if self.include_right_view:
+                nrow = self.input_channels // 2
+                ncol = 2
+            else:
+                nrow = self.input_channels
+                ncol = 1
+
+        fig = plt.figure(figsize=(10, 10))
+        grid = ImageGrid(fig, 111,
+                         nrows_ncols=(nrow, ncol),
+                         direction='column',
+                         axes_pad=0.3)
+
+        if self.is_color_input:
+            range_inputs = range(self.input_channels // 3)
+        else:
+            range_inputs = range(self.input_channels)
+
+        for ax, idx in zip(grid, range_inputs):
+            if self.is_color_input:
+                # select 3 channels for color inputs
+                npimg = img[3*idx:3*(idx+1)].squeeze().detach().cpu().numpy()
+                npimg = np.transpose(npimg, (1, 2, 0))
+                ax.imshow(npimg)
+            else:
+                npimg = img[idx].squeeze().detach().cpu().numpy()
+                ax.imshow(npimg, cmap='gray')
+            ax.axis('off')
+            side = 'left'
+            if idx >= nrow:
+                side = 'right'
+                idx = idx - nrow
+            ax.set_title(f"{side} view: {folder_name}/{frame_nums[idx // 2]}/include_right_view:{self.include_right_view}")
+
+        if save_fig:
+            dir = trainer.checkpoint_callback.dirpath
+            dir = os.path.split(dir)[0]
+            dir_path = os.path.join(dir, f"epoch_{self.current_epoch}", "input")
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            img_path = os.path.join(dir_path, f"{title}.png")
+            plt.savefig(img_path, bbox_inches='tight')
+            plt.close()
+
+        return fig
 
 
 if __name__ == '__main__':
