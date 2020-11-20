@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from models.unet import UNet
+from models.depth_map.unet import UNet
 from metrics.fid import calculate_fid
 from data.data import DaVinciDataModule
 

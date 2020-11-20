@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from models.unet import UNet
+from models.depth_map.unet import UNet
 from metrics.fid import calculate_fid
 from data.data import DaVinciDataModule
 
@@ -18,10 +18,9 @@ from pytorch_lightning.metrics.functional import ssim, psnr
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import Callback
 
-from models.model import SavePredImgCallback
-from models.model import DepthMap
+from models.depth_map.model import DepthMap
 
-from src.metrics.fid_v2 import FIDCallback
+from metrics.fid_v2 import FIDCallback
 
 
 class UpperBoundImgCallback(Callback):
@@ -228,7 +227,8 @@ if __name__ == '__main__':
     print('lightning version', pl.__version__)
 
     # train
-    # trainer = pl.Trainer.from_argparse_args(args, callbacks=[UpperBoundImgCallback(dm.vis_img_dataloader())])
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback()])
+    trainer = pl.Trainer.from_argparse_args(args)
+    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[UpperBoundImgCallback(dm.vis_img_dataloader())])
+    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback()])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
