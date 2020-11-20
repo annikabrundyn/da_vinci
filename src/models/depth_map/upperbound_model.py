@@ -21,6 +21,8 @@ from pytorch_lightning.callbacks import Callback
 from models.model import SavePredImgCallback
 from models.model import DepthMap
 
+from src.metrics.fid_v2 import FIDCallback
+
 
 class UpperBoundImgCallback(Callback):
 
@@ -226,6 +228,7 @@ if __name__ == '__main__':
     print('lightning version', pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[UpperBoundImgCallback(dm.vis_img_dataloader())])
+    # trainer = pl.Trainer.from_argparse_args(args, callbacks=[UpperBoundImgCallback(dm.vis_img_dataloader())])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback()])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
