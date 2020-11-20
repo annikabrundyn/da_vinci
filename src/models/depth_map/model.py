@@ -56,7 +56,7 @@ class DepthMap(pl.LightningModule):
             features_start: int = 64,
             bilinear: bool = False,
             lr: float = 0.001,
-            output_img_freq : int = 5000,
+            output_img_freq : int = 10000,
             fid_freq : int = 500,
             **kwargs
     ):
@@ -282,7 +282,7 @@ class DepthMap(pl.LightningModule):
         parser.add_argument("--is_color_input", action='store_true', default=False, help="use color inputs instead of bw")
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
-        parser.add_argument("--output_img_freq", type=int, default=100)
+        parser.add_argument("--output_img_freq", type=int, default=10000)
         parser.add_argument("--fid_freq", type=int, default=500)
         parser.add_argument("--num_workers", type=int, default=8)
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
