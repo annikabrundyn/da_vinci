@@ -228,7 +228,7 @@ class DepthMap(pl.LightningModule):
 
         return fig
 
-    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False, location=None):
+    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False, dir_path=None):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
@@ -238,9 +238,7 @@ class DepthMap(pl.LightningModule):
 
         if save_fig:
             #dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", location)
-            dir = trainer.checkpoint_callback.dirpath
-            dir = os.path.split(dir)[0]
-            dir_path = os.path.join(dir, f"epoch_{self.current_epoch}", location)
+
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
