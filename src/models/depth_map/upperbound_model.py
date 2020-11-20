@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
+from models.depth_map.model import DepthMap
 from models.depth_map.unet import UNet
 from metrics.fid import calculate_fid
 from data.data import DaVinciDataModule
@@ -15,12 +16,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import Callback
-
-from models.depth_map.model import DepthMap
-
-from metrics.fid_v2 import FIDCallback
 
 
 class UpperBoundImgCallback(Callback):
@@ -50,8 +46,9 @@ class UpperBoundImgCallback(Callback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         '''save only the predicted '''
-        print('a')
+
         if trainer.current_epoch % self.epoch_logging_freq == 0:
+            print('save predicted val images')
             batch_idx = 0
             for img, target, extra in self.dl:
                 img, target = img.to(pl_module.device), target.to(pl_module.device)
@@ -67,6 +64,25 @@ class UpperBoundImgCallback(Callback):
                 pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, dir_path=dir_path)
 
                 batch_idx += 1
+
+    def on_keyboard_interrupt(self, trainer, pl_module):
+        '''save predicted when kill experiment'''
+        print('save final predicted val images')
+        batch_idx = 0
+        for img, target, extra in self.dl:
+            img, target = img.to(pl_module.device), target.to(pl_module.device)
+            folder_name = extra['image_set'][0]
+            frame_nums = extra['frame_nums'][0]
+
+            pred = pl_module(img)
+
+            dir = trainer.checkpoint_callback.dirpath
+            dir = os.path.split(dir)[0]
+            dir_path = os.path.join(dir, f"epoch_{trainer.current_epoch}", "pred")
+
+            pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, dir_path=dir_path)
+
+            batch_idx += 1
 
 
 class UpperBoundModel(DepthMap):
@@ -111,10 +127,9 @@ class UpperBoundModel(DepthMap):
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-        fid_val = calculate_fid(pred, target, is_color_input=self.is_color_input, device=self.device)
+
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
-        self.log('train_fid', fid_val)
 
         return loss_val
 
@@ -131,10 +146,9 @@ class UpperBoundModel(DepthMap):
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-        fid_val = calculate_fid(pred, target, is_color_input=self.is_color_input, device=self.device)
+
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
-        self.log('valid_fid', fid_val)
 
     def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None, dir_path=None):
         """Summary
@@ -227,8 +241,6 @@ if __name__ == '__main__':
     print('lightning version', pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args)
-    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[UpperBoundImgCallback(dm.vis_img_dataloader())])
-    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback()])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[UpperBoundImgCallback(dm.vis_img_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
