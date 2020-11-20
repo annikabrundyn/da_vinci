@@ -11,13 +11,12 @@ from models.depth_map.base_model import BaseDepthMap
 from models.depth_map.unet import UNet
 from metrics.fid import calculate_fid
 from data.data import DaVinciDataModule
-from models.callbacks import SaveImgCallBack
+from models.callbacks.img_save import SaveImgCallBack
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from pytorch_lightning.metrics.functional import ssim, psnr
-from pytorch_lightning.callbacks import Callback
 
 
 class ColorModel(BaseDepthMap):
@@ -87,16 +86,15 @@ if __name__ == '__main__':
     parser = pl.Trainer.add_argparse_args(parser)
 
     # model args
-    parser = UpperBoundModel.add_model_specific_args(parser)
+    parser = ColorModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
     # data
     dm = DaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
-                           include_right_view=True,
-                           stack_horizontal=args.stack_horizontal,
-                           is_color_input=args.is_color_input,
+                           include_right_view=False,
+                           is_color_input=True,
                            extra_info=True,
                            batch_size=args.batch_size,
                            num_workers=args.num_workers)
@@ -114,7 +112,7 @@ if __name__ == '__main__':
     print(len(extra_info))
 
     # model
-    model = UpperBoundModel(**args.__dict__)
+    model = ColorModel(**args.__dict__)
     print("model instance created")
     print('lightning version', pl.__version__)
 

@@ -46,7 +46,6 @@ class BaseDepthMap(pl.LightningModule):
 
         self.net = UNet(num_classes=self.hparams.num_classes,
                         input_channels=self.input_channels,
-                        num_stack_horizontal=num_stack_horizontal,
                         num_layers=self.hparams.num_layers,
                         features_start=self.hparams.features_start,
                         bilinear=self.hparams.bilinear)
