@@ -56,7 +56,7 @@ class DepthMap(pl.LightningModule):
             features_start: int = 64,
             bilinear: bool = False,
             lr: float = 0.001,
-            output_img_freq : int = 500,
+            output_img_freq : int = 5000,
             fid_freq : int = 500,
             **kwargs
     ):

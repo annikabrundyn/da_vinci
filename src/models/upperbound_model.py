@@ -110,9 +110,11 @@ class UpperBoundModel(DepthMap):
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
+        fid_val = calculate_fid(pred, target)
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
-
+        self.log('train_fid', fid_val)
+        
         return loss_val
 
     def validation_step(self, batch, batch_idx):
@@ -128,8 +130,10 @@ class UpperBoundModel(DepthMap):
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
+        fid_val = calculate_fid(pred, target)
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
+        self.log('valid_fid', fid_val)
 
     def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None, dir_path=None):
         """Summary
