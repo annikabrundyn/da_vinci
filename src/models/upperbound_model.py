@@ -110,11 +110,11 @@ class UpperBoundModel(DepthMap):
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-        fid_val = calculate_fid(pred, target)
+        fid_val = calculate_fid(pred, target, is_color_input=self.is_color_input, device=self.device)
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
         self.log('train_fid', fid_val)
-        
+
         return loss_val
 
     def validation_step(self, batch, batch_idx):
@@ -130,7 +130,7 @@ class UpperBoundModel(DepthMap):
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-        fid_val = calculate_fid(pred, target)
+        fid_val = calculate_fid(pred, target, is_color_input=self.is_color_input, device=self.device)
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
         self.log('valid_fid', fid_val)
