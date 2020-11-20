@@ -70,7 +70,7 @@ class UpperBoundImgCallback(Callback):
             pred = pl_module(img)
 
             dir = os.path.split(trainer.checkpoint_callback.dirpath)[0]
-            dir_path = os.path.join(dir, "checkpoint_pred")
+            dir_path = os.path.join(dir, f"epoch_{trainer.current_epoch + 1}", "pred")
 
             pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, dir_path=dir_path)
             batch_idx += 1
