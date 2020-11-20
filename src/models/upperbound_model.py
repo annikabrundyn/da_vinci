@@ -190,7 +190,6 @@ if __name__ == '__main__':
                            extra_info=True,
                            batch_size=args.batch_size,
                            num_workers=args.num_workers)
-    dm.setup()
     print("dm setup")
 
     # sanity check
