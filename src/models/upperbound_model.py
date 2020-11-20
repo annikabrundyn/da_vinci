@@ -225,6 +225,3 @@ if __name__ == '__main__':
     trainer = pl.Trainer.from_argparse_args(args, callbacks=[UpperBoundImgCallback(dm.vis_img_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
-
-    # predict + save val images
-    # trainer.test(model, dm.vis_img_dataloader())
