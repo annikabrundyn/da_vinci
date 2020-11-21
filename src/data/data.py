@@ -268,7 +268,7 @@ class DaVinciDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         loader = DataLoader(self.val_dataset,
                             batch_size=self.batch_size,
-                            shuffle=False,
+                            shuffle=True,
                             num_workers=self.num_workers)
         return loader
 

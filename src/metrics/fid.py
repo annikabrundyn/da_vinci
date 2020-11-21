@@ -68,7 +68,7 @@ def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
 
-def calculate_fid(preds, truths, is_color=False, dims=2048, device='cpu'):
+def calculate_fid(preds, truths, is_color=False, dims=2048, device='gpu'):
     """Calculates the FID of two paths"""
     if not is_color:
         preds = preds.repeat(1, 3, 1, 1)
