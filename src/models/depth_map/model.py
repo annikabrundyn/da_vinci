@@ -6,16 +6,14 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-<<<<<<< HEAD:src/models/model.py
+
 from models.unet import UNet
-=======
 
 from models.depth_map.unet import UNet
 from metrics.fid import calculate_fid
 from data.data import DaVinciDataModule
 
 import matplotlib.pyplot as plt
->>>>>>> main:src/models/depth_map/model.py
 from mpl_toolkits.axes_grid1 import ImageGrid
 from pytorch_lightning.metrics.functional import ssim, psnr
 
@@ -34,12 +32,8 @@ class Model(pl.LightningModule):
             features_start: int = 64,
             bilinear: bool = False,
             lr: float = 0.001,
-<<<<<<< HEAD:src/models/model.py
-            output_img_freq : int = 500,
-=======
             output_img_freq : int = 10000,
             fid_freq : int = 500,
->>>>>>> main:src/models/depth_map/model.py
             **kwargs
     ):
         super().__init__()

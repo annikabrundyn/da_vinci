@@ -1,9 +1,8 @@
 import os
-<<<<<<< HEAD
+
 from data.depth_data import DepthDaVinciDataModule
-=======
 from data.data import DaVinciDataModule
->>>>>>> main
+
 
 def test_val_test_splits(data_dir):
 
