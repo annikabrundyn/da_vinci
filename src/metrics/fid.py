@@ -6,7 +6,7 @@ from PIL import Image
 from pytorch_fid.inception import InceptionV3
 from pytorch_fid.fid_score import calculate_frechet_distance
 
-def get_activations(batch, model, dims=2048, device='cpu'):
+def get_activations(batch, model, dims=2048, device='cuda'):
     """Calculates the activations of the pool_3 layer for all images.
     Params:
     -- batch       :
@@ -47,7 +47,7 @@ def get_activations(batch, model, dims=2048, device='cpu'):
 
     return pred_arr
 
-def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
+def calculate_activation_statistics(batch, model, dims=2048, device='cuda'):
     """Calculation of the statistics used by the FID.
     Params:
     -- batch       :
@@ -68,20 +68,22 @@ def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
 
-def calculate_fid(preds, truths, is_color=False, dims=2048, device='cpu'):
+def calculate_fid(preds, truths, is_color=False, dims=2048, device='cuda', inception_model=None):
     """Calculates the FID of two paths"""
 
     if not is_color:
         preds = preds.repeat(1, 3, 1, 1)
         truths = truths.repeat(1, 3, 1, 1)
 
-    block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
+    if inception_model == None:
+        block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
+        inception_model = InceptionV3([block_idx])
 
-    model = InceptionV3([block_idx]).to(device)
+    inception_model = inception_model.to(device)
 
-    m1, s1 = calculate_activation_statistics(preds, model,
+    m1, s1 = calculate_activation_statistics(preds, inception_model,
                                          dims, device)
-    m2, s2 = calculate_activation_statistics(truths, model,
+    m2, s2 = calculate_activation_statistics(truths, inception_model,
                                          dims, device)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
 
