@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from models.depth_map.model import DepthMap
+from models.depth_map.model import Model
 from models.depth_map.unet import UNet
 from metrics.fid import calculate_fid
 from data.data import DaVinciDataModule
@@ -77,7 +77,7 @@ class UpperBoundImgCallback(Callback):
     #         batch_idx += 1
 
 
-class UpperBoundModel(DepthMap):
+class UpperBoundModel(Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

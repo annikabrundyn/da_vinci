@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 import pytorch_lightning as pl
 from data.right_data import RightDaVinciDataModule
-from models.model import Model
+from models.depth_map.model import Model
 from models.callbacks.save_pred_img_callback import SavePredImgCallback
 from models.callbacks.fid_callback import FidCallback
 from models.right_unet import RightUNet
@@ -51,7 +51,7 @@ class RightModel(Model):
                              features_start=self.hparams.features_start,
                              bilinear=self.hparams.bilinear)
 
-    def _matplotlib_imshow_target(self, img, title, inverse=True, cmap='magma', save_fig=False, location=None, trainer=None):
+    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False, dir_path=None):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()

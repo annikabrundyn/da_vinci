@@ -1,5 +1,5 @@
 from data.data import DaVinciDataModule
-from models.model import Model
+from models.depth_map.model import Model
 
 import os.path
 from argparse import ArgumentParser

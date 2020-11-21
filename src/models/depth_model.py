@@ -2,8 +2,10 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 from data.depth_data import DepthDaVinciDataModule
-from models.model import Model
+from models.depth_map.model import Model
+
 from models.callbacks.save_pred_img_callback import SavePredImgCallback
+from models.callbacks.img_save import SaveImgCallBack
 from models.callbacks.fid_callback import FidCallback
 
 
@@ -83,7 +85,7 @@ if __name__ == '__main__':
     print('lightning version', pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SavePredImgCallback(dm.vis_img_dataloader()),FidCallback(dm.train_dataloader(),dm.val_dataloader())])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[SaveImgCallBack(dm.vis_img_dataloader())])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
 

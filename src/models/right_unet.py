@@ -1,4 +1,4 @@
-from models.unet import UNet
+from models.depth_map.unet import UNet
 
 
 class RightUNet(UNet):

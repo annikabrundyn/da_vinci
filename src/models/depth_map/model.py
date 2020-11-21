@@ -7,9 +7,8 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from models.unet import UNet
-
 from models.depth_map.unet import UNet
+
 from metrics.fid import calculate_fid
 from data.data import DaVinciDataModule
 
@@ -233,8 +232,8 @@ class Model(pl.LightningModule):
         self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
-        color_target_dm = self._matplotlib_imshow_target(target, "target")
-        color_pred_dm = self._matplotlib_imshow_target(pred, "prediction")
+        color_target_dm = self._matplotlib_imshow_dm(target, "target")
+        color_pred_dm = self._matplotlib_imshow_dm(pred, "prediction")
 
         self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
         self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)

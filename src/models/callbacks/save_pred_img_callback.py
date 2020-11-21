@@ -17,7 +17,7 @@ class SavePredImgCallback(Callback):
                 pred = pl_module(img)
 
                 pl_module._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}", trainer=trainer)
-                pl_module._matplotlib_imshow_target(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True, location="target", trainer=trainer)
-                pl_module._matplotlib_imshow_target(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, location="pred", trainer=trainer)
+                pl_module._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True, trainer=trainer)
+                pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, trainer=trainer)
 
                 batch_idx += 1

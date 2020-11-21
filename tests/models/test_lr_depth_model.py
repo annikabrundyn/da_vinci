@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 from data.depth_data import DepthDaVinciDataModule
 from models.callbacks.save_pred_img_callback import SavePredImgCallback
 from models.callbacks.fid_callback import FidCallback
-from models.lr_depth_model import LeftRightDepthMap
+from models.depth_map.upperbound_model import UpperBoundModel, UpperBoundImgCallback
 
 
 @pytest.mark.parametrize("frames_per_sample,frames_to_drop,is_color_input",
@@ -15,13 +15,13 @@ def test_lr_depth_model(seed_everything, data_dir, frames_per_sample, frames_to_
                                 include_right_view=True,
                                 is_color_input=is_color_input,
                                 extra_info=True,
-                                batch_size=16,
+                                batch_size=2,
                                 num_workers=0)
     dm.setup()
 
     # model
-    model = LeftRightDepthMap(frames_per_sample=frames_per_sample, frames_to_drop=frames_to_drop, is_color_input=is_color_input)
+    model = UpperBoundModel(frames_per_sample=frames_per_sample, frames_to_drop=frames_to_drop, is_color_input=is_color_input)
 
     # train
-    trainer = pl.Trainer(fast_dev_run=True, callbacks=[SavePredImgCallback(dm.vis_img_dataloader()),FidCallback(dm.train_dataloader(),dm.val_dataloader())])
+    trainer = pl.Trainer(fast_dev_run=True, callbacks=[UpperBoundImgCallback(dm.vis_img_dataloader())])
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
