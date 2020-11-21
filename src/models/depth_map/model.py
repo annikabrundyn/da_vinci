@@ -206,11 +206,8 @@ class Model(pl.LightningModule):
 
         return fig
 
-<<<<<<< HEAD:src/models/model.py
-    def _matplotlib_imshow_target(self, img, title, inverse=True, cmap='magma', save_fig=False, location=None, trainer=None):
-=======
     def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False, dir_path=None):
->>>>>>> main:src/models/depth_map/model.py
+
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
@@ -220,7 +217,6 @@ class Model(pl.LightningModule):
 
         if save_fig:
             #dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", location)
-
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
@@ -249,13 +245,10 @@ class Model(pl.LightningModule):
         self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
         self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
 
-<<<<<<< HEAD:src/models/model.py
-=======
     def _log_fid(self, pred, target, step_name):
         fid_val = calculate_fid(pred, target, is_color_input=self.is_color_input, device=self.device)
         self.logger.experiment.add_scalar(f"{step_name}_fid", fid_val, self.trainer.global_step)
 
->>>>>>> main:src/models/depth_map/model.py
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
