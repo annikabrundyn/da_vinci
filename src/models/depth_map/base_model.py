@@ -1,17 +1,21 @@
-import os.path
-from argparse import ArgumentParser
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-from models.unet import UNet
-from mpl_toolkits.axes_grid1 import ImageGrid
+import pytorch_lightning as pl
+
+import os.path
+import numpy as np
+
+from argparse import ArgumentParser
+
+from models.depth_map.unet import UNet
+from data.data import DaVinciDataModule
 from pytorch_lightning.metrics.functional import ssim, psnr
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import ImageGrid
 
-class Model(pl.LightningModule):
+
+class BaseDepthMap(pl.LightningModule):
     def __init__(
             self,
             frames_per_sample: int,
@@ -19,13 +23,13 @@ class Model(pl.LightningModule):
             include_right_view: bool = False,
             stack_horizontal: bool = False,
             is_color_input: bool = False,
-            is_color_output: bool = False,
             num_classes: int = 1,
             num_layers: int = 5,
             features_start: int = 64,
             bilinear: bool = False,
             lr: float = 0.001,
-            output_img_freq : int = 500,
+            output_img_freq : int = 10000,
+            fid_freq : int = 500,
             **kwargs
     ):
         super().__init__()
@@ -35,22 +39,13 @@ class Model(pl.LightningModule):
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
         self.is_color_input = is_color_input
-        self.is_color_output = is_color_output
+
         self.save_hyperparameters()
 
         self._calc_input_channels()
 
-        if self.stack_horizontal:
-            if self.include_right_view:
-                num_stack_horizontal = (self.frames_per_sample - self.frames_to_drop) * 2
-            else:
-                num_stack_horizontal = (self.frames_per_sample - self.frames_to_drop)
-        else:
-            num_stack_horizontal = 1
-        self.num_stack_horizontal = num_stack_horizontal
         self.net = UNet(num_classes=self.hparams.num_classes,
                         input_channels=self.input_channels,
-                        num_stack_horizontal=self.num_stack_horizontal,
                         num_layers=self.hparams.num_layers,
                         features_start=self.hparams.features_start,
                         bilinear=self.hparams.bilinear)
@@ -111,24 +106,12 @@ class Model(pl.LightningModule):
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
 
-    # def test_step(self, batch, batch_idx):
-    #     # batch size is 1 in the validation pred images
-    #     img, target, extra_info = batch
-    #     folder_name = extra_info['image_set'][0]
-    #     frame_nums = extra_info['frame_nums'][0]
-    #
-    #     pred = self(img)
-    #
-    #     self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
-    #     self._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True)
-    #     self._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True)
-
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
         #sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=10)
         return [opt]
 
-    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None, trainer=None):
+    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None):
         """Summary
 
         Args:
@@ -137,15 +120,11 @@ class Model(pl.LightningModule):
         Returns:
             TYPE: fig
         """
-
         if self.stack_horizontal:
             nrow = self.input_channels
             ncol = 1
         elif not self.stack_horizontal:
-            if self.is_color_input and self.include_right_view:
-                nrow = (self.input_channels // 3) // 2
-                ncol = 2
-            elif self.include_right_view:
+            if self.include_right_view:
                 nrow = self.input_channels // 2
                 ncol = 2
             else:
@@ -192,7 +171,7 @@ class Model(pl.LightningModule):
 
         return fig
 
-    def _matplotlib_imshow_target(self, img, title, inverse=True, cmap='magma', save_fig=False, location=None, trainer=None):
+    def _matplotlib_imshow_dm(self, img, title, inverse=True, cmap='magma', save_fig=False, dir_path=None):
         if inverse:
             img = 1 - img
         npimg = img.squeeze().detach().cpu().numpy()
@@ -202,9 +181,7 @@ class Model(pl.LightningModule):
 
         if save_fig:
             #dir_path = os.path.join(trainer.log_dir, f"epoch_{self.current_epoch}", location)
-            dir = trainer.checkpoint_callback.dirpath
-            dir = os.path.split(dir)[0]
-            dir_path = os.path.join(dir, f"epoch_{self.current_epoch}", location)
+
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
@@ -227,11 +204,12 @@ class Model(pl.LightningModule):
         self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
 
         # Log colorized depth maps - using magma colormap
-        color_target_dm = self._matplotlib_imshow_target(target, "target")
-        color_pred_dm = self._matplotlib_imshow_target(pred, "prediction")
+        color_target_dm = self._matplotlib_imshow_dm(target, "target")
+        color_pred_dm = self._matplotlib_imshow_dm(pred, "prediction")
 
         self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
         self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
+
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -244,7 +222,8 @@ class Model(pl.LightningModule):
         parser.add_argument("--is_color_input", action='store_true', default=False, help="use color inputs instead of bw")
         parser.add_argument("--num_classes", type=int, default=1, help="output channels")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
-        parser.add_argument("--output_img_freq", type=int, default=100)
+        parser.add_argument("--output_img_freq", type=int, default=10000)
+        parser.add_argument("--fid_freq", type=int, default=500)
         parser.add_argument("--num_workers", type=int, default=8)
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
         parser.add_argument("--num_layers", type=int, default=5, help="number of layers on u-net")
