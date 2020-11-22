@@ -16,6 +16,7 @@ from data.right_data import RightDaVinciDataModule
 from models.callbacks.callback_right_view import RightCallback
 from models.callbacks.fid_callback import FidCallback
 from models.right_view.right_unet import RightUNet
+from metrics.fid import calculate_fid
 
 
 class BaseRightModel(pl.LightningModule):
@@ -81,6 +82,10 @@ class BaseRightModel(pl.LightningModule):
         if self.hparams.log_tb_imgs and self.global_step % self.hparams.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
 
+        if self.current_epoch % 10 == 0:
+            fid_val = calculate_fid(pred, target, is_color=self.is_color_input, device=self.device)
+            self.log('train_fid', fid_val)
+
         # metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
@@ -98,6 +103,10 @@ class BaseRightModel(pl.LightningModule):
         # log predicted images
         if self.hparams.log_tb_imgs and self.global_step % self.hparams.output_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
+
+        if self.current_epoch % 10 == 0:
+            fid_val = calculate_fid(pred, target, is_color=self.is_color_input, device=self.device)
+            self.log('val_fid', fid_val)
 
         # metrics
         ssim_val = ssim(pred, target)
