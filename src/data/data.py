@@ -19,9 +19,8 @@ class DaVinciDataSet(Dataset):
                  include_right_view: bool = False,  # whether to include right images
                  stack_horizontal: bool = False,
                  is_color_input: bool = False,
+                 is_color_output: bool = False,
                  extra_info: bool = False,
-                 img_transform=None,
-                 target_transform=None,
                  target_dir='disparity'
                  ):
         self.data_dir = data_dir
@@ -31,22 +30,23 @@ class DaVinciDataSet(Dataset):
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
         self.is_color_input = is_color_input
+        self.is_color_output = is_color_output
         self.extra_info = extra_info
         self.target_dir = target_dir
 
-        if not img_transform:
-            if self.is_color_input:
-                self.img_transform = transforms.Compose([transforms.ToTensor()])
-            else:
-                self.img_transform = transforms.Compose([transforms.Grayscale(),
-                                                         transforms.ToTensor()])
-        else:
-            self.img_transform = img_transform
+        self._img_transforms()
 
-        if not target_transform:
+    def _img_transforms(self):
+
+        if self.is_color_input:
+            self.img_transform = transforms.Compose([transforms.ToTensor()])
+        else:
+            self.img_transform = transforms.Compose([transforms.Grayscale(), transforms.ToTensor()])
+
+        if self.is_color_output:
             self.target_transform = transforms.Compose([transforms.ToTensor()])
         else:
-            self.target_transform = target_transform
+            self.target_transform = transforms.Compose([transforms.Grayscale(), transforms.ToTensor()])
 
     def __len__(self):
         return len(self.sample_list)
@@ -103,6 +103,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             include_right_view: bool = False,
             stack_horizontal: bool = False,
             is_color_input: bool = False,
+            is_color_output: bool = False,
             extra_info: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
@@ -119,6 +120,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.include_right_view = include_right_view
         self.stack_horizontal = stack_horizontal
         self.is_color_input = is_color_input
+        self.is_color_output = is_color_output
         self.extra_info = extra_info
         self.val_split = val_split
         self.test_split = test_split
@@ -223,22 +225,24 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.test_samples = shuffle(self.test_samples, random_state=42)
 
         self.train_dataset = self.dataset(data_dir=self.data_dir,
-                                            sample_list=self.train_samples,
-                                            frames_per_sample=self.frames_per_sample,
-                                            frames_to_drop=self.frames_to_drop,
-                                            include_right_view=self.include_right_view,
-                                            stack_horizontal=self.stack_horizontal,
-                                            is_color_input=self.is_color_input,
-                                            extra_info=self.extra_info)
-
-        self.val_dataset = self.dataset(data_dir=self.data_dir,
-                                          sample_list=self.val_samples,
+                                          sample_list=self.train_samples,
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
                                           include_right_view=self.include_right_view,
                                           stack_horizontal=self.stack_horizontal,
                                           is_color_input=self.is_color_input,
+                                          is_color_output=self.is_color_output,
                                           extra_info=self.extra_info)
+
+        self.val_dataset = self.dataset(data_dir=self.data_dir,
+                                        sample_list=self.val_samples,
+                                        frames_per_sample=self.frames_per_sample,
+                                        frames_to_drop=self.frames_to_drop,
+                                        include_right_view=self.include_right_view,
+                                        stack_horizontal=self.stack_horizontal,
+                                        is_color_input=self.is_color_input,
+                                        is_color_output=self.is_color_output,
+                                        extra_info=self.extra_info)
 
         self.test_dataset = self.dataset(data_dir=self.data_dir,
                                            sample_list=self.test_samples,
@@ -247,6 +251,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                            include_right_view=self.include_right_view,
                                            stack_horizontal=self.stack_horizontal,
                                            is_color_input=self.is_color_input,
+                                         is_color_output=self.is_color_output,
                                            extra_info=self.extra_info)
 
         self.vis_dataset = self.dataset(data_dir=self.data_dir,
@@ -256,6 +261,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                                           include_right_view=self.include_right_view,
                                           stack_horizontal=self.stack_horizontal,
                                           is_color_input=self.is_color_input,
+                                        is_color_output=self.is_color_output,
                                           extra_info=self.extra_info)
 
     def train_dataloader(self):
