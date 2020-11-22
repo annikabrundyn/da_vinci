@@ -24,9 +24,10 @@ class FidCallback(Callback):
         if batch_idx < 5:
             try:
                 fid_val = calculate_fid(pred, target, self.model, is_color=pl_module.is_color_output, device=pl_module.device)
+                pl_module.log("train_fid", fid_val)
             except ValueError:
-                fid_val = -1
-            pl_module.log("train_fid", fid_val)
+                pass
+
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
         if trainer.current_epoch % self.epoch_logging_freq != 0:
@@ -40,7 +41,8 @@ class FidCallback(Callback):
             try:
                 fid_val = calculate_fid(pred, target, self.model, is_color=pl_module.is_color_output,
                                         device=pl_module.device)
+                pl_module.log("val_fid", fid_val)
             except ValueError:
-                fid_val = -1
-            pl_module.log("val_fid", fid_val)
+                pass
+
 
