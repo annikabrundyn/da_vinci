@@ -245,24 +245,24 @@ class DaVinciDataModule(pl.LightningDataModule):
                                         extra_info=self.extra_info)
 
         self.test_dataset = self.dataset(data_dir=self.data_dir,
-                                           sample_list=self.test_samples,
-                                           frames_per_sample=self.frames_per_sample,
-                                           frames_to_drop=self.frames_to_drop,
-                                           include_right_view=self.include_right_view,
-                                           stack_horizontal=self.stack_horizontal,
-                                           is_color_input=self.is_color_input,
+                                         sample_list=self.test_samples,
+                                         frames_per_sample=self.frames_per_sample,
+                                         frames_to_drop=self.frames_to_drop,
+                                         include_right_view=self.include_right_view,
+                                         stack_horizontal=self.stack_horizontal,
+                                         is_color_input=self.is_color_input,
                                          is_color_output=self.is_color_output,
-                                           extra_info=self.extra_info)
+                                         extra_info=self.extra_info)
 
         self.vis_dataset = self.dataset(data_dir=self.data_dir,
-                                          sample_list=self.vis_img_list,
-                                          frames_per_sample=self.frames_per_sample,
-                                          frames_to_drop=self.frames_to_drop,
-                                          include_right_view=self.include_right_view,
-                                          stack_horizontal=self.stack_horizontal,
-                                          is_color_input=self.is_color_input,
+                                        sample_list=self.vis_img_list,
+                                        frames_per_sample=self.frames_per_sample,
+                                        frames_to_drop=self.frames_to_drop,
+                                        include_right_view=self.include_right_view,
+                                        stack_horizontal=self.stack_horizontal,
+                                        is_color_input=self.is_color_input,
                                         is_color_output=self.is_color_output,
-                                          extra_info=self.extra_info)
+                                        extra_info=self.extra_info)
 
     def train_dataloader(self):
         loader = DataLoader(self.train_dataset,
