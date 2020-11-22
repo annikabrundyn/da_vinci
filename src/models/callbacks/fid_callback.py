@@ -12,9 +12,7 @@ class FidCallback(Callback):
     def on_pretrain_routine_end(self, trainer, pl_module):
         dims = 2048
         block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
-
         self.model = InceptionV3([block_idx]).to(pl_module.device)
-
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
         if trainer.current_epoch % self.epoch_logging_freq != 0:
