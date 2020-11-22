@@ -7,10 +7,10 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from models.depth_map.model import Model
+from models.depth_map.base_model import BaseDepthMap
 from models.depth_map.unet import UNet
 from metrics.fid import calculate_fid
-from data.data import DaVinciDataModule
+from data.depth_data import DepthDaVinciDataModule
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -77,7 +77,7 @@ class UpperBoundImgCallback(Callback):
     #         batch_idx += 1
 
 
-class UpperBoundModel(Model):
+class UpperBoundModel(BaseDepthMap):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # data
-    dm = DaVinciDataModule(args.data_dir,
+    dm = DepthDaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=True,

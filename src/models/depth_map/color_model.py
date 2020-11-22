@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from models.depth_map.base_model import BaseDepthMap
 from models.depth_map.unet import UNet
 from metrics.fid import calculate_fid
-from data.data import DaVinciDataModule
+from data.depth_data import DepthDaVinciDataModule
 from models.callbacks.img_save import SaveImgCallBack
 
 import matplotlib.pyplot as plt
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # data
-    dm = DaVinciDataModule(args.data_dir,
+    dm = DepthDaVinciDataModule(args.data_dir,
                            frames_per_sample=args.frames_per_sample,
                            frames_to_drop=args.frames_to_drop,
                            include_right_view=False,
