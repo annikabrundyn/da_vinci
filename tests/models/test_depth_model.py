@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 from data.depth_data import DepthDaVinciDataModule
 from models.callbacks.img_save import SaveImgCallBack
 from models.callbacks.fid_callback import FidCallback
-from models.depth_model import DepthModel
+from models.depth_map.depth_model import DepthModel
 
 
 @pytest.mark.parametrize("frames_per_sample,frames_to_drop,include_right_view,stack_horizontal,is_color_input",

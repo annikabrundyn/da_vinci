@@ -4,7 +4,7 @@ from data.right_data import RightDaVinciDataModule
 from models.callbacks.save_pred_img_callback import SavePredImgCallback
 from models.callbacks.img_save import SaveImgCallBack
 from models.callbacks.fid_callback import FidCallback
-from models.right_model import RightModel
+from models.right_view.right_model import RightModel
 
 
 @pytest.mark.parametrize("frames_per_sample,frames_to_drop",

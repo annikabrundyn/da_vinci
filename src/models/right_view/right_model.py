@@ -8,7 +8,7 @@ from data.right_data import RightDaVinciDataModule
 from models.depth_map.model import Model
 from models.callbacks.save_pred_img_callback import SavePredImgCallback
 from models.callbacks.fid_callback import FidCallback
-from models.right_unet import RightUNet
+from models.right_view.right_unet import RightUNet
 
 
 class RightModel(Model):
