@@ -57,17 +57,13 @@ if __name__ == "__main__":
     print("size of validset:", len(dm.val_samples))
     print("size of testset:", len(dm.test_samples))
 
-    img, target, extra_info = next(iter(dm.train_dataloader()))
-    print(img.shape)
-    print(target.shape)
-    print(len(extra_info))
-
     # model
     model = DirectRightModel(**args.__dict__)
     print("model instance created")
     print("lightning version", pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback(dm.vis_img_dataloader()),FidCallback(dm.train_dataloader(),dm.val_dataloader())])
+    num_batches = len(dm.val_samples) // args.batch_size
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback(dm.vis_img_dataloader()),FidCallback(num_batches)])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
