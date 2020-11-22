@@ -19,6 +19,11 @@ from models.callbacks.fid_callback import FidCallback
 from models.right_view.right_unet import RightUNet
 
 
+class DirectRightModel(BaseRightModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
     print("start right direct model")
@@ -30,7 +35,7 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)
 
     # model args
-    parser = BaseRightModel.add_model_specific_args(parser)
+    parser = DirectRightModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
     # data
@@ -58,7 +63,7 @@ if __name__ == "__main__":
     print(len(extra_info))
 
     # model
-    model = BaseRightModel(**args.__dict__)
+    model = DirectRightModel(**args.__dict__)
     print("model instance created")
     print("lightning version", pl.__version__)
 
