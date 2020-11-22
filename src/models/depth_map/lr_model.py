@@ -2,9 +2,9 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 
-from models.unet import UNet
+from models.depth_map.unet import UNet
 from data.data import DaVinciDataModule
-from models.model import DepthMap
+from models.depth_model import DepthMap
 
 
 class LeftRightDepthMap(DepthMap):
