@@ -68,16 +68,12 @@ def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
 
-def calculate_fid(preds, truths, is_color=False, dims=2048, device='cpu'):
+def calculate_fid(preds, truths, model, is_color=False, dims=2048, device='cpu'):
     """Calculates the FID of two paths"""
 
     if not is_color:
         preds = preds.repeat(1, 3, 1, 1)
         truths = truths.repeat(1, 3, 1, 1)
-
-    block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
-
-    model = InceptionV3([block_idx]).to(device)
 
     m1, s1 = calculate_activation_statistics(preds, model,
                                          dims, device)
