@@ -23,7 +23,7 @@ class FidCallback(Callback):
 
         if batch_idx in self.val_indices:
             try:
-                fid_val = calculate_fid(pred, target, self.model, is_color=pl_module.is_color_output, device=pl_module.device)
+                fid_val = calculate_fid(pred, target, self.model, is_color=pl_module.is_color_output)
                 pl_module.log("train_fid", fid_val)
             except ValueError:
                 pass
@@ -41,8 +41,7 @@ class FidCallback(Callback):
         # TODO: make this random
         if batch_idx < 5:
             try:
-                fid_val = calculate_fid(pred, target, self.model, is_color=pl_module.is_color_output,
-                                        device=pl_module.device)
+                fid_val = calculate_fid(pred, target, self.model, is_color=pl_module.is_color_output)
                 pl_module.log("val_fid", fid_val)
             except ValueError:
                 pass

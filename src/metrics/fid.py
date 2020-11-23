@@ -6,7 +6,7 @@ from PIL import Image
 from pytorch_fid.inception import InceptionV3
 from pytorch_fid.fid_score import calculate_frechet_distance
 
-def get_activations(batch, model, dims=2048, device='cpu'):
+def get_activations(batch, model, dims=2048):
     """Calculates the activations of the pool_3 layer for all images.
     Params:
     -- batch       :
@@ -29,8 +29,6 @@ def get_activations(batch, model, dims=2048, device='cpu'):
 
     start_idx = 0
 
-    batch = batch.to(device)
-
     with torch.no_grad():
         pred = model(batch)[0]
 
@@ -47,7 +45,7 @@ def get_activations(batch, model, dims=2048, device='cpu'):
 
     return pred_arr
 
-def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
+def calculate_activation_statistics(batch, model, dims=2048):
     """Calculation of the statistics used by the FID.
     Params:
     -- batch       :
@@ -63,22 +61,20 @@ def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
     -- sigma : The covariance matrix of the activations of the pool_3 layer of
                the inception model.
     """
-    act = get_activations(batch, model, dims, device)
+    act = get_activations(batch, model, dims)
     mu = np.mean(act, axis=0)
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
 
-def calculate_fid(preds, truths, model, is_color=False, dims=2048, device='cpu'):
+def calculate_fid(preds, truths, model, is_color=False, dims=2048):
     """Calculates the FID of two paths"""
 
     if not is_color:
         preds = preds.repeat(1, 3, 1, 1)
         truths = truths.repeat(1, 3, 1, 1)
 
-    m1, s1 = calculate_activation_statistics(preds, model,
-                                         dims, device)
-    m2, s2 = calculate_activation_statistics(truths, model,
-                                         dims, device)
+    m1, s1 = calculate_activation_statistics(preds, model,dims)
+    m2, s2 = calculate_activation_statistics(truths, model,dims)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
 
     return fid_value
