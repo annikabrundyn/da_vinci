@@ -4,10 +4,9 @@ import torchvision
 
 
 class RightCallback(Callback):
-    def __init__(self, dl, epoch_logging_freq: int = 50):
+    def __init__(self, epoch_logging_freq: int = 50):
         # save predictions every 50 epochs
         self.epoch_logging_freq = epoch_logging_freq
-        self.dl = dl
 
     def on_pretrain_routine_end(self, trainer, pl_module):
         '''save the input + target images only once'''
@@ -24,12 +23,22 @@ class RightCallback(Callback):
 
         batch_idx = 0
 
-        for img, target, _ in self.dl:
+        for img, target, _ in trainer.datamodule.vis_img_dataloader():
+            img = img.squeeze(0)
+            target = target.squeeze(0)
+
             fp_input = os.path.join(inputs_dir_path, f"input_{batch_idx}.png")
             fp_target = os.path.join(targets_dir_path, f"target_{batch_idx}.png")
 
-            torchvision.utils.save_image(img.squeeze(0), fp=fp_input)
-            torchvision.utils.save_image(target.squeeze(0), fp=fp_target)
+            if pl_module.total_num_frames > 1:
+                if pl_module.is_color_input:
+                    img = img.reshape(pl_module.total_num_frames, 3, img.shape[1], img.shape[2])
+                else:
+                    img = img.reshape(pl_module.total_num_frames, 1, img.shape[1], img.shape[2])
+            img = torchvision.utils.make_grid(img, nrow=1)
+
+            torchvision.utils.save_image(img, fp=fp_input)
+            torchvision.utils.save_image(target, fp=fp_target)
 
             batch_idx += 1
 
@@ -41,7 +50,7 @@ class RightCallback(Callback):
                 os.makedirs(curr_epoch_path)
 
             batch_idx = 0
-            for img, _, _ in self.dl:
+            for img, _, _ in trainer.datamodule.vis_img_dataloader():
                 img = img.to(pl_module.device)
                 pred = pl_module(img)
                 fp = os.path.join(curr_epoch_path, f"prediction_{batch_idx}.png")
