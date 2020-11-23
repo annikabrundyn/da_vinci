@@ -141,7 +141,7 @@ class BaseRightModel(pl.LightningModule):
         parser.add_argument("--stack_horizontal", action='store_true', default=False, help="stacks input views horizontally")
         parser.add_argument("--is_color_input", action='store_true', default=True, help="use color inputs instead of bw")
         parser.add_argument("--is_color_output", action='store_true', default=True, help="use color outputs instead of bw")
-        parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
+        parser.add_argument("--batch_size", type=int, default=32, help="size of the batches")
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
         parser.add_argument("--save_img_freq", type=int, default=50)
