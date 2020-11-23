@@ -3,6 +3,7 @@ from pytorch_lightning.callbacks import Callback
 
 
 class SaveImgCallBack(Callback):
+    # for depth map models
 
     def __init__(self, dl, epoch_logging_freq: int = 30):
         # save predictions every 50 epochs
