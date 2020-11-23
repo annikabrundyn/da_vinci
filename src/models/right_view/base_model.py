@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import torchvision
 
 import os.path
 import numpy as np
@@ -13,7 +14,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from data.right_data import RightDaVinciDataModule
-from models.callbacks.callback_right_view import RightCallback
 from models.callbacks.fid_callback import FidCallback
 from models.right_view.right_unet import RightUNet
 
@@ -30,7 +30,7 @@ class BaseRightModel(pl.LightningModule):
         bilinear: bool = False,
         lr: float = 0.001,
         log_tb_imgs: bool = False,
-        output_img_freq: int = 10000,
+        tb_img_freq: int = 10000,
         **kwargs
     ):
         super().__init__()
@@ -65,6 +65,8 @@ class BaseRightModel(pl.LightningModule):
             self.frames_to_drop = min(self.frames_to_drop, max_drop_frames)
             self.input_channels = self.frames_per_sample - self.frames_to_drop
 
+        self.total_num_frames = self.input_channels
+
         if self.is_color_input:
             self.input_channels = 3 * self.input_channels
 
@@ -78,7 +80,7 @@ class BaseRightModel(pl.LightningModule):
         self.log('train_loss', loss_val)
 
         # log images
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.output_img_freq == 0:
+        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
 
         # metrics
@@ -96,7 +98,7 @@ class BaseRightModel(pl.LightningModule):
         self.log('valid_loss', loss_val)
 
         # log predicted images
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.output_img_freq == 0:
+        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # metrics
@@ -111,98 +113,23 @@ class BaseRightModel(pl.LightningModule):
 
     def _log_images(self, img, target, pred, extra_info, step_name, limit=1):
         # TODO: Randomly select image from batch instead of first image?
-        img = img[:limit]
-        target = target[:limit]
-        pred = pred[:limit]
+        img = img[:limit].squeeze(0)
+        target = target[:limit].squeeze(0)
+        pred = pred[:limit].squeeze(0)
         folder_name = extra_info['image_set'][0]
         frame_nums = extra_info['frame_nums'][0]
-        frame_nums = frame_nums.split()
 
-        fig = self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums)
-        self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
-
-        # Log colorized depth maps - using magma colormap
-        color_target_dm = self._matplotlib_imshow_dm(target, "target")
-        color_pred_dm = self._matplotlib_imshow_dm(pred, "prediction")
-
-        self.logger.experiment.add_figure(f'{step_name}_target_dm_color', color_target_dm, self.trainer.global_step)
-        self.logger.experiment.add_figure(f'{step_name}_pred_dm_color', color_pred_dm, self.trainer.global_step)
-
-    def _matplotlib_imshow_input_imgs(self, img, folder_name, frame_nums, save_fig=False, title=None, dir_path=None):
-
-        nrow, ncol = self.input_channels, 1
-        if self.is_color_input:
-            nrow = nrow // 3
-
-        fig = plt.figure(figsize=(10, 10))
-        grid = ImageGrid(fig, 111,
-                         nrows_ncols=(nrow, ncol),
-                         direction='column',
-                         axes_pad=0.3)
-
-        for ax, idx in zip(grid, range(nrow)):
+        if self.total_num_frames > 1:
             if self.is_color_input:
-                # select 3 channels for color inputs
-                npimg = img[3*idx:3*(idx+1)].squeeze().detach().cpu().numpy()
-                npimg = np.transpose(npimg, (1, 2, 0))
-                ax.imshow(npimg)
+                img = img.reshape(self.total_num_frames, 3, img.shape[1], img.shape[2])
             else:
-                npimg = img[idx].squeeze().detach().cpu().numpy()
-                ax.imshow(npimg, cmap='gray')
-            ax.axis('off')
-            ax.set_title(f"{folder_name}/{frame_nums[idx]}")
+                img = img.reshape(self.total_num_frames, 1, img.shape[1], img.shape[2])
+        img = torchvision.utils.make_grid(img, nrow=1)
 
-        if save_fig:
-            if not os.path.exists(dir_path):
-                os.makedirs(dir_path)
-
-            img_path = os.path.join(dir_path, f"{title}.png")
-            plt.savefig(img_path, bbox_inches='tight')
-            plt.close()
-
-        return fig
-
-    def _matplotlib_imshow_right_view(self, img, title, save_fig=False, dir_path=None):
-
-        npimg = img.squeeze().detach().cpu().numpy()
-        if self.is_color_output:
-            npimg = np.transpose(npimg, (1, 2, 0))
-            cmap = None
-        else:
-            cmap = "gray"
-
-        fig = plt.figure()
-        plt.imshow(npimg, cmap=cmap)
-        plt.title(title)
-
-        if save_fig:
-            if not os.path.exists(dir_path):
-                os.makedirs(dir_path)
-
-            img_path = os.path.join(dir_path, f"{title}.png")
-            plt.savefig(img_path, bbox_inches='tight')
-            plt.close()
-
-        return fig
-
-    def _log_images(self, img, target, pred, extra_info, step_name, limit=1):
-        # TODO: Randomly select image from batch instead of first image?
-        img = img[:limit]
-        target = target[:limit]
-        pred = pred[:limit]
-        folder_name = extra_info['image_set'][0]
-        frame_nums = extra_info['frame_nums'][0]
-        frame_nums = frame_nums.split()
-
-        fig = self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums)
-        self.logger.experiment.add_figure(f'{step_name}_input_images', fig, self.trainer.global_step)
-
-        # Log colorized depth maps - using magma colormap
-        target_right = self._matplotlib_imshow_right_view(target, "target")
-        pred_right = self._matplotlib_imshow_right_view(pred, "prediction")
-
-        self.logger.experiment.add_figure(f'{step_name}_target_right_view', target_right, self.trainer.global_step)
-        self.logger.experiment.add_figure(f'{step_name}_pred_right_view', pred_right, self.trainer.global_step)
+        self.logger.experiment.add_image(f'{step_name}_input_images', img, self.trainer.global_step)
+        self.logger.experiment.add_image(f'{step_name}_target', target, self.trainer.global_step)
+        self.logger.experiment.add_image(f'{step_name}_pred', pred, self.trainer.global_step)
+        self.logger.experiment.add_text(f'{step_name}_img_folder_path', f'{folder_name}: {frame_nums}', self.trainer.global_step)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -215,8 +142,9 @@ class BaseRightModel(pl.LightningModule):
         parser.add_argument("--is_color_input", action='store_true', default=True, help="use color inputs instead of bw")
         parser.add_argument("--is_color_output", action='store_true', default=True, help="use color outputs instead of bw")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
-        parser.add_argument("--log_tb_imgs", type=bool, default=False)
-        parser.add_argument("--output_img_freq", type=int, default=10000)
+        parser.add_argument("--log_tb_imgs", action='store_true', default=False)
+        parser.add_argument("--tb_img_freq", type=int, default=10000)
+        parser.add_argument("--save_img_freq", type=int, default=50)
         parser.add_argument("--fid_freq", type=int, default=500)
         parser.add_argument("--num_workers", type=int, default=8)
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
