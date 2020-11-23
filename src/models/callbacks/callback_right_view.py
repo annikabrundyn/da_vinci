@@ -31,7 +31,7 @@ class RightCallback(Callback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         '''save only the predicted '''
-        if trainer.current_epoch + 1 % self.epoch_logging_freq == 0:
+        if (trainer.current_epoch + 1) % self.epoch_logging_freq == 0:
             dir = os.path.split(trainer.checkpoint_callback.dirpath)[0]
             dir_path = os.path.join(dir, f"epoch_{trainer.current_epoch + 2}", "pred")
             batch_idx = 0
