@@ -68,6 +68,5 @@ if __name__ == "__main__":
 
     # train
     trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback()])
-    #trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm)
