@@ -4,9 +4,9 @@ import torchvision
 
 
 class RightCallback(Callback):
-    def __init__(self, epoch_logging_freq: int = 50):
+    def __init__(self, save_img_freq: int = 50):
         # save predictions every 50 epochs
-        self.epoch_logging_freq = epoch_logging_freq
+        self.save_img_freq = save_img_freq
 
     def on_pretrain_routine_end(self, trainer, pl_module):
         '''save the input + target images only once'''
@@ -44,7 +44,7 @@ class RightCallback(Callback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         '''save only the predicted '''
-        if (trainer.current_epoch + 1) % self.epoch_logging_freq == 0:
+        if (trainer.current_epoch + 1) % self.save_img_freq == 0:
             curr_epoch_path = os.path.join(self.preds_dir_path, f"epoch_{trainer.current_epoch}")
             if not os.path.exists(curr_epoch_path):
                 os.makedirs(curr_epoch_path)

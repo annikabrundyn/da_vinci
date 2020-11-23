@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from data.right_data import RightDaVinciDataModule
-from models.callbacks.callback_right_view import RightCallback
 from models.callbacks.fid_callback import FidCallback
 from models.right_view.right_unet import RightUNet
 
@@ -31,7 +30,7 @@ class BaseRightModel(pl.LightningModule):
         bilinear: bool = False,
         lr: float = 0.001,
         log_tb_imgs: bool = False,
-        output_img_freq: int = 10000,
+        tb_img_freq: int = 10000,
         **kwargs
     ):
         super().__init__()
@@ -81,7 +80,7 @@ class BaseRightModel(pl.LightningModule):
         self.log('train_loss', loss_val)
 
         # log images
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.output_img_freq == 0:
+        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='train')
 
         # metrics
@@ -99,7 +98,7 @@ class BaseRightModel(pl.LightningModule):
         self.log('valid_loss', loss_val)
 
         # log predicted images
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.output_img_freq == 0:
+        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
             self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # metrics
@@ -144,7 +143,8 @@ class BaseRightModel(pl.LightningModule):
         parser.add_argument("--is_color_output", action='store_true', default=True, help="use color outputs instead of bw")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
-        parser.add_argument("--output_img_freq", type=int, default=10000)
+        parser.add_argument("--tb_img_freq", type=int, default=10000)
+        parser.add_argument("--save_img_freq", type=int, default=50)
         parser.add_argument("--fid_freq", type=int, default=500)
         parser.add_argument("--num_workers", type=int, default=8)
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")

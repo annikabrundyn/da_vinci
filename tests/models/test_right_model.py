@@ -3,9 +3,7 @@ import pytorch_lightning as pl
 
 from models.right_view.direct_right_model import DirectRightModel
 from data.right_data import RightDaVinciDataModule
-
-from models.callbacks.callback_right_view import RightCallback
-from models.callbacks.fid_callback import FidCallback
+from models.callbacks.right_callback import RightCallback
 
 
 @pytest.mark.parametrize("frames_per_sample,frames_to_drop,is_color_input,is_color_output",
@@ -25,5 +23,5 @@ def test_right_model(seed_everything, data_dir, frames_per_sample, frames_to_dro
     model = DirectRightModel(frames_per_sample, frames_to_drop, is_color_input, is_color_output)
 
     # train
-    trainer = pl.Trainer(fast_dev_run=True, callbacks=[RightCallback(dm.vis_img_dataloader()),FidCallback(dm.train_dataloader(),dm.val_dataloader())])
-    trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
+    trainer = pl.Trainer(fast_dev_run=True, callbacks=[RightCallback()])
+    trainer.fit(model, dm)
