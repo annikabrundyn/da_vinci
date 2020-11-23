@@ -119,7 +119,6 @@ class BaseRightModel(pl.LightningModule):
         pred = pred[:limit].squeeze(0)
         folder_name = extra_info['image_set'][0]
         frame_nums = extra_info['frame_nums'][0]
-        frame_nums = frame_nums.split()
 
         if self.total_num_frames > 1:
             if self.is_color_input:
@@ -131,7 +130,7 @@ class BaseRightModel(pl.LightningModule):
         self.logger.experiment.add_image(f'{step_name}_input_images', img, self.trainer.global_step)
         self.logger.experiment.add_image(f'{step_name}_target', target, self.trainer.global_step)
         self.logger.experiment.add_image(f'{step_name}_pred', pred, self.trainer.global_step)
-        self.logger.experiment.add_text(f'{step_name}_img_title', f'{folder_name}: {frame_nums}', self.trainer.global_step)
+        self.logger.experiment.add_text(f'{step_name}_img_folder_path', f'{folder_name}: {frame_nums}', self.trainer.global_step)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
