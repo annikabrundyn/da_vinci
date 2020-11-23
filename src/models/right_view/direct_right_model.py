@@ -15,7 +15,6 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 from models.right_view.base_model import BaseRightModel
 from data.right_data import RightDaVinciDataModule
 from models.callbacks.callback_right_view import RightCallback
-from models.callbacks.fid_callback import FidCallback
 from models.right_view.right_unet import RightUNet
 
 
@@ -68,6 +67,7 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback(dm.vis_img_dataloader()),FidCallback(dm.train_dataloader(),dm.val_dataloader())])
+    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback(dm.vis_img_dataloader())])
+    trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
