@@ -38,8 +38,8 @@ class RightDepthMapCallback(Callback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         '''save only the predicted '''
-        if (trainer.current_epoch + 1) % self.save_img_freq == 0:
-            curr_epoch_path = os.path.join(self.preds_dir_path, f"epoch_{trainer.current_epoch}")
+        if (trainer.current_epoch) % self.save_img_freq == 0:
+            curr_epoch_path = os.path.join(self.preds_dir_path, f"epoch_{trainer.current_epoch + 1}")
             if not os.path.exists(curr_epoch_path):
                 os.makedirs(curr_epoch_path)
 
