@@ -60,22 +60,6 @@ class UpperBoundImgCallback(Callback):
                 pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, dir_path=dir_path)
                 batch_idx += 1
 
-    # this doesn't work on grid
-    # def on_keyboard_interrupt(self, trainer, pl_module):
-    #     '''save predicted when kill experiment'''
-    #     print('save checkpoint val images')
-    #
-    #     batch_idx = 0
-    #     for img, target, extra in self.dl:
-    #         img, target = img.to(pl_module.device), target.to(pl_module.device)
-    #         pred = pl_module(img)
-    #
-    #         dir = os.path.split(trainer.checkpoint_callback.dirpath)[0]
-    #         dir_path = os.path.join(dir, f"epoch_{trainer.current_epoch + 1}", "pred")
-    #
-    #         pl_module._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True, dir_path=dir_path)
-    #         batch_idx += 1
-
 
 class UpperBoundModel(BaseDepthMap):
 

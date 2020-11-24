@@ -70,7 +70,8 @@ class BaseDepthMap(pl.LightningModule):
             self.input_channels = self.input_channels * 3
 
     def forward(self, x):
-        return self.net(x)
+        y, _ = self.net(x)
+        return y
 
     def training_step(self, batch, batch_idx):
         img, target, extra_info = batch
