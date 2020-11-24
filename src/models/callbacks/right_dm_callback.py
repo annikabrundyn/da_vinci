@@ -31,8 +31,6 @@ class RightDepthMapCallback(Callback):
             fp_input = os.path.join(inputs_dir_path, f"input_{batch_idx}.png")
             fp_target = os.path.join(targets_dir_path, f"target_{batch_idx}.png")
 
-
-
             torchvision.utils.save_image(img, fp=fp_input)
             torchvision.utils.save_image(target, fp=fp_target)
 
