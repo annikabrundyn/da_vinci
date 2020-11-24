@@ -193,6 +193,6 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightDepthMapCallback()])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightDepthMapCallback(args.save_img_freq)])
     print("trainer created")
     trainer.fit(model, dm)
