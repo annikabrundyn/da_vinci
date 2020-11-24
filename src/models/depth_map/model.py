@@ -82,7 +82,8 @@ class Model(pl.LightningModule):
             self.input_channels = self.input_channels * 3
 
     def forward(self, x):
-        return self.net(x)
+        y, _ = self.net(x)
+        return y
 
     def training_step(self, batch, batch_idx):
         img, target, extra_info = batch
@@ -117,18 +118,6 @@ class Model(pl.LightningModule):
         psnr_val = psnr(pred, target)
         self.log('valid_ssim', ssim_val)
         self.log('valid_psnr', psnr_val)
-
-    # def test_step(self, batch, batch_idx):
-    #     # batch size is 1 in the validation pred images
-    #     img, target, extra_info = batch
-    #     folder_name = extra_info['image_set'][0]
-    #     frame_nums = extra_info['frame_nums'][0]
-    #
-    #     pred = self(img)
-    #
-    #     self._matplotlib_imshow_input_imgs(img.squeeze(0), folder_name, frame_nums, save_fig=True, title=f"input_{batch_idx}")
-    #     self._matplotlib_imshow_dm(target.squeeze(0), title=f"target_{batch_idx}", save_fig=True)
-    #     self._matplotlib_imshow_dm(pred.squeeze(0), title=f"prediction_{batch_idx}", save_fig=True)
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)

@@ -51,10 +51,10 @@ class UNet(nn.Module):
         for i, layer in enumerate(self.layers[self.num_layers:-1]):
             xi[-1] = layer(xi[-1], xi[-2 - i])
         # Final conv layer of UNet
-        output = self.layers[-1](xi[-1])
+        orig_output = self.layers[-1](xi[-1])
         # Extra conv layer to reshape for depth map dimensions
-        output = self.conv_reshape(output)
-        return output
+        reshaped = self.conv_reshape(orig_output)
+        return reshaped, orig_output
 
 
 class DoubleConv(nn.Module):

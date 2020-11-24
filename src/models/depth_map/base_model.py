@@ -74,7 +74,7 @@ class BaseDepthMap(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         img, target, extra_info = batch
-        pred = self(img)
+        pred, _ = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
 
@@ -92,7 +92,7 @@ class BaseDepthMap(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         img, target, extra_info = batch
-        pred = self(img)
+        pred, _ = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
 
