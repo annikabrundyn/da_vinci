@@ -1,3 +1,4 @@
+import torch
 from models.depth_map.unet import UNet
 
 
@@ -26,6 +27,7 @@ class RightUNet(UNet):
                          features_start,
                          bilinear)
         self.conv_reshape = None
+        self.sig = torch.nn.Sigmoid()
 
     def forward(self, x):
         xi = [self.layers[0](x)]
@@ -37,5 +39,5 @@ class RightUNet(UNet):
             xi[-1] = layer(xi[-1], xi[-2 - i])
         # Final conv layer of UNet
         output = self.layers[-1](xi[-1])
-
+        output = self.sig(output)
         return output
