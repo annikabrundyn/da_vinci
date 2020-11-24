@@ -110,14 +110,12 @@ class DepthMapRightModel(pl.LightningModule):
 
     def _log_images(self, img, target, pred, pred_dm, extra_info, step_name, limit=1):
         # TODO: Randomly select image from batch instead of first image?
-        img = img[:limit].squeeze(0)
+        img = img[:limit, 0:3, :, :].squeeze(0)
         target = target[:limit].squeeze(0)
         pred = pred[:limit].squeeze(0)
         pred_dm = pred_dm[:limit].squeeze(0)
         folder_name = extra_info['image_set'][0]
         frame_nums = extra_info['frame_nums'][0]
-
-        img = img[:, 0:3, :, :]
 
         self.logger.experiment.add_image(f'{step_name}_input_images', img, self.trainer.global_step)
         self.logger.experiment.add_image(f'{step_name}_target', target, self.trainer.global_step)
