@@ -56,7 +56,6 @@ if __name__ == "__main__":
     print(f"extra info len: {len(extra_info)}")
 
     # model
-    model = DirectRightModel(**args.__dict__)
     model = DirectRightModel.load_from_checkpoint(checkpoint_path=args.ckpt)
     model.to(device)
     model.eval()
