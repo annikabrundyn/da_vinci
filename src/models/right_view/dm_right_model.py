@@ -29,6 +29,7 @@ class DepthMapRightModel(pl.LightningModule):
         left_frames_per_sample: int = 1,
         is_color_input: bool = True,
         is_color_output: bool = True,
+        unfreeze_epoch_no: int = 30,
         num_layers: int = 5,
         features_start: int = 64,
         bilinear: bool = False,
@@ -42,6 +43,7 @@ class DepthMapRightModel(pl.LightningModule):
         self.save_hyperparameters()
 
         self.trained_depth_model = ColorModel.load_from_checkpoint(self.hparams.dm_model_checkpoint)
+        self.frozen = True
         self.trained_depth_model.freeze()
 
         if left_frames_per_sample == 1 and is_color_input and is_color_output:
@@ -71,6 +73,11 @@ class DepthMapRightModel(pl.LightningModule):
         return pred_right, pred_dm
 
     def training_step(self, batch, batch_idx):
+
+        if self.current_epoch >= self.hparams.unfreeze_epoch_no and self.frozen:
+            self.frozen = False
+            self.trained_depth_model.unfreeze()
+
         img, target, extra_info = batch
         pred, pred_dm = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
@@ -132,6 +139,7 @@ class DepthMapRightModel(pl.LightningModule):
         parser.add_argument("--dm_frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
         parser.add_argument("--is_color_input", action='store_true', default=True, help="use color inputs instead of bw")
         parser.add_argument("--is_color_output", action='store_true', default=True, help="use color outputs instead of bw")
+        parser.add_argument("--unfreeze_epoch_no", type=int, default=30, help="unfreeze after how many epochs")
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
         parser.add_argument("--save_img_freq", type=int, default=50)
