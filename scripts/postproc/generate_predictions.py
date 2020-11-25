@@ -81,3 +81,5 @@ if __name__ == "__main__":
             outputs = torch.cat(outputs)
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=30)
             outputs = []
+        outputs = torch.cat(outputs)
+        torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=30)
