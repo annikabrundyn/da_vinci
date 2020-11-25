@@ -61,7 +61,6 @@ class DepthMapRightModel(pl.LightningModule):
                                      bilinear=self.hparams.bilinear)
 
     def forward(self, x):
-
         # depth map model
         reshaped_dm, pred_dm = self.trained_depth_model(x)
         # combine with last left image
@@ -73,12 +72,6 @@ class DepthMapRightModel(pl.LightningModule):
         return pred_right, pred_dm
 
     def training_step(self, batch, batch_idx):
-
-        if self.frozen and self.current_epoch >= 1:
-            print("unfreezing")
-            self.frozen = False
-            self.trained_depth_model.unfreeze()
-
         img, target, extra_info = batch
         pred, pred_dm = self(img)
         loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
@@ -113,7 +106,7 @@ class DepthMapRightModel(pl.LightningModule):
         self.log('valid_psnr', psnr_val)
 
     def configure_optimizers(self):
-        opt = torch.optim.Adam(self.right_model.parameters(), lr=self.hparams.lr)
+        opt = torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
         return [opt]
 
     def _log_images(self, img, target, pred, pred_dm, extra_info, step_name, limit=1):
