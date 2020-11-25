@@ -11,15 +11,6 @@ class RightDaVinciDataSet(DaVinciDataSet):
 
         self.target_dir = 'image_1'
 
-    def pred_dataloader(self):
-        loader = DataLoader(
-            self.pred_dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=self.num_workers,
-        )
-        return loader
-
 
 class RightDaVinciDataModule(DaVinciDataModule):
     def __init__(self, *args, **kwargs):
