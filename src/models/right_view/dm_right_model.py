@@ -74,7 +74,7 @@ class DepthMapRightModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        if self.current_epoch >= self.hparams.unfreeze_epoch_no and self.frozen:
+        if self.frozen and self.current_epoch >= 1:
             self.frozen = False
             self.trained_depth_model.unfreeze()
 
