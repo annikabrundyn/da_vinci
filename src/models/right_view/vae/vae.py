@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from data.right_data import RightDaVinciDataModule
-from models.vae_components import Encoder, Decoder
+from models.right_view.vae.vae_components import Encoder, Decoder
 
 
 class VAE(pl.LightningModule):
