@@ -8,6 +8,8 @@ from torch.nn import functional as F
 from data.right_data import RightDaVinciDataModule
 from models.right_view.vae.vae_components import Encoder, Decoder
 
+from pytorch_lightning.metrics.functional import ssim, psnr
+
 
 class VAE(pl.LightningModule):
 
@@ -106,10 +108,13 @@ class VAE(pl.LightningModule):
 
         loss = kl + recon_loss
 
+        ssim = ssim(x_hat, x)
+
         logs = {
             "recon_loss": recon_loss,
             "kl": kl,
             "loss": loss,
+            "ssim": ssim,
         }
         return loss, logs
 
