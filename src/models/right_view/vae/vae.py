@@ -13,8 +13,8 @@ class VAE(pl.LightningModule):
 
     def __init__(
         self,
-        frames_per_sample: int,
-        frames_to_drop: int,
+        frames_per_sample: int = 1,
+        frames_to_drop: int = 0,
         input_height: int = 192,
         input_width: int = 384,
         output_height: int = 192,
@@ -44,7 +44,6 @@ class VAE(pl.LightningModule):
         self.kl_coeff = kl_coeff
         self.enc_out_dim = enc_out_dim
         self.latent_dim = latent_dim
-        self.in_channels = 3
 
         self.input_height = input_height
         self.input_width = input_width
@@ -52,8 +51,8 @@ class VAE(pl.LightningModule):
         self.output_height = output_height
         self.output_width = output_width
 
+        self.in_channels = 3
         self.out_channels = 3
-
 
         self.encoder = self.init_encoder(self.enc_out_dim, self.latent_dim,
                                          self.in_channels, self.input_height, self.input_width)
