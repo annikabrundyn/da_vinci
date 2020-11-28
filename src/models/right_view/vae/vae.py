@@ -19,7 +19,6 @@ class VAE(pl.LightningModule):
         input_width: int = 384,
         output_height: int = 192,
         output_width: int = 384,
-        maxpool1: bool = False,
         enc_out_dim: int = 512,
         kl_coeff: float = 0.1,
         latent_dim: int = 256,
@@ -30,7 +29,6 @@ class VAE(pl.LightningModule):
         """
         Args:
             input_height: height of the images
-            maxpool1: use standard maxpool to reduce spatial dim of feat by a factor of 2
             enc_out_dim: set according to the out_channel count of
                 encoder used (512 for resnet18, 2048 for resnet50)
             kl_coeff: coefficient for kl term of the loss
@@ -135,7 +133,6 @@ class VAE(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
 
-        parser.add_argument("--maxpool1", action='store_true')
         parser.add_argument("--lr", type=float, default=1e-4)
 
         parser.add_argument("--enc_out_dim", type=int, default=512)
