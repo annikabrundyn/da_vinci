@@ -13,11 +13,12 @@ class VAE(pl.LightningModule):
 
     def __init__(
         self,
+        frames_per_sample: int,
+        frames_to_drop: int,
         input_height: int = 192,
         input_width: int = 384,
         output_height: int = 192,
         output_width: int = 384,
-        first_conv: bool = False,
         maxpool1: bool = False,
         enc_out_dim: int = 512,
         kl_coeff: float = 0.1,
@@ -29,8 +30,6 @@ class VAE(pl.LightningModule):
         """
         Args:
             input_height: height of the images
-            first_conv: use standard kernel_size 7, stride 2 at start or
-                replace it with kernel_size 3, stride 1 conv
             maxpool1: use standard maxpool to reduce spatial dim of feat by a factor of 2
             enc_out_dim: set according to the out_channel count of
                 encoder used (512 for resnet18, 2048 for resnet50)
@@ -55,11 +54,13 @@ class VAE(pl.LightningModule):
         self.output_height = output_height
         self.output_width = output_width
 
+        self.out_channels = 3
+
 
         self.encoder = self.init_encoder(self.enc_out_dim, self.latent_dim,
                                          self.in_channels, self.input_height, self.input_width)
         self.decoder = self.init_decoder(self.enc_out_dim, self.latent_dim,
-                                         self.in_channels, self.output_height, self.output_width)
+                                         self.out_channels, self.output_height, self.output_width)
 
         self.fc_mu = nn.Linear(self.enc_out_dim, self.latent_dim)
         self.fc_var = nn.Linear(self.enc_out_dim, self.latent_dim)
@@ -134,11 +135,10 @@ class VAE(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
 
-        parser.add_argument("--first_conv", action='store_true')
         parser.add_argument("--maxpool1", action='store_true')
         parser.add_argument("--lr", type=float, default=1e-4)
 
-        parser.add_argument("--enc_out_dim", type=int, default=512,help="512 for resnet18, 2048 for bigger resnets, adjust for wider resnets")
+        parser.add_argument("--enc_out_dim", type=int, default=512)
         parser.add_argument("--kl_coeff", type=float, default=0.1)
         parser.add_argument("--latent_dim", type=int, default=256)
 
