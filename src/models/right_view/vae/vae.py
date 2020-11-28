@@ -25,7 +25,10 @@ class VAE(pl.LightningModule):
         kl_coeff: float = 0.1,
         latent_dim: int = 256,
         in_channels: int = 3,
-        lr: float = 1e-4,
+        lr: float = 0.001,
+        log_tb_imgs: bool = False,
+        tb_img_freq: int = 10000,
+        save_img_freq: int = 50,
         **kwargs
     ):
         """
@@ -95,9 +98,9 @@ class VAE(pl.LightningModule):
 
     def step(self, batch, batch_idx):
         x, y = batch
-        z, x_hat, p, q = self._run_step(x)
+        z, y_hat, p, q = self._run_step(x)
 
-        recon_loss = F.mse_loss(x_hat, x, reduction='mean')
+        recon_loss = F.mse_loss(y_hat, y, reduction='mean')
 
         log_qz = q.log_prob(z)
         log_pz = p.log_prob(z)
@@ -108,7 +111,7 @@ class VAE(pl.LightningModule):
 
         loss = kl + recon_loss
 
-        ssim_val = ssim(x_hat, x)
+        ssim_val = ssim(y_hat, y)
 
         logs = {
             "recon_loss": recon_loss,
@@ -116,41 +119,59 @@ class VAE(pl.LightningModule):
             "loss": loss,
             "ssim": ssim_val,
         }
-        return loss, logs
+        return loss, logs, x, y_hat, y
 
     def training_step(self, batch, batch_idx):
-        loss, logs = self.step(batch, batch_idx)
-        self.log_dict(
-            {f"train_{k}": v for k, v in logs.items()}, on_step=True, on_epoch=False
-        )
+        loss, logs, x, y_hat, y = self.step(batch, batch_idx)
+        self.log_dict({f"train_{k}": v for k, v in logs.items()})
+
+        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+            self._log_images(x, y, y_hat, step_name='train')
+
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, logs = self.step(batch, batch_idx)
+        loss, logs, x, y_hat, y = self.step(batch, batch_idx)
         self.log_dict({f"val_{k}": v for k, v in logs.items()})
-        return loss
+
+        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+            self._log_images(x, y, y_hat, step_name='valid')
+
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
+
+    def _log_images(self, img, target, pred, step_name, limit=1):
+        img = img[:limit].squeeze(0)
+        target = target[:limit].squeeze(0)
+        pred = pred[:limit].squeeze(0)
+
+        self.logger.experiment.add_image(f'{step_name}_input_images', img, self.trainer.global_step)
+        self.logger.experiment.add_image(f'{step_name}_target', target, self.trainer.global_step)
+        self.logger.experiment.add_image(f'{step_name}_pred', pred, self.trainer.global_step)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
 
-        parser.add_argument("--lr", type=float, default=1e-4)
+        parser.add_argument("--lr", type=float, default=0.001)
 
         parser.add_argument("--enc_out_dim", type=int, default=512)
         parser.add_argument("--kl_coeff", type=float, default=0.1)
         parser.add_argument("--latent_dim", type=int, default=256)
 
-        parser.add_argument("--batch_size", type=int, default=256)
-        parser.add_argument("--num_workers", type=int, default=8)
+        parser.add_argument("--log_tb_imgs", action='store_true', default=False)
+        parser.add_argument("--tb_img_freq", type=int, default=10000)
+        parser.add_argument("--save_img_freq", type=int, default=50)
+
         parser.add_argument("--data_dir", type=str, default="/Users/annikabrundyn/Developer/da_vinci/daVinci_data")
         parser.add_argument('--input_height', type=int, default=192)
         parser.add_argument('--input_width', type=int, default=384, help='input image width')
         parser.add_argument('--output_height', type=int, default=192)
         parser.add_argument('--output_width', type=int, default=384)
-        parser.add_argument('--in_channels', type=int, default=3)
+
+        parser.add_argument("--batch_size", type=int, default=32)
+        parser.add_argument("--num_workers", type=int, default=8)
 
         return parser
 
