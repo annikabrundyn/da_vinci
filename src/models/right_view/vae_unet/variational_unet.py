@@ -46,6 +46,7 @@ class VariationalUNet(nn.Module):
 
     def forward(self, x):
         xi = [self.layers[0](x)]
+
         # Down path
         for layer in self.layers[1:self.num_layers]:
             xi.append(layer(xi[-1]))

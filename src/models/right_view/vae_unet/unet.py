@@ -10,6 +10,7 @@ from models.right_view.vae_unet.conv import ConvolutionalBlock
 
 from data.right_data import RightDaVinciDataModule
 
+
 class UNet(nn.Module):
     def __init__(
             self,
