@@ -108,13 +108,13 @@ class VAE(pl.LightningModule):
 
         loss = kl + recon_loss
 
-        ssim = ssim(x_hat, x)
+        ssim_val = ssim(x_hat, x)
 
         logs = {
             "recon_loss": recon_loss,
             "kl": kl,
             "loss": loss,
-            "ssim": ssim,
+            "ssim": ssim_val,
         }
         return loss, logs
 
