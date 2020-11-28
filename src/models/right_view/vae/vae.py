@@ -56,6 +56,7 @@ class VAE(pl.LightningModule):
         self.output_height = output_height
         self.output_width = output_width
 
+        # TODO: generalize for multi frame
         self.in_channels = 3
         self.out_channels = 3
 
