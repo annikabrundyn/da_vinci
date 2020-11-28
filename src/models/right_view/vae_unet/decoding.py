@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from .conv import ConvolutionalBlock
 
-CHANNELS_DIMENSION = 1
+CHANNELS_DIMENSION = 3
 UPSAMPLING_MODES = (
     'nearest',
     'linear',

@@ -4,18 +4,17 @@
 
 from typing import Optional
 import torch.nn as nn
-from .encoding import Encoder, EncodingBlock
-from .decoding import Decoder
-from .conv import ConvolutionalBlock
+from models.right_view.vae_unet.encoding import Encoder, EncodingBlock
+from models.right_view.vae_unet.decoding import Decoder
+from models.right_view.vae_unet.conv import ConvolutionalBlock
 
-__all__ = ['UNet', 'UNet2D', 'UNet3D']
-
+from data.right_data import RightDaVinciDataModule
 
 class UNet(nn.Module):
     def __init__(
             self,
-            in_channels: int = 1,
-            out_classes: int = 2,
+            in_channels: int = 3,
+            out_classes: int = 3,
             dimensions: int = 2,
             num_encoding_blocks: int = 5,
             out_channels_first_layer: int = 64,
@@ -135,12 +134,21 @@ class UNet2D(UNet):
         super().__init__(*args, **kwargs)
 
 
-class UNet3D(UNet):
-    def __init__(self, *args, **user_kwargs):
-        kwargs = {}
-        kwargs['dimensions'] = 3
-        kwargs['num_encoding_blocks'] = 4
-        kwargs['out_channels_first_layer'] = 32
-        kwargs['normalization'] = 'batch'
-        kwargs.update(user_kwargs)
-        super().__init__(*args, **kwargs)
+    # data
+dm = RightDaVinciDataModule(
+    data_dir="/Users/annikabrundyn/Developer/da_vinci/daVinci_data",
+    frames_per_sample=1,
+    frames_to_drop=0,
+    is_color_input=True,
+    is_color_output=True,
+    extra_info=False,
+    batch_size=1,
+    num_workers=0,
+)
+dm.setup()
+
+img, target = next(iter(dm.train_dataloader()))
+
+model = UNet2D()
+
+print("hi")
