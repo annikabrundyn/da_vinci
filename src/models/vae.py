@@ -12,7 +12,18 @@ from pl_bolts.models.autoencoders.components import (
     resnet50_encoder,
 )
 
-from pl_bolts.datamodules import CIFAR10DataModule, ImagenetDataModule, STL10DataModule
+from data.right_data import RightDaVinciDataModule
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from pl_bolts.models.autoencoders.components import ResNetDecoder, DecoderBlock
+
+
+from models.vae_components import Encoder, Decoder
+
+
 
 class VAE(pl.LightningModule):
     """
@@ -37,12 +48,16 @@ class VAE(pl.LightningModule):
     def __init__(
         self,
         input_height: int,
+        input_width: int,
+        output_height: int,
+        output_width: int,
         enc_type: str = 'resnet18',
         first_conv: bool = False,
         maxpool1: bool = False,
         enc_out_dim: int = 512,
         kl_coeff: float = 0.1,
         latent_dim: int = 256,
+        in_channels: int = 3,
         lr: float = 1e-4,
         **kwargs
     ):
@@ -68,32 +83,30 @@ class VAE(pl.LightningModule):
         self.kl_coeff = kl_coeff
         self.enc_out_dim = enc_out_dim
         self.latent_dim = latent_dim
+        self.in_channels = 3
+
         self.input_height = input_height
+        self.input_width = input_width
 
-        valid_encoders = {
-            'resnet18': {'enc': resnet18_encoder, 'dec': resnet18_decoder},
-            'resnet50': {'enc': resnet50_encoder, 'dec': resnet50_decoder},
-        }
+        self.output_height = output_height
+        self.output_width = output_width
 
-        if enc_type not in valid_encoders:
-            self.encoder = resnet18_encoder(first_conv, maxpool1)
-            self.decoder = resnet18_decoder(self.latent_dim, self.input_height, first_conv, maxpool1)
-        else:
-            self.encoder = valid_encoders[enc_type]['enc'](first_conv, maxpool1)
-            self.decoder = valid_encoders[enc_type]['dec'](self.latent_dim, self.input_height, first_conv, maxpool1)
+
+        self.encoder = self.init_encoder(self.enc_out_dim, self.latent_dim,
+                                         self.in_channels, self.input_height, self.input_width)
+        self.decoder = self.init_decoder(self.enc_out_dim, self.latent_dim,
+                                         self.in_channels, self.output_height, self.output_width)
 
         self.fc_mu = nn.Linear(self.enc_out_dim, self.latent_dim)
         self.fc_var = nn.Linear(self.enc_out_dim, self.latent_dim)
 
-    @staticmethod
-    def pretrained_weights_available():
-        return list(VAE.pretrained_urls.keys())
+    def init_encoder(self, hidden_dim, latent_dim, in_channels, input_height, input_width):
+        encoder = Encoder(hidden_dim, latent_dim, in_channels, input_height, input_width)
+        return encoder
 
-    def from_pretrained(self, checkpoint_name):
-        if checkpoint_name not in VAE.pretrained_urls:
-            raise KeyError(str(checkpoint_name) + ' not present in pretrained weights.')
-
-        return self.load_from_checkpoint(VAE.pretrained_urls[checkpoint_name], strict=False)
+    def init_decoder(self, hidden_dim, latent_dim, in_channels, output_height, output_width):
+        decoder = Decoder(hidden_dim, latent_dim, in_channels, output_height, output_width)
+        return decoder
 
     def forward(self, x):
         x = self.encoder(x)
@@ -171,40 +184,62 @@ class VAE(pl.LightningModule):
 
         parser.add_argument("--batch_size", type=int, default=256)
         parser.add_argument("--num_workers", type=int, default=8)
-        parser.add_argument("--data_dir", type=str, default=".")
+        parser.add_argument("--data_dir", type=str, default="/Users/annikabrundyn/Developer/da_vinci/daVinci_data")
+        parser.add_argument('--input_height', type=int, default=192)
+        parser.add_argument('--input_width', type=int, default=384, help='input image width')
+        parser.add_argument('--output_height', type=int, default=192)
+        parser.add_argument('--output_width', type=int, default=384)
+        parser.add_argument('--in_channels', type=int, default=3)
 
         return parser
 
 
-if __name__ == "__main__":
 
-    pl.seed_everything()
+if __name__ == "__main__":
+    # sets seed for numpy, torch, python.random and PYTHONHASHSEED
+    print("start right direct model")
+    pl.seed_everything(42)
 
     parser = ArgumentParser()
-    parser.add_argument("--dataset", default="cifar10", type=str, choices=["cifar10", "stl10", "imagenet"])
-    script_args, _ = parser.parse_known_args(args)
 
-    if script_args.dataset == "cifar10":
-        dm_cls = CIFAR10DataModule
-    elif script_args.dataset == "stl10":
-        dm_cls = STL10DataModule
-    elif script_args.dataset == "imagenet":
-        dm_cls = ImagenetDataModule
-    else:
-        raise ValueError(f"undefined dataset {script_args.dataset}")
-
-    parser = VAE.add_model_specific_args(parser)
+    # trainer args
     parser = pl.Trainer.add_argparse_args(parser)
-    args = parser.parse_args(args)
 
-    dm = dm_cls.from_argparse_args(args)
-    args.input_height = dm.size()[-1]
+    # model args
+    parser = VAE.add_model_specific_args(parser)
+    args = parser.parse_args()
 
-    if args.max_steps == -1:
-        args.max_steps = None
+    # data
+    dm = RightDaVinciDataModule(
+        args.data_dir,
+        frames_per_sample=1,
+        frames_to_drop=0,
+        is_color_input=True,
+        is_color_output=True,
+        extra_info=False,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+    )
+    dm.setup()
+    print("dm setup")
 
-    model = VAE(**vars(args))
+    # sanity check
+    print("size of trainset:", len(dm.train_samples))
+    print("size of validset:", len(dm.val_samples))
+    print("size of testset:", len(dm.test_samples))
 
+    img, target = next(iter(dm.train_dataloader()))
+    print(img.shape)
+    print(target.shape)
+
+    args.input_height = 192
+
+    # model
+    model = VAE(**args.__dict__)
+    print("model instance created")
+    print("lightning version", pl.__version__)
+
+    # train
     trainer = pl.Trainer.from_argparse_args(args)
+    print("trainer created")
     trainer.fit(model, dm)
-
