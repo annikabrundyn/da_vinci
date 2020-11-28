@@ -7,7 +7,7 @@ from torch.nn import functional as F
 
 from data.right_data import RightDaVinciDataModule
 from models.right_view.vae.vae_components import Encoder, Decoder
-
+from models.callbacks.vae_callback import VAERightCallback
 from pytorch_lightning.metrics.functional import ssim, psnr
 
 
@@ -137,7 +137,6 @@ class VAE(pl.LightningModule):
         if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
             self._log_images(x, y, y_hat, step_name='valid')
 
-
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
@@ -221,5 +220,6 @@ if __name__ == "__main__":
 
     # train
     trainer = pl.Trainer.from_argparse_args(args)
+    #trainer = pl.Trainer.from_argparse_args(args, callbacks = [VAERightCallback(args.save_img_freq)])
     print("trainer created")
     trainer.fit(model, dm)
