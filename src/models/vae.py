@@ -17,7 +17,6 @@ class VAE(pl.LightningModule):
         input_width: int = 384,
         output_height: int = 192,
         output_width: int = 384,
-        enc_type: str = 'resnet18',
         first_conv: bool = False,
         maxpool1: bool = False,
         enc_out_dim: int = 512,
@@ -30,7 +29,6 @@ class VAE(pl.LightningModule):
         """
         Args:
             input_height: height of the images
-            enc_type: option between resnet18 or resnet50
             first_conv: use standard kernel_size 7, stride 2 at start or
                 replace it with kernel_size 3, stride 1 conv
             maxpool1: use standard maxpool to reduce spatial dim of feat by a factor of 2
@@ -136,7 +134,6 @@ class VAE(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
 
-        parser.add_argument("--enc_type", type=str, default='resnet18', help="resnet18/resnet50")
         parser.add_argument("--first_conv", action='store_true')
         parser.add_argument("--maxpool1", action='store_true')
         parser.add_argument("--lr", type=float, default=1e-4)
