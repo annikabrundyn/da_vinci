@@ -5,52 +5,18 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from pl_bolts.models.autoencoders.components import (
-    resnet18_decoder,
-    resnet18_encoder,
-    resnet50_decoder,
-    resnet50_encoder,
-)
-
 from data.right_data import RightDaVinciDataModule
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-from pl_bolts.models.autoencoders.components import ResNetDecoder, DecoderBlock
-
-
 from models.vae_components import Encoder, Decoder
 
 
-
 class VAE(pl.LightningModule):
-    """
-    Standard VAE with Gaussian Prior and approx posterior.
-    Model is available pretrained on different datasets:
-    Example::
-        # not pretrained
-        vae = VAE()
-        # pretrained on cifar10
-        vae = VAE.from_pretrained('cifar10-resnet18')
-        # pretrained on stl10
-        vae = VAE.from_pretrained('stl10-resnet18')
-    """
-
-    pretrained_urls = {
-        'cifar10-resnet18':
-            'https://pl-bolts-weights.s3.us-east-2.amazonaws.com/vae/vae-cifar10/checkpoints/epoch%3D89.ckpt',
-        'stl10-resnet18':
-            'https://pl-bolts-weights.s3.us-east-2.amazonaws.com/vae/vae-stl10/checkpoints/epoch%3D89.ckpt'
-    }
 
     def __init__(
         self,
-        input_height: int,
-        input_width: int,
-        output_height: int,
-        output_width: int,
+        input_height: int = 192,
+        input_width: int = 384,
+        output_height: int = 192,
+        output_width: int = 384,
         enc_type: str = 'resnet18',
         first_conv: bool = False,
         maxpool1: bool = False,
@@ -175,10 +141,7 @@ class VAE(pl.LightningModule):
         parser.add_argument("--maxpool1", action='store_true')
         parser.add_argument("--lr", type=float, default=1e-4)
 
-        parser.add_argument(
-            "--enc_out_dim", type=int, default=512,
-            help="512 for resnet18, 2048 for bigger resnets, adjust for wider resnets"
-        )
+        parser.add_argument("--enc_out_dim", type=int, default=512,help="512 for resnet18, 2048 for bigger resnets, adjust for wider resnets")
         parser.add_argument("--kl_coeff", type=float, default=0.1)
         parser.add_argument("--latent_dim", type=int, default=256)
 
@@ -231,8 +194,6 @@ if __name__ == "__main__":
     img, target = next(iter(dm.train_dataloader()))
     print(img.shape)
     print(target.shape)
-
-    args.input_height = 192
 
     # model
     model = VAE(**args.__dict__)
