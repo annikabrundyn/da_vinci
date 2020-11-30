@@ -23,7 +23,8 @@ class Encoder(torch.nn.Module):
         self.pooling_size = 4
         conv_out_dim = self._calculate_output_dim(in_channels, input_height, input_width, self.pooling_size)
 
-        self.fc1 = DenseBlock(conv_out_dim, hidden_dim)
+        self.fc1 = nn.Linear(conv_out_dim, hidden_dim)
+        #self.fc1 = DenseBlock(conv_out_dim, hidden_dim)
         #self.fc2 = DenseBlock(hidden_dim, hidden_dim)
 
         #self.fc_z_out = nn.Linear(hidden_dim, latent_dim)
