@@ -21,13 +21,16 @@ class VAEModel(pl.LightningModule):
             self,
             frames_per_sample: int = 1,
             frames_to_drop: int = 0,
-            enc_out_dim: int = 512,
-            latent_dim: int = 256,
+            enc_out_dim: int = 128,
+            latent_dim: int = 128,
             kl_coeff: float = 0.1,
             lr: float = 0.001,
             log_tb_imgs: bool = False,
             tb_img_freq: int = 10000,
             save_img_freq: int = 50,
+            num_layers: int = 5,
+            features_start: int = 64,
+            bilinear: bool = False,
             **kwargs
     ):
         super().__init__()
@@ -39,11 +42,14 @@ class VAEModel(pl.LightningModule):
 
         # TODO: generalize for multi frame
         self.in_channels = 3
-        self.out_channels = 3
 
-        # TODO change num_classes name and add ability to modify architecture
-        self.net = VariationalUNet(num_classes=self.out_channels,
-                                   input_channels=self.in_channels)
+        self.net = VariationalUNet(input_channels=self.in_channels,
+                                   output_channels=3,
+                                   enc_out_dim=enc_out_dim,
+                                   latent_dim=latent_dim,
+                                   num_layers=num_layers,
+                                   features_start=features_start,
+                                   bilinear=bilinear)
 
     def forward(self, x):
         return self.net(x)
@@ -51,8 +57,8 @@ class VAEModel(pl.LightningModule):
     def step(self, batch, batch_idx):
         img, target = batch
         pred, kl = self(img)
-        mse_loss = F.mse_loss(pred.squeeze(), target.squeeze())
 
+        mse_loss = F.mse_loss(pred.squeeze(), target.squeeze())
         loss = mse_loss + kl
 
         ssim_val = ssim(pred, target)
@@ -85,7 +91,9 @@ class VAEModel(pl.LightningModule):
         parser.add_argument("--data_dir", type=str, default="/Users/annikabrundyn/Developer/da_vinci/daVinci_data", help="path to davinci data")
         parser.add_argument("--frames_per_sample", type=int, default=1, help="number of frames to include in each sample")
         parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
-        parser.add_argument("--num_classes", type=int, default=1, help="output channels")
+        parser.add_argument("--enc_out_dim", type=int, default=128)
+        parser.add_argument("--latent_dim", type=int, default=128)
+        parser.add_argument("--kl_coeff", type=float, default=0.1)
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--output_img_freq", type=int, default=10000)
         parser.add_argument("--num_workers", type=int, default=8)

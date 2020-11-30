@@ -6,18 +6,12 @@ from data.right_data import RightDaVinciDataModule
 
 
 class VariationalUNet(nn.Module):
-    """
-    Args:
-        num_classes: Number of output classes required
-        num_layers: Number of layers in each side of U-net (default 5)
-        features_start: Number of features in first layer (default 64)
-        bilinear (bool): Whether to use bilinear interpolation or transposed convolutions (default) for upsampling.
-    """
     def __init__(
             self,
-            num_classes: int,
             input_channels: int,
-            latent_dim: int = 128,
+            output_channels: int = 3,
+            enc_out_dim: int = 512,
+            latent_dim: int = 256,
             num_layers: int = 5,
             features_start: int = 64,
             bilinear: bool = False
@@ -37,12 +31,16 @@ class VariationalUNet(nn.Module):
             layers.append(Up(feats, feats // 2, bilinear))
             feats //= 2
 
-        layers.append(nn.Conv2d(feats, num_classes, kernel_size=1))
+        layers.append(nn.Conv2d(feats, output_channels, kernel_size=1))
 
         self.layers = nn.ModuleList(layers)
 
-        self.mu = nn.Linear(1024 * 12 * 24, self.hparams.latent_dim)
-        self.logvar = nn.Linear(1024 * 12 * 24, self.hparams.latent_dim)
+        #  does this unnecessarily blow things up - just go direct?
+        self.fc = nn.Linear(1024 * 12 * 24, enc_out_dim)
+
+        self.mu = nn.Linear(enc_out_dim, latent_dim)
+        self.logvar = nn.Linear(enc_out_dim, latent_dim)
+
         self.log_scale = nn.Parameter(torch.tensor([0.0]))
 
     def gaussian_like(self, mean, logscale, sample):
@@ -61,6 +59,7 @@ class VariationalUNet(nn.Module):
         # embedding
         emb = xi[-1]
         emb = emb.view(emb.size(0), -1)
+        emb = self.fc(emb)
 
         # variational
         mu = self.mu(emb)
