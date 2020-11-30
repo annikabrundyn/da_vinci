@@ -153,24 +153,19 @@ class VAE(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-
         parser.add_argument("--lr", type=float, default=0.001)
-
         parser.add_argument("--enc_out_dim", type=int, default=512)
         parser.add_argument("--kl_coeff", type=float, default=0.1)
         parser.add_argument("--latent_dim", type=int, default=256)
-
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
         parser.add_argument("--save_img_freq", type=int, default=50)
-
         parser.add_argument("--data_dir", type=str, default="/Users/annikabrundyn/Developer/da_vinci/daVinci_data")
         parser.add_argument('--input_height', type=int, default=192)
         parser.add_argument('--input_width', type=int, default=384, help='input image width')
         parser.add_argument('--output_height', type=int, default=192)
         parser.add_argument('--output_width', type=int, default=384)
-
-        parser.add_argument("--batch_size", type=int, default=32)
+        parser.add_argument("--batch_size", type=int, default=16)
         parser.add_argument("--num_workers", type=int, default=8)
 
         return parser
@@ -190,6 +185,8 @@ if __name__ == "__main__":
     # model args
     parser = VAE.add_model_specific_args(parser)
     args = parser.parse_args()
+
+    print(args.batch_size)
 
     # data
     dm = RightDaVinciDataModule(
