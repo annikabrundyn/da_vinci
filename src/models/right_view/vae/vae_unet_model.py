@@ -106,7 +106,6 @@ class VAEModel(pl.LightningModule):
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
-    print("start right direct model")
     pl.seed_everything(42)
 
     parser = ArgumentParser()
@@ -117,8 +116,6 @@ if __name__ == "__main__":
     # model args
     parser = VAEModel.add_model_specific_args(parser)
     args = parser.parse_args()
-
-    print(args.batch_size)
 
     # data
     dm = RightDaVinciDataModule(
