@@ -2,18 +2,13 @@ import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
-import os.path
-import numpy as np
-
 from argparse import ArgumentParser
 
 from data.right_data import RightDaVinciDataModule
 from pytorch_lightning.metrics.functional import ssim, psnr
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import ImageGrid
-
 from models.right_view.vae.vae_unet import VariationalUNet
+from models.callbacks.vae_callback import VAERightCallback
 
 
 class VAEModel(pl.LightningModule):
@@ -154,7 +149,7 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args)
-    #trainer = pl.Trainer.from_argparse_args(args, callbacks = [VAERightCallback(args.save_img_freq)])
+    #trainer = pl.Trainer.from_argparse_args(args)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks = [VAERightCallback(args.save_img_freq)])
     print("trainer created")
     trainer.fit(model, dm)

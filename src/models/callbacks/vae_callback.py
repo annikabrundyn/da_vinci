@@ -37,7 +37,7 @@ class VAERightCallback(Callback):
 
     def on_validation_epoch_end(self, trainer, pl_module):
         '''save only the predicted '''
-        if (trainer.current_epoch + 1) % self.save_img_freq == 0:
+        if trainer.current_epoch % self.save_img_freq == 0:
             curr_epoch_path = os.path.join(self.preds_dir_path, f"epoch_{trainer.current_epoch}")
             if not os.path.exists(curr_epoch_path):
                 os.makedirs(curr_epoch_path)
@@ -45,7 +45,7 @@ class VAERightCallback(Callback):
             batch_idx = 0
             for img, _ in trainer.datamodule.vis_img_dataloader():
                 img = img.to(pl_module.device)
-                pred = pl_module(img)
+                pred, _ = pl_module(img)
                 fp = os.path.join(curr_epoch_path, f"prediction_{batch_idx}.png")
                 torchvision.utils.save_image(pred.squeeze(0), fp=fp)
                 batch_idx += 1
