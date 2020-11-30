@@ -154,9 +154,9 @@ class VAE(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--lr", type=float, default=0.001)
-        parser.add_argument("--enc_out_dim", type=int, default=512)
+        parser.add_argument("--enc_out_dim", type=int, default=128)
         parser.add_argument("--kl_coeff", type=float, default=0.1)
-        parser.add_argument("--latent_dim", type=int, default=256)
+        parser.add_argument("--latent_dim", type=int, default=128)
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
         parser.add_argument("--save_img_freq", type=int, default=50)
