@@ -8,7 +8,6 @@ from data.right_data import RightDaVinciDataModule
 from pytorch_lightning.metrics.functional import ssim, psnr
 
 from models.right_view.vae.vae_unet import VariationalUNet
-from models.callbacks.vae_callback import VAERightCallback
 
 
 class VAEModel(pl.LightningModule):
@@ -146,7 +145,6 @@ if __name__ == "__main__":
     # model
     model = VAEModel(**args.__dict__)
     print("model instance created")
-    print("lightning version", pl.__version__)
 
     # train
     trainer = pl.Trainer.from_argparse_args(args)

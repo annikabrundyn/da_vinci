@@ -41,7 +41,7 @@ class VariationalUNet(nn.Module):
         self.fc_logvar = nn.Linear(enc_out_dim, latent_dim)
 
         # initialize weights to try prevent large std and nan values
-        self.fc_logvar.weight.data.uniform_(-0.01, 0.01)
+        self.fc_logvar.weight.data.uniform_(-0.001, 0.001)
 
         self.projection_1 = nn.Linear(latent_dim, 1024 * 12 * 24)
         self.projection_2 = nn.Sequential(
