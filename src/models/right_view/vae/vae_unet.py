@@ -61,8 +61,9 @@ class VariationalUNet(nn.Module):
         return log_pxz
 
     def forward(self, x):
+
+        # down path / encoder
         xi = [self.layers[0](x)]
-        # Down path
         for layer in self.layers[1:self.num_layers]:
             output = layer(xi[-1])
             xi.append(output)
@@ -81,10 +82,9 @@ class VariationalUNet(nn.Module):
         P = torch.distributions.Normal(torch.zeros_like(mu), torch.ones_like(std))
         Q = torch.distributions.Normal(mu, std)
         z = Q.rsample()
-        #kl = (Q.log_prob(z) - P.log_prob(z)).nansum(-1)
         kl = (Q.log_prob(z) - P.log_prob(z)).sum(-1)
-        #kl = self.kl_coeff * kl.mean()
 
+        # project emb and z for right decoder dimensions
         first_dec_out = xi[-1]
         z = self.projection_1(z)
         z = z.view(first_dec_out.size())
@@ -93,17 +93,13 @@ class VariationalUNet(nn.Module):
         first_dec_out = self.projection_2(first_dec_out)
         xi[-1] = first_dec_out
 
-        # Up path
+        # up path / decoder
         for i, layer in enumerate(self.layers[self.num_layers:-1]):
             decoder_out = xi[-1]
             encoder_matching = xi[-2 - i]
             xi[-1] = layer(decoder_out, encoder_matching)
         # Final conv layer of UNet
         output = self.layers[-1](xi[-1])
-
-        # reconstruction
-        # log_pxz = self.gaussian_like(output, self.log_scale, x)
-        # elbo_loss = (kl - log_pxz).mean()
 
         return output, kl, std.min().detach(), std.max().detach()
 

@@ -101,21 +101,22 @@ class VAE(pl.LightningModule):
         x, y = batch
         z, y_hat, p, q = self._run_step(x)
 
-        recon_loss = F.mse_loss(y_hat, y, reduction='mean')
+        mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
 
         log_qz = q.log_prob(z)
         log_pz = p.log_prob(z)
 
         kl = log_qz - log_pz
-        kl = kl.mean()
+        #kl = kl.mean()
         kl *= self.kl_coeff
 
-        loss = kl + recon_loss
+        loss = kl + mse_loss
+        loss = loss.mean()
 
         ssim_val = ssim(y_hat, y)
 
         logs = {
-            "recon_loss": recon_loss,
+            "mse_loss": mse_loss,
             "kl": kl,
             "loss": loss,
             "ssim": ssim_val,

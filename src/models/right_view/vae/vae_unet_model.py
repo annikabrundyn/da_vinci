@@ -151,6 +151,5 @@ if __name__ == "__main__":
 
     # train
     trainer = pl.Trainer.from_argparse_args(args)
-    #trainer = pl.Trainer.from_argparse_args(args, callbacks = [VAERightCallback(args.save_img_freq)])
     print("trainer created")
     trainer.fit(model, dm)
