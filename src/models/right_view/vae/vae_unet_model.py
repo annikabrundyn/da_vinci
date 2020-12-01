@@ -61,8 +61,8 @@ class VAEModel(pl.LightningModule):
         ssim_val = ssim(pred, target)
 
         logs = {
-            "mse_loss": mse_loss,
-            "kl": kl,
+            "mse_loss": mse_loss.mean(),
+            "kl": kl.mean(),
             "loss": loss,
             "ssim": ssim_val,
             "std_min": std_min,
