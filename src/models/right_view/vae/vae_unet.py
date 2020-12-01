@@ -59,7 +59,6 @@ class VariationalUNet(nn.Module):
         return log_pxz
 
     def forward(self, x):
-
         # down path / encoder
         xi = [self.layers[0](x)]
         for layer in self.layers[1:self.num_layers]:
