@@ -40,6 +40,12 @@ class VariationalUNet(nn.Module):
 
         self.mu = nn.Linear(enc_out_dim, latent_dim)
         self.logvar = nn.Linear(enc_out_dim, latent_dim)
+        self.projection_1 = nn.Linear(latent_dim, 1024 * 12 * 24)
+        self.projection_2 = nn.Sequential(
+            nn.Conv2d(2 * 1024, 1024, kernel_size=3, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(inplace=True)
+        )
 
         self.log_scale = nn.Parameter(torch.tensor([0.0]))
 
@@ -72,9 +78,19 @@ class VariationalUNet(nn.Module):
         z = Q.rsample()
         kl = (P.log_prob(z) - Q.log_prob(z)).sum(-1)
 
+        first_dec_out = xi[-1]
+        z = self.projection_1(z)
+        z = z.view(first_dec_out.size())
+
+        first_dec_out = torch.cat([first_dec_out, z], dim=1)
+        first_dec_out = self.projection_2(first_dec_out)
+        xi[-1] = first_dec_out
+
         # Up path
         for i, layer in enumerate(self.layers[self.num_layers:-1]):
-            xi[-1] = layer(xi[-1], xi[-2 - i])
+            decoder_out = xi[-1]
+            encoder_matching = xi[-2 - i]
+            xi[-1] = layer(decoder_out, encoder_matching)
         # Final conv layer of UNet
         output = self.layers[-1](xi[-1])
 
