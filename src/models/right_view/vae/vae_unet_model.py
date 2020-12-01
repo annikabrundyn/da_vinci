@@ -53,7 +53,7 @@ class VAEModel(pl.LightningModule):
         img, target = batch
         pred, kl = self(img)
 
-        mse_loss = F.mse_loss(pred.squeeze(), target.squeeze())
+        mse_loss = F.mse_loss(pred, target)
         loss = mse_loss + kl
 
         ssim_val = ssim(pred, target)
