@@ -42,6 +42,8 @@ class VariationalUNet(nn.Module):
 
         self.fc_mu = nn.Linear(enc_out_dim, latent_dim)
         self.fc_logvar = nn.Linear(enc_out_dim, latent_dim)
+        self.fc_logvar.weight.data.uniform_(-0.01, 0.01)
+
         self.projection_1 = nn.Linear(latent_dim, 1024 * 12 * 24)
         self.projection_2 = nn.Sequential(
             nn.Conv2d(2 * 1024, 1024, kernel_size=3, padding=1),
@@ -62,7 +64,8 @@ class VariationalUNet(nn.Module):
         xi = [self.layers[0](x)]
         # Down path
         for layer in self.layers[1:self.num_layers]:
-            xi.append(layer(xi[-1]))
+            output = layer(xi[-1])
+            xi.append(output)
 
         # embedding
         emb = xi[-1]
@@ -74,14 +77,13 @@ class VariationalUNet(nn.Module):
         logvar = self.fc_logvar(emb)
 
         # kl
-        #std = torch.exp(logvar / 2)
-        std = torch.exp(logvar / 5)
+        std = torch.exp(logvar / 2)
         P = torch.distributions.Normal(torch.zeros_like(mu), torch.ones_like(std))
         Q = torch.distributions.Normal(mu, std)
         z = Q.rsample()
         #kl = (Q.log_prob(z) - P.log_prob(z)).nansum(-1)
         kl = (Q.log_prob(z) - P.log_prob(z)).sum(-1)
-        kl = self.kl_coeff * kl.mean()
+        #kl = self.kl_coeff * kl.mean()
 
         first_dec_out = xi[-1]
         z = self.projection_1(z)
@@ -103,7 +105,7 @@ class VariationalUNet(nn.Module):
         # log_pxz = self.gaussian_like(output, self.log_scale, x)
         # elbo_loss = (kl - log_pxz).mean()
 
-        return output, kl
+        return output, kl, std.min().detach(), std.max().detach()
 
 
 class DoubleConv(nn.Module):

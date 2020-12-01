@@ -51,10 +51,12 @@ class VAEModel(pl.LightningModule):
 
     def step(self, batch, batch_idx):
         img, target = batch
-        pred, kl = self(img)
+        pred, kl, std_min, std_max = self(img)
 
-        mse_loss = F.mse_loss(pred, target)
-        loss = mse_loss + kl
+        mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
+        #mse_loss = F.mse_loss(pred, target)
+        loss = mse_loss + (self.hparams.kl_coeff*kl)
+        loss = loss.mean()
 
         ssim_val = ssim(pred, target)
 
@@ -62,7 +64,9 @@ class VAEModel(pl.LightningModule):
             "mse_loss": mse_loss,
             "kl": kl,
             "loss": loss,
-            "ssim": ssim_val
+            "ssim": ssim_val,
+            "std_min": std_min,
+            "std_max": std_max,
         }
 
         return loss, logs
@@ -146,7 +150,7 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # train
-    #trainer = pl.Trainer.from_argparse_args(args)
-    trainer = pl.Trainer.from_argparse_args(args, callbacks = [VAERightCallback(args.save_img_freq)])
+    trainer = pl.Trainer.from_argparse_args(args)
+    #trainer = pl.Trainer.from_argparse_args(args, callbacks = [VAERightCallback(args.save_img_freq)])
     print("trainer created")
     trainer.fit(model, dm)
