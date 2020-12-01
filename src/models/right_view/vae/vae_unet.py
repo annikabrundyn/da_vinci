@@ -51,8 +51,6 @@ class VariationalUNet(nn.Module):
             nn.ReLU(inplace=True)
         )
 
-        self.log_scale = nn.Parameter(torch.tensor([0.0]))
-
     def gaussian_like(self, mean, logscale, sample):
         scale = torch.exp(logscale)
         dist = torch.distributions.Normal(mean, scale)
