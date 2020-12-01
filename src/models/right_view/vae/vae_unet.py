@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from data.right_data import RightDaVinciDataModule
-
 
 class VariationalUNet(nn.Module):
     def __init__(
@@ -37,11 +35,12 @@ class VariationalUNet(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
-        #  does this unnecessarily blow things up - just go direct?
         self.fc = nn.Linear(1024 * 12 * 24, enc_out_dim)
 
         self.fc_mu = nn.Linear(enc_out_dim, latent_dim)
         self.fc_logvar = nn.Linear(enc_out_dim, latent_dim)
+
+        # initialize weights to try prevent large std and nan values
         self.fc_logvar.weight.data.uniform_(-0.01, 0.01)
 
         self.projection_1 = nn.Linear(latent_dim, 1024 * 12 * 24)
@@ -81,7 +80,7 @@ class VariationalUNet(nn.Module):
         z = Q.rsample()
         kl = (Q.log_prob(z) - P.log_prob(z)).sum(-1)
 
-        # project emb and z for right decoder dimensions
+        # project emb and z to match original decoder dims
         first_dec_out = xi[-1]
         z = self.projection_1(z)
         z = z.view(first_dec_out.size())

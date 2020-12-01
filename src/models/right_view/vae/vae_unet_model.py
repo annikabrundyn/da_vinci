@@ -54,7 +54,6 @@ class VAEModel(pl.LightningModule):
         pred, kl, std_min, std_max = self(img)
 
         mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
-        #mse_loss = F.mse_loss(pred, target)
         loss = mse_loss + (self.hparams.kl_coeff*kl)
         loss = loss.mean()
 
