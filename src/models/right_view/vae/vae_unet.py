@@ -8,8 +8,8 @@ class VariationalUNet(nn.Module):
             self,
             input_channels: int,
             output_channels: int = 3,
-            enc_out_dim: int = 512,
-            latent_dim: int = 256,
+            enc_out_dim: int = 128,
+            latent_dim: int = 128,
             kl_coeff: float = 0.01,
             num_layers: int = 5,
             features_start: int = 64,
@@ -35,13 +35,12 @@ class VariationalUNet(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
-        self.fc = nn.Linear(1024 * 12 * 24, enc_out_dim)
-
-        self.fc_mu = nn.Linear(enc_out_dim, latent_dim)
-        self.fc_logvar = nn.Linear(enc_out_dim, latent_dim)
+        self.fc_mu = nn.Linear(1024 * 12 * 24, latent_dim)
+        self.fc_logvar = nn.Linear(1024 * 12 * 24, latent_dim)
 
         # initialize weights to try prevent large std and nan values
-        self.fc_logvar.weight.data.uniform_(-0.001, 0.001)
+        self.fc_mu.weight.data.uniform_(-0.01, 0.01)
+        self.fc_logvar.weight.data.uniform_(-0.01, 0.01)
 
         self.projection_1 = nn.Linear(latent_dim, 1024 * 12 * 24)
         self.projection_2 = nn.Sequential(
@@ -57,7 +56,11 @@ class VariationalUNet(nn.Module):
         log_pxz = log_pxz.sum(dim=(1,2,3))
         return log_pxz
 
-    def forward(self, x):
+    def forward(self, x, y):
+
+        # concat x and y
+        x = torch.cat([x, y], dim=1)
+
         # down path / encoder
         xi = [self.layers[0](x)]
         for layer in self.layers[1:self.num_layers]:
@@ -67,18 +70,14 @@ class VariationalUNet(nn.Module):
         # embedding
         emb = xi[-1]
         emb = emb.view(emb.size(0), -1)
-        emb = self.fc(emb)
 
         # variational
         mu = self.fc_mu(emb)
         logvar = self.fc_logvar(emb)
 
         # kl
-        std = torch.exp(logvar / 2)
-        P = torch.distributions.Normal(torch.zeros_like(mu), torch.ones_like(std))
-        Q = torch.distributions.Normal(mu, std)
-        z = Q.rsample()
-        kl = (Q.log_prob(z) - P.log_prob(z)).sum(-1)
+        z = self._reparameterize(mu, logvar)
+        kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), 1)
 
         # project emb and z to match original decoder dims
         first_dec_out = xi[-1]
@@ -97,8 +96,16 @@ class VariationalUNet(nn.Module):
         # Final conv layer of UNet
         output = self.layers[-1](xi[-1])
 
-        return output, kl, std.min().detach(), std.max().detach()
+        return output, kl
 
+    def _reparameterize(self, mu, logvar):
+        if self.training:
+            std = torch.exp(0.5 * logvar)
+            eps = torch.randn_like(std)
+            z = mu + std * eps
+        else:
+            z = mu
+        return z
 
 class DoubleConv(nn.Module):
     """

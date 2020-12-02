@@ -17,7 +17,7 @@ class VAEModel(pl.LightningModule):
             frames_to_drop: int = 0,
             enc_out_dim: int = 128,
             latent_dim: int = 128,
-            kl_coeff: float = 0.1,
+            kl_coeff: float = 0.00001,
             lr: float = 0.001,
             log_tb_imgs: bool = False,
             tb_img_freq: int = 10000,
@@ -35,7 +35,7 @@ class VAEModel(pl.LightningModule):
         self.save_hyperparameters()
 
         # TODO: generalize for multi frame
-        self.in_channels = 3
+        self.in_channels = 2*3
 
         self.net = VariationalUNet(input_channels=self.in_channels,
                                    output_channels=3,
@@ -45,16 +45,20 @@ class VAEModel(pl.LightningModule):
                                    features_start=features_start,
                                    bilinear=bilinear)
 
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, x, y):
+        return self.net(x, y)
 
     def step(self, batch, batch_idx):
         img, target = batch
-        pred, kl, std_min, std_max = self(img)
+        pred, kl = self(img, target)
 
         mse_loss = ((pred - target) ** 2).mean(dim=(1, 2, 3))
         loss = mse_loss + (self.hparams.kl_coeff*kl)
         loss = loss.mean()
+
+        print("kl: ", kl)
+        print("mse: ", mse_loss)
+        print("loss: ", loss)
 
         ssim_val = ssim(pred, target)
 
@@ -63,8 +67,6 @@ class VAEModel(pl.LightningModule):
             "kl": kl.mean(),
             "loss": loss,
             "ssim": ssim_val,
-            "std_min": std_min,
-            "std_max": std_max,
         }
 
         return loss, logs
@@ -90,7 +92,7 @@ class VAEModel(pl.LightningModule):
         parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
         parser.add_argument("--enc_out_dim", type=int, default=128)
         parser.add_argument("--latent_dim", type=int, default=128)
-        parser.add_argument("--kl_coeff", type=float, default=0.1)
+        parser.add_argument("--kl_coeff", type=float, default=0.00001)
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
