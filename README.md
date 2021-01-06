@@ -9,6 +9,9 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
+## Poster
+Please see this [poster](https://docs.google.com/presentation/d/1Qnxh49socrYeDhQzyGQ8H-rfmWyeNB7rH-u8-XRhKMc/edit?usp=sharing) for a brief introduction to the project.
+
 ### data.py
 
 This is where the DaVinciDataModule (dm) is defined. 
