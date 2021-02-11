@@ -127,10 +127,3 @@ class Up(nn.Module):
         # Concatenate along the channels axis
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
-
-
-print("hi")
-model = UNet(num_classes=3, input_channels=3)
-x = torch.rand(1, 3, 384, 192)
-xhat = model(x)
-print("done")
