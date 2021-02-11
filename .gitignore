@@ -136,3 +136,17 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+*.DS_Store
+
+daVinci_data
+
+grid_artifacts/
+
+*lightning_logs
+
+*cifar-10*
+
+*yaml
+
+.idea/
