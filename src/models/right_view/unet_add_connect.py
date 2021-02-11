@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class UNet(nn.Module):
+class ModifiedUNet(nn.Module):
     """
     Args:
         num_classes: Number of output classes required
