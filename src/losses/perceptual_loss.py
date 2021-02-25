@@ -36,3 +36,8 @@ class Perceptual(nn.Module):
         feat_gt = self.extractor(y_true)
 
         return sum([self.l1(feat_pred[i], feat_gt[i]) for i in range(3)])
+
+
+
+loss = Perceptual()
+print("hey")
