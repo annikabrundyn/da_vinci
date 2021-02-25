@@ -67,6 +67,7 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback(args.save_img_freq)])
+    # trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback(args.save_img_freq)])
+    trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm)
