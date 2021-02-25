@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class DoubleConv(nn.Module):
+class DoubleConvMF(nn.Module):
     """
     [ Conv2d => BatchNorm (optional) => ReLU ] x 2
     """
@@ -20,10 +20,23 @@ class DoubleConv(nn.Module):
         )
 
     def forward(self, x):
-        return self.net(x)
+        """
+        x -> (batch, frames, channels, height, width)
+        """
+        # (b, f, c, h, w) -> (bf, c, h, w)
+        b, f, c, h, w = x.size()
+        x = x.view(-1, c, h, w)
+
+        x = self.net(x)
+
+        # (bf, c, h, w) -> (b, f, c, h, w)
+        _, c, h, w = x.size()
+        x = x.view(b, f, c, h, w)
+
+        return x
 
 
-class Down(nn.Module):
+class DownMF(nn.Module):
     """
     Downscale with MaxPool => DoubleConvolution block
     """
@@ -36,7 +49,17 @@ class Down(nn.Module):
         )
 
     def forward(self, x):
-        return self.net(x)
+        # (b, f, c, h, w) -> (bf, c, h, w)
+        b, f, c, h, w = x.size()
+        x = x.view(-1, c, h, w)
+
+        x = self.net(x)
+
+        # (bf, c, h, w) -> (b, f, c, h, w)
+        _, c, h, w = x.size()
+        x = x.view(b, f, c, h, w)
+
+        return x
 
 
 class Up(nn.Module):
@@ -70,3 +93,23 @@ class Up(nn.Module):
         # Concatenate along the channels axis
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
+
+
+class DoubleConv(nn.Module):
+    """
+    [ Conv2d => BatchNorm (optional) => ReLU ] x 2
+    """
+
+    def __init__(self, in_ch: int, out_ch: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_ch),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        return self.net(x)
