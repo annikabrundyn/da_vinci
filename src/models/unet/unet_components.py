@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 class DoubleConvMF(nn.Module):
     """
+    Multiframe version
     [ Conv2d => BatchNorm (optional) => ReLU ] x 2
     """
 
@@ -38,6 +39,7 @@ class DoubleConvMF(nn.Module):
 
 class DownMF(nn.Module):
     """
+    Multiframe version
     Downscale with MaxPool => DoubleConvolution block
     """
 
