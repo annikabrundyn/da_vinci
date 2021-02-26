@@ -82,6 +82,6 @@ class MultiFrameUNet(nn.Module):
         return pred_right
 
 
-x = torch.rand(2, 5, 3, 100, 100)
-model = MultiFrameUNet(num_frames = 5, combine_fn="max")
-out = model(x)
+# x = torch.rand(2, 5, 3, 100, 100)
+# model = MultiFrameUNet(num_frames = 5, combine_fn="max")
+# out = model(x)

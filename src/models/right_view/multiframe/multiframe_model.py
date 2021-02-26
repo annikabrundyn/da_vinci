@@ -17,6 +17,8 @@ from data.multiframe_data import MFDaVinciDataModule
 from models.right_view.multiframe.multiframe_unet import MultiFrameUNet
 from losses import Perceptual, L1_Perceptual, L1_SSIM
 
+from pytorch_lightning.loggers.neptune import NeptuneLogger
+
 
 class MultiFrameModel(pl.LightningModule):
     def __init__(
@@ -51,13 +53,15 @@ class MultiFrameModel(pl.LightningModule):
     def _determine_loss_fn(self):
         if self.loss == "l1":
             self.criterion = torch.nn.L1Loss()
+        elif self.loss == "mse":
+            self.criterion = torch.nn.MSELoss()
         elif self.loss == "ssim":
             self.criterion = SSIM()
         elif self.loss == "perceptual":
             self.criterion = Perceptual()
         elif self.loss == "l1_perceptual":
             self.criterion = L1_Perceptual()
-        elif self.loss == "L1_SSIM":
+        elif self.loss == "l1_ssim":
             self.criterion = L1_SSIM()
         else:
             print("Using MSE Loss")
@@ -72,16 +76,13 @@ class MultiFrameModel(pl.LightningModule):
         img, target = batch
         pred = self(img)
 
-        loss_val = self.criterion(pred.squeeze(), target.squeeze())
-        self.log('train_loss', loss_val)
-
-        # log images
-        # if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
-        #     self._log_images(img, target, pred, extra_info, step_name='train')
-
-        # metrics
+        loss_val = self.criterion(pred, target)
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
+
+        # TODO: is there a clean way to do this
+        #logs = {'train_loss': loss_val, 'train_ssim': ssim_val, 'train_psnr': psnr_val}
+        self.log('train_loss', loss_val)
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
 
@@ -90,62 +91,44 @@ class MultiFrameModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         img, target = batch
         pred = self(img)
-        loss_val = self.criterion(pred.squeeze(), target.squeeze())
-        self.log('valid_loss', loss_val)
 
-        # log predicted images
-        # if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
-        #     self._log_images(img, target, pred, extra_info, step_name='valid')
-
-        # metrics
+        loss_val = self.criterion(pred, target)
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-        self.log('valid_ssim', ssim_val)
-        self.log('valid_psnr', psnr_val)
+
+        # TODO: find cleaner way
+        # logs = {'val_loss': loss_val, 'val_ssim': ssim_val, 'val_psnr': psnr_val}
+        self.log('val_loss', loss_val)
+        self.log('val_ssim', ssim_val)
+        self.log('val_psnr', psnr_val)
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
         return [opt]
 
-    def _log_images(self, img, target, pred, extra_info, step_name, limit=1):
-        # TODO: Randomly select image from batch instead of first image?
-        img = img[:limit].squeeze(0)
-        target = target[:limit].squeeze(0)
-        pred = pred[:limit].squeeze(0)
-        folder_name = extra_info['image_set'][0]
-        frame_nums = extra_info['frame_nums'][0]
-
-        if self.total_num_frames > 1:
-            if self.is_color_input:
-                img = img.reshape(self.total_num_frames, 3, img.shape[1], img.shape[2])
-            else:
-                img = img.reshape(self.total_num_frames, 1, img.shape[1], img.shape[2])
-        img = torchvision.utils.make_grid(img, nrow=1)
-
-        self.logger.experiment.add_image(f'{step_name}_input_images', img, self.trainer.global_step)
-        self.logger.experiment.add_image(f'{step_name}_target', target, self.trainer.global_step)
-        self.logger.experiment.add_image(f'{step_name}_pred', pred, self.trainer.global_step)
-        self.logger.experiment.add_text(f'{step_name}_img_folder_path', f'{folder_name}: {frame_nums}', self.trainer.global_step)
-
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
+
+        # Required arguments
         parser.add_argument("--data_dir", type=str, help="path to davinci data")
-        parser.add_argument("--num_frames", type=int, help="consecutive frames to include")
-        parser.add_argument("--combine_fn", type=str, help="")
-        parser.add_argument("--loss", type=str, help="")
+        parser.add_argument("--num_frames", type=int, help="number of consecutive frames to include")
+        parser.add_argument("--combine_fn", type=str, help="how to combine multiple frames")
+        parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'L1_SSIM'], help="loss function")
+        parser.add_argument("--bilinear", action='store_true', help="bilinear (True) vs. transposed convolution (False)")
+        parser.add_argument("--num_layers", type=int, help="number of layers/blocks in u-net")
+
+        # hyperparameters with a default value
+        parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
         parser.add_argument("--batch_size", type=int, default=32, help="size of the batches")
+        parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
+        parser.add_argument("--num_workers", type=int, default=8)
+
+        # logging
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
         parser.add_argument("--save_img_freq", type=int, default=50)
         parser.add_argument("--fid_freq", type=int, default=500)
-        parser.add_argument("--num_workers", type=int, default=8)
-        parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
-        parser.add_argument("--num_layers", type=int, default=5, help="number of layers on u-net")
-        parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
-        parser.add_argument("--bilinear", action='store_true', default=False,
-                            help="whether to use bilinear interpolation or transposed")
-
         return parser
 
 
