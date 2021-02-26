@@ -15,7 +15,7 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 
 from data.right_data import RightDaVinciDataModule
 from models.right_view.multiframe.multiframe_unet import MultiFrameUNet
-from losses import Perceptual, L1_Perceptual
+from losses import Perceptual, L1_Perceptual, L1_SSIM
 
 
 class MultiFrameModel(pl.LightningModule):
@@ -57,6 +57,8 @@ class MultiFrameModel(pl.LightningModule):
             self.criterion = Perceptual()
         elif self.loss == "l1_perceptual":
             self.criterion = L1_Perceptual()
+        elif self.loss == "L1_SSIM":
+            self.criterion = L1_SSIM()
         else:
             print("Using MSE Loss")
             self.criterion = torch.nn.MSELoss()
