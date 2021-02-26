@@ -41,8 +41,9 @@ class ModifiedUNet(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
-        # WIP: add additional residual connection straight from input to output
+        # WIP: should we combine them with a single convolutional layer? no non-linearity?
         self.final_conv = nn.Conv2d(2 * input_channels, input_channels, kernel_size=1)
+
 
     def forward(self, x):
         xi = [self.layers[0](x)]
