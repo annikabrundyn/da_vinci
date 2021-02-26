@@ -84,7 +84,7 @@ class MultiFrameModel(pl.LightningModule):
         psnr_val = psnr(pred, target)
         lpips_val = self.LPIPS(pred, target)
 
-        # TODO: is there a clean way to do this
+        # TODO: is there a clean way to do this - not logging train metrics atm
         #logs = {'train_loss': loss_val, 'train_ssim': ssim_val, 'train_psnr': psnr_val}
         self.log('train_loss', loss_val)
         self.log('train_ssim', ssim_val)
