@@ -4,6 +4,7 @@ from torch import nn
 from losses.perceptual_loss import Perceptual
 from pytorch_lightning.metrics import SSIM
 
+
 class L1_Perceptual(nn.Module):
     def __init__(self) -> None:
         '''
