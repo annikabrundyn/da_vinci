@@ -31,7 +31,7 @@ class Perceptual(nn.Module):
         self.extractor = VGG16FeatureExtractor()
         self.l1 = nn.L1Loss()
 
-    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
         feat_pred = self.extractor(y_pred)
         feat_gt = self.extractor(y_true)
 

@@ -37,6 +37,8 @@ class MultiFrameModel(pl.LightningModule):
         self.combine_fn = combine_fn
         self.loss = loss
 
+        self.criterion = self._determine_loss_fn(self.loss)
+
         self.save_hyperparameters()
 
         # by default assuming color input and output (3 channels)
@@ -46,9 +48,7 @@ class MultiFrameModel(pl.LightningModule):
                                   features_start=features_start,
                                   bilinear=bilinear)
 
-
-
-    def determine_loss_fn(self):
+    def _determine_loss_fn(self):
         if self.loss == "l1":
             self.criterion = torch.nn.L1Loss()
         elif self.loss == "ssim":
@@ -61,13 +61,16 @@ class MultiFrameModel(pl.LightningModule):
             print("Using MSE Loss")
             self.criterion = torch.nn.MSELoss()
 
+        return self.criterion
+
     def forward(self, x):
         return self.net(x)
 
     def training_step(self, batch, batch_idx):
         img, target, extra_info = batch
         pred = self(img)
-        loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
+
+        loss_val = self.criterion(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
 
         # log images
@@ -85,7 +88,7 @@ class MultiFrameModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         img, target, extra_info = batch
         pred = self(img)
-        loss_val = F.mse_loss(pred.squeeze(), target.squeeze())
+        loss_val = self.criterion(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
 
         # log predicted images
@@ -126,12 +129,6 @@ class MultiFrameModel(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_dir", type=str, help="path to davinci data")
-        parser.add_argument("--frames_per_sample", type=int, default=1, help="number of frames to include in each sample")
-        parser.add_argument("--frames_to_drop", type=int, default=0, help="number of frames to randomly drop in each sample")
-        parser.add_argument("--include_right_view", action='store_true', default=False, help="include left and right view")
-        parser.add_argument("--stack_horizontal", action='store_true', default=False, help="stacks input views horizontally")
-        parser.add_argument("--is_color_input", action='store_true', default=True, help="use color inputs instead of bw")
-        parser.add_argument("--is_color_output", action='store_true', default=True, help="use color outputs instead of bw")
         parser.add_argument("--batch_size", type=int, default=32, help="size of the batches")
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
