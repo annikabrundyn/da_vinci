@@ -182,7 +182,7 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback("real_stats.pickle", dm)])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback("real_stats.pickle", dm, num_samples=5)])
     #trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

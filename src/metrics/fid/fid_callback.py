@@ -15,29 +15,26 @@ from metrics.fid.fid_components import load_patched_inception_v3, calc_fid
 class FIDCallback(pl.callbacks.base.Callback):
     '''
     db_stats - name of pickle file with inception stats on real data
-    n_samples - number of samples for FID calculation
+    dm - validation datamodule
+    num_samples - number of samples for calculating FID stats from generated images
     '''
 
-    def __init__(self, db_stats, dm,
-                 data_transform=None, n_samples=5000, batch_size=16):
-        self.n_samples = n_samples
-        self.batch_size = batch_size
+    def __init__(self, db_stats, dm, num_samples=5000):
+        self.num_samples = num_samples
         self.inception = load_patched_inception_v3()
 
         self.val_dl = dm.val_dataloader()
 
         if not os.path.isfile(db_stats):
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
             print("Ground Truth inception stats pickle not found.")
             print(f"Creating using device {device}")
             self.inception = self.inception.to(device)
             features = []
 
-            batches = 0
+            # Real features are calculated on all validation data
             for i, (real_im, _) in enumerate(tqdm(self.val_dl, desc="Getting features for real data")):
-                if batches > 5:
-                    break
-
                 # check whether this is first or last frame
                 real_im = real_im[0]
                 real_im = real_im.to(device)
@@ -45,12 +42,14 @@ class FIDCallback(pl.callbacks.base.Callback):
                 feat = self.inception(real_im)[0].view(real_im.shape[0], -1)  # compute features
                 features.append(feat.to('cpu'))
 
-                batches += 1
+            # have to calculate on cpu because of numpy calculation?
             features = torch.cat(features, 0).numpy()
             self.inception = self.inception.to(torch.device('cpu'))
+
             self.real_mean = np.mean(features, 0)
             self.real_cov = np.cov(features, rowvar=False)
 
+            # save real data stats as pickle file
             with open(db_stats, 'wb') as handle:
                 pickle.dump({'mean': self.real_mean, 'cov': self.real_cov},
                             handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -72,9 +71,10 @@ class FIDCallback(pl.callbacks.base.Callback):
             self.to(pl_module.device)
             features = []
 
-            batches = 5
+            samples_used = 0
             for i, (img, target) in enumerate(tqdm(self.val_dl, desc="Getting features for generated images.")):
-                if batches > 5:
+                samples_used += len(target)
+                if samples_used >= self.num_samples:
                     break
 
                 pred = pl_module(img)
@@ -82,9 +82,7 @@ class FIDCallback(pl.callbacks.base.Callback):
                 feat = self.inception(pred)[0].view(pred.shape[0], -1)  # compute features
                 features.append(feat.to('cpu'))
 
-                batches += 1
-
-            features = torch.cat(features, 0)[:self.n_samples].numpy()
+            features = torch.cat(features, 0).numpy()
 
             sample_mean = np.mean(features, 0)
             sample_cov = np.cov(features, rowvar=False)
@@ -93,7 +91,8 @@ class FIDCallback(pl.callbacks.base.Callback):
             print(f"FID: {fid}\n")
 
             # log FID
-            # pl_module.log("val_fid", fid)
-            # self.to(torch.device('cpu'))
+            # pl_module.log("val_fid", fid) - doesnt work???
+            pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
+            #self.to(torch.device('cpu'))
 
-        self.last_global_step = trainer.global_step
+        #self.last_global_step = trainer.global_step
