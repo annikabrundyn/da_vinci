@@ -9,6 +9,7 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 from pytorch_lightning.metrics.functional import ssim, psnr
+import lpips
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -50,6 +51,8 @@ class MultiFrameModel(pl.LightningModule):
                                   features_start=features_start,
                                   bilinear=bilinear)
 
+        self.LPIPS = lpips.LPIPS(net='alex')
+
     def _determine_loss_fn(self):
         if self.loss == "l1":
             self.criterion = torch.nn.L1Loss()
@@ -79,12 +82,14 @@ class MultiFrameModel(pl.LightningModule):
         loss_val = self.criterion(pred, target)
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
+        lpips_val = self.LPIPS(pred, target)
 
         # TODO: is there a clean way to do this
         #logs = {'train_loss': loss_val, 'train_ssim': ssim_val, 'train_psnr': psnr_val}
         self.log('train_loss', loss_val)
         self.log('train_ssim', ssim_val)
         self.log('train_psnr', psnr_val)
+        self.log('train_lpips', lpips_val)
 
         return loss_val
 
@@ -95,12 +100,14 @@ class MultiFrameModel(pl.LightningModule):
         loss_val = self.criterion(pred, target)
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
+        lpips_val = self.LPIPS(pred, target)
 
         # TODO: find cleaner way
         # logs = {'val_loss': loss_val, 'val_ssim': ssim_val, 'val_psnr': psnr_val}
         self.log('val_loss', loss_val)
         self.log('val_ssim', ssim_val)
         self.log('val_psnr', psnr_val)
+        self.log('val_lpips', lpips_val)
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
