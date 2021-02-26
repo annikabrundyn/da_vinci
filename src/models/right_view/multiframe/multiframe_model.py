@@ -13,7 +13,7 @@ from pytorch_lightning.metrics.functional import ssim, psnr
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
-from data.right_data import RightDaVinciDataModule
+from data.multiframe_data import MFDaVinciDataModule
 from models.right_view.multiframe.multiframe_unet import MultiFrameUNet
 from losses import Perceptual, L1_Perceptual, L1_SSIM
 
@@ -37,7 +37,7 @@ class MultiFrameModel(pl.LightningModule):
         self.combine_fn = combine_fn
         self.loss = loss
 
-        self.criterion = self._determine_loss_fn(self.loss)
+        self.criterion = self._determine_loss_fn()
 
         self.save_hyperparameters()
 
@@ -69,15 +69,15 @@ class MultiFrameModel(pl.LightningModule):
         return self.net(x)
 
     def training_step(self, batch, batch_idx):
-        img, target, extra_info = batch
+        img, target = batch
         pred = self(img)
 
         loss_val = self.criterion(pred.squeeze(), target.squeeze())
         self.log('train_loss', loss_val)
 
         # log images
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
-            self._log_images(img, target, pred, extra_info, step_name='train')
+        # if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+        #     self._log_images(img, target, pred, extra_info, step_name='train')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -88,14 +88,14 @@ class MultiFrameModel(pl.LightningModule):
         return loss_val
 
     def validation_step(self, batch, batch_idx):
-        img, target, extra_info = batch
+        img, target = batch
         pred = self(img)
         loss_val = self.criterion(pred.squeeze(), target.squeeze())
         self.log('valid_loss', loss_val)
 
         # log predicted images
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
-            self._log_images(img, target, pred, extra_info, step_name='valid')
+        # if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+        #     self._log_images(img, target, pred, extra_info, step_name='valid')
 
         # metrics
         ssim_val = ssim(pred, target)
@@ -131,6 +131,9 @@ class MultiFrameModel(pl.LightningModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_dir", type=str, help="path to davinci data")
+        parser.add_argument("--num_frames", type=int, help="consecutive frames to include")
+        parser.add_argument("--combine_fn", type=str, help="")
+        parser.add_argument("--loss", type=str, help="")
         parser.add_argument("--batch_size", type=int, default=32, help="size of the batches")
         parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
@@ -144,3 +147,52 @@ class MultiFrameModel(pl.LightningModule):
                             help="whether to use bilinear interpolation or transposed")
 
         return parser
+
+
+if __name__ == "__main__":
+    # sets seed for numpy, torch, python.random and PYTHONHASHSEED
+    print("start right multiframe model")
+    pl.seed_everything(42)
+
+    parser = ArgumentParser()
+
+    # trainer args
+    parser = pl.Trainer.add_argparse_args(parser)
+
+    # model args
+    parser = MultiFrameModel.add_model_specific_args(parser)
+    args = parser.parse_args()
+
+    # data
+    dm = MFDaVinciDataModule(
+        args.data_dir,
+        frames_per_sample=args.num_frames,
+        frames_to_drop=0,
+        is_color_input=True,
+        is_color_output=True,
+        extra_info=False,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+    )
+    dm.setup()
+    print("dm setup")
+
+    # sanity check
+    print("size of trainset:", len(dm.train_samples))
+    print("size of validset:", len(dm.val_samples))
+    print("size of testset:", len(dm.test_samples))
+
+    img, target = next(iter(dm.train_dataloader()))
+    print(img.shape)
+    print(target.shape)
+
+    # model
+    model = MultiFrameModel(**args.__dict__)
+    print("model instance created")
+    print("lightning version", pl.__version__)
+
+    # train
+    # trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback(args.save_img_freq)])
+    trainer = pl.Trainer.from_argparse_args(args)
+    print("trainer created")
+    trainer.fit(model, dm)
