@@ -8,24 +8,21 @@ import torch
 import numpy as np
 from tqdm import tqdm
 import os
-from hydra.utils import instantiate
-from tqdm import tqdm
 
 from metrics.fid.fid_components import load_patched_inception_v3, calc_fid
 
 
 class FIDCallback(pl.callbacks.base.Callback):
     '''
-    db_stats - pickle file with inception stats on real data
-    n_samples - number of samples for FID
+    db_stats - name of pickle file with inception stats on real data
+    n_samples - number of samples for FID calculation
     '''
 
-    def __init__(self, db_stats, dm, noise_dim=3,
+    def __init__(self, db_stats, dm,
                  data_transform=None, n_samples=5000, batch_size=16):
         self.n_samples = n_samples
         self.batch_size = batch_size
         self.inception = load_patched_inception_v3()
-        self.noise_dim = noise_dim
 
         self.val_dl = dm.val_dataloader()
 
