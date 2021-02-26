@@ -18,7 +18,7 @@ from data.multiframe_data import MFDaVinciDataModule
 from models.right_view.multiframe.multiframe_unet import MultiFrameUNet
 from losses import Perceptual, L1_Perceptual, L1_SSIM
 
-from pytorch_lightning.loggers.neptune import NeptuneLogger
+from metrics import FIDCallback
 
 
 class MultiFrameModel(pl.LightningModule):
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # train
-    # trainer = pl.Trainer.from_argparse_args(args, callbacks=[RightCallback(args.save_img_freq)])
-    trainer = pl.Trainer.from_argparse_args(args)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback("real_stats.pickle", dm)])
+    #trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
-    trainer.fit(model, dm)
+    trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

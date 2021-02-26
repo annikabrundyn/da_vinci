@@ -1,179 +1,88 @@
-import os
-import torch
-from torch.utils.data import DataLoader, random_split
-from torchvision import transforms
-import pytorch_lightning as pl
-from tqdm import tqdm
 import numpy as np
-from inception import InceptionV3
-import pickle
-from scipy import linalg
-from pytorch_lightning.utilities import rank_zero_only
+import torch
+from torch.nn.functional import adaptive_avg_pool2d
+from PIL import Image
 
+from pytorch_fid.inception import InceptionV3
+from pytorch_fid.fid_score import calculate_frechet_distance
 
+def get_activations(batch, model, dims=2048, device='cpu'):
+    """Calculates the activations of the pool_3 layer for all images.
+    Params:
+    -- batch       :
+    -- model       : Instance of inception model
+    -- batch_size  : Batch size of images for the model to process at once.
+                     Make sure that the number of samples is a multiple of
+                     the batch size, otherwise some samples are ignored. This
+                     behavior is retained to match the original FID score
+                     implementation.
+    -- dims        : Dimensionality of features returned by Inception
+    -- device      : Device to run calculations
+    Returns:
+    -- A numpy array of dimension (num images, dims) that contains the
+       activations of the given tensor when feeding inception with the
+       query tensor.
+    """
+    model.eval()
 
-def load_patched_inception_v3():
-    inception_feat = InceptionV3([3], normalize_input=False).eval()
-    return inception_feat
+    pred_arr = np.empty((len(batch), dims))
 
+    start_idx = 0
 
-def calc_fid(sample_mean, sample_cov, real_mean, real_cov, eps=1e-6):
-    ''' https://github.com/rosinality/stylegan2-pytorch/blob/master/fid.py '''
-    cov_sqrt, _ = linalg.sqrtm(sample_cov @ real_cov, disp=False)
+    batch = batch.to(device)
 
-    if not np.isfinite(cov_sqrt).all():
-        print('product of cov matrices is singular')
-        offset = np.eye(sample_cov.shape[0]) * eps
-        cov_sqrt = linalg.sqrtm((sample_cov + offset) @ (real_cov + offset))
+    with torch.no_grad():
+        pred = model(batch)[0]
 
-    if np.iscomplexobj(cov_sqrt):
-        if not np.allclose(np.diagonal(cov_sqrt).imag, 0, atol=1e-3):
-            m = np.max(np.abs(cov_sqrt.imag))
+    # If model output is not scalar, apply global spatial average pooling.
+    # This happens if you choose a dimensionality not equal 2048.
+    if pred.size(2) != 1 or pred.size(3) != 1:
+        pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
 
-            raise ValueError(f'Imaginary component {m}')
+    pred = pred.squeeze(3).squeeze(2).cpu().numpy()
 
-        cov_sqrt = cov_sqrt.real
+    pred_arr[start_idx:start_idx + pred.shape[0]] = pred
 
-    mean_diff = sample_mean - real_mean
-    mean_norm = mean_diff @ mean_diff
+    start_idx = start_idx + pred.shape[0]
 
-    trace = np.trace(sample_cov) + np.trace(real_cov) - 2 * np.trace(cov_sqrt)
+    return pred_arr
 
-    fid = mean_norm + trace
+def calculate_activation_statistics(batch, model, dims=2048, device='cpu'):
+    """Calculation of the statistics used by the FID.
+    Params:
+    -- batch       :
+    -- model       : Instance of inception model
+    -- batch_size  : The images numpy array is split into batches with
+                     batch size batch_size. A reasonable batch size
+                     depends on the hardware.
+    -- dims        : Dimensionality of features returned by Inception
+    -- device      : Device to run calculations
+    Returns:
+    -- mu    : The mean over samples of the activations of the pool_3 layer of
+               the inception model.
+    -- sigma : The covariance matrix of the activations of the pool_3 layer of
+               the inception model.
+    """
+    act = get_activations(batch, model, dims, device)
+    mu = np.mean(act, axis=0)
+    sigma = np.cov(act, rowvar=False)
+    return mu, sigma
 
-    return fid
+def calculate_fid(preds, truths, is_color=False, dims=2048, device='cpu'):
+    """Calculates the FID of two paths"""
 
+    if not is_color:
+        preds = preds.repeat(1, 3, 1, 1)
+        truths = truths.repeat(1, 3, 1, 1)
 
+    block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
 
+    model = InceptionV3([block_idx]).to(device)
 
+    m1, s1 = calculate_activation_statistics(preds, model,
+                                         dims, device)
+    m2, s2 = calculate_activation_statistics(truths, model,
+                                         dims, device)
+    fid_value = calculate_frechet_distance(m1, s1, m2, s2)
 
-def calc_fid_pytorch(sample_mean, sample_cov, real_mean, real_cov, eps=1e-6):
-    ''' https://github.com/rosinality/stylegan2-pytorch/blob/master/fid.py '''
-    cov_sqrt, _ = linalg.sqrtm(sample_cov @ real_cov, disp=False)
-    cov_sqrt = torch.from_numpy(cov_sqrt)
-
-    # check if contains complex numbers - dont know how to do in pytorch
-    if np.iscomplexobj(cov_sqrt):
-        if not np.allclose(np.diagonal(cov_sqrt).imag, 0, atol=1e-3):
-            m = np.max(np.abs(cov_sqrt.imag))
-
-            raise ValueError(f'Imaginary component {m}')
-
-        cov_sqrt = cov_sqrt.real
-
-    if not torch.isfinite(cov_sqrt).all():
-        print('product of cov matrices is singular')
-        offset = torch.eye(sample_cov.shape[0]) * eps
-        cov_sqrt = linalg.sqrtm((sample_cov + offset) @ (real_cov + offset))
-
-    mean_diff = sample_mean - real_mean
-    mean_norm = mean_diff @ mean_diff
-
-    trace = torch.trace(sample_cov) + torch.trace(real_cov) - 2 * torch.trace(cov_sqrt)
-
-    fid = mean_norm + trace
-
-    return fid
-
-
-
-
-class FIDCallback(pl.callbacks.base.Callback):
-    '''
-    db_stats - pickle file with inception stats on real data
-    n_samples - number of samples for FID
-    '''
-
-    def __init__(self, db_stats, full_val_dataset, batch_size=32, n_samples=100):
-        self.batch_size = batch_size
-        self.inception = load_patched_inception_v3()
-        self.n_samples = n_samples
-        self.full_val_dataset = full_val_dataset
-
-        # If we haven't already calculated real data stats - calculate
-        if not os.path.isfile(db_stats):
-            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-            print("Ground Truth inception stats pickle not found.")
-            print(f"Creating using device {device}")
-            self.inception = self.inception.to(device)
-            features = []
-
-            # val dataset
-            real_dataloader = DataLoader(self.full_val_dataset, batch_size=self.batch_size)
-
-            total_batches = len(real_dataloader)
-            for i, (real_im, _) in enumerate(tqdm(real_dataloader, desc="Getting features for real data")):
-                real_im = real_im.to(device)
-                if real_im.shape[1] == 1:
-                    # convert greyscale to RGB
-                    real_im = torch.cat(3 * [real_im], dim=1)
-                feat = self.inception(real_im)[0].view(real_im.shape[0], -1)  # compute features
-                features.append(feat.to('cpu'))
-            features = torch.cat(features, 0).numpy()
-            self.inception = self.inception.to(torch.device('cpu'))
-            self.real_mean = np.mean(features, 0)
-            self.real_cov = np.cov(features, rowvar=False)
-
-            # save stats as pickle file
-            with open(db_stats, 'wb') as handle:
-                pickle.dump({'mean': self.real_mean, 'cov': self.real_cov},
-                            handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-        # Load real data stats - ie real_mean, real_cov
-        with open(db_stats, 'rb') as f:
-            embeds = pickle.load(f)
-            #self.real_mean = embeds['mean']
-            #self.real_cov = embeds['cov']
-            self.real_mean = torch.from_numpy(embeds['mean'])
-            self.real_cov = torch.from_numpy(embeds['cov'])
-
-    def to(self, device):
-        self.inception = self.inception.to(device)
-        self.z_samples = [z.to(device) for z in self.z_samples]
-
-    @rank_zero_only
-    def on_validation_start(self, trainer, pl_module):
-        '''
-        Initialize random noise and inception module
-        I keep the model and the noise on CPU when it's not needed to preserve memory; could also be initialized on pl_module.device
-        '''
-        noise_dim = 3 #not sure what this is
-        self.z_samples = [torch.randn(self.batch_size, noise_dim) for i in
-                          range(0, self.n_samples, self.batch_size)]
-        print('\nFID initialized')
-
-    @rank_zero_only
-    def on_validation_epoch_start(self, trainer, pl_module):
-        # calculate fid for validation samples
-        pl_module.eval()
-
-        with torch.no_grad():
-            self.to(pl_module.device)
-            features = []
-
-            total_batches = len(self.z_samples)
-            for i, z in enumerate(tqdm(self.z_samples, desc="Getting features for fake images.")):
-                inputs = z
-                fake = pl_module.decoder(z)
-                #TODO: remove hard coding for mnist
-                fake = fake.reshape(fake.shape[0], 1, 28, 28)
-                if fake.shape[1] == 1:
-                    # convert greyscale to RGB
-                    fake = torch.cat(3 * [fake], dim=1)
-                feat = self.inception(fake)[0].view(fake.shape[0], -1)  # compute features
-                features.append(feat.to('cpu'))
-
-            features = torch.cat(features, 0)[:self.n_samples].numpy()
-
-            sample_mean = np.mean(features, 0)
-            sample_cov = np.cov(features, rowvar=False)
-
-            sample_mean = torch.from_numpy(sample_mean)
-            sample_cov = torch.from_numpy(sample_cov)
-
-
-            fid = calc_fid_pytorch(sample_mean, sample_cov, self.real_mean, self.real_cov)
-
-            print(f"FID: {fid}\n")
-
-
+    return fid_value
