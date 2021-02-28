@@ -14,63 +14,39 @@ import lpips
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
-from data.multiframe_data import MFDaVinciDataModule
-from models.right_view.multiframe.multiframe_unet import MultiFrameUNet
-from losses import Perceptual, L1_Perceptual, L1_SSIM
-
-from metrics import FIDCallback
+from data.right_data import RightDaVinciDataModule
+from models.unet.unet_plain import UNet
 
 
-class MultiFrameModel(pl.LightningModule):
+class UNet2DModel(pl.LightningModule):
     def __init__(
-        self,
-        num_frames: int,
-        combine_fn: str,
-        loss: str,
-        num_layers: int,
-        bilinear: bool,
-        features_start: int = 64,
-        lr: float = 0.001,
-        log_tb_imgs: bool = False,
-        tb_img_freq: int = 10000,
-        **kwargs
+            self,
+            num_frames: int,
+            loss: str,
+            num_layers: int,
+            bilinear: bool,
+            features_start: int = 64,
+            lr: float = 0.001,
+            log_tb_imgs: bool = False,
+            tb_img_freq: int = 10000,
+            **kwargs
     ):
         super().__init__()
+        self.save_hyperparameters()
         self.num_frames = num_frames
-        self.combine_fn = combine_fn
         self.loss = loss
 
         self.criterion = self._determine_loss_fn()
+        self.input_channels = 3 * self.num_frames
 
-        self.save_hyperparameters()
-
-        # by default assuming color input and output (3 channels)
-        self.net = MultiFrameUNet(num_frames=num_frames,
-                                  combine_fn=combine_fn,
-                                  num_layers=num_layers,
-                                  features_start=features_start,
-                                  bilinear=bilinear)
+        self.net = UNet(
+            input_channels = self.input_channels,
+            output_channels = 3,
+            num_layers = self.hparams.num_layers,
+            features_start = self.hparams.features_start,
+            bilinear = self.hparams.bilinear)
 
         self.LPIPS = lpips.LPIPS(net='alex')
-
-    def _determine_loss_fn(self):
-        if self.loss == "l1":
-            self.criterion = torch.nn.L1Loss()
-        elif self.loss == "mse":
-            self.criterion = torch.nn.MSELoss()
-        elif self.loss == "ssim":
-            self.criterion = SSIM()
-        elif self.loss == "perceptual":
-            self.criterion = Perceptual()
-        elif self.loss == "l1_perceptual":
-            self.criterion = L1_Perceptual()
-        elif self.loss == "l1_ssim":
-            self.criterion = L1_SSIM()
-        else:
-            print("Using MSE Loss")
-            self.criterion = torch.nn.MSELoss()
-
-        return self.criterion
 
     def forward(self, x):
         return self.net(x)
@@ -110,9 +86,28 @@ class MultiFrameModel(pl.LightningModule):
         self.log('val_lpips', lpips_val)
 
     def configure_optimizers(self):
-        # TODO: should this not be net parameters?
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
         return [opt]
+
+    def _determine_loss_fn(self):
+        if self.loss == "l1":
+            self.criterion = torch.nn.L1Loss()
+        elif self.loss == "mse":
+            self.criterion = torch.nn.MSELoss()
+        elif self.loss == "ssim":
+            self.criterion = SSIM()
+        elif self.loss == "perceptual":
+            self.criterion = Perceptual()
+        elif self.loss == "l1_perceptual":
+            self.criterion = L1_Perceptual()
+        elif self.loss == "l1_ssim":
+            self.criterion = L1_SSIM()
+        else:
+            print("Using MSE Loss")
+            self.criterion = torch.nn.MSELoss()
+
+        return self.criterion
+
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -121,7 +116,6 @@ class MultiFrameModel(pl.LightningModule):
         # Required arguments
         parser.add_argument("--data_dir", type=str, help="path to davinci data")
         parser.add_argument("--num_frames", type=int, help="number of consecutive frames to include")
-        parser.add_argument("--combine_fn", type=str, help="how to combine multiple frames")
         parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'L1_SSIM'], help="loss function")
         parser.add_argument("--bilinear", action='store_true', help="bilinear (True) vs. transposed convolution (False)")
         parser.add_argument("--num_layers", type=int, help="number of layers/blocks in u-net")
@@ -151,11 +145,11 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)
 
     # model args
-    parser = MultiFrameModel.add_model_specific_args(parser)
+    parser = UNet2DModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
     # data
-    dm = MFDaVinciDataModule(
+    dm = RightDaVinciDataModule(
         args.data_dir,
         frames_per_sample=args.num_frames,
         frames_to_drop=0,
@@ -178,12 +172,12 @@ if __name__ == "__main__":
     print(target.shape)
 
     # model
-    model = MultiFrameModel(**args.__dict__)
+    model = UNet2DModel(**args.__dict__)
     print("model instance created")
     print("lightning version", pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback("real_stats.pickle", dm, num_samples=5)])
-    #trainer = pl.Trainer.from_argparse_args(args)
+    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback("real_stats.pickle", dm, num_samples=5)])
+    trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

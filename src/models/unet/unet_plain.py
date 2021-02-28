@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from unet_components import DoubleConv, Up, Down
+from models.unet.unet_components import DoubleConv, Up, Down
 
 
 class UNet(nn.Module):
@@ -15,18 +15,16 @@ class UNet(nn.Module):
     """
     def __init__(
             self,
-            num_classes: int,
             input_channels: int,
-            num_stack_horizontal: int = 1,
+            output_channels: int = 3,
             num_layers: int = 5,
             features_start: int = 64,
             bilinear: bool = False
     ):
         super().__init__()
         self.num_layers = num_layers
-        self.input_channels = input_channels
 
-        layers = [DoubleConv(self.input_channels, features_start)]
+        layers = [DoubleConv(input_channels, features_start)]
 
         feats = features_start
         for _ in range(num_layers - 1):
@@ -37,7 +35,7 @@ class UNet(nn.Module):
             layers.append(Up(feats, feats // 2, bilinear))
             feats //= 2
 
-        layers.append(nn.Conv2d(feats, num_classes, kernel_size=1))
+        layers.append(nn.Conv2d(feats, output_channels, kernel_size=1))
 
         self.layers = nn.ModuleList(layers)
 
