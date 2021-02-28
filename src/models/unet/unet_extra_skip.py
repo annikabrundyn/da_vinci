@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from unet_components import DoubleConv, Up, Down
+from models.unet.unet_components import DoubleConv, Up, Down
 
 
-class ModifiedUNet(nn.Module):
+class UNetExtraSkip(nn.Module):
     """
     Args:
         num_classes: Number of output classes required
@@ -15,9 +15,8 @@ class ModifiedUNet(nn.Module):
     """
     def __init__(
             self,
-            num_classes: int,
             input_channels: int,
-            num_stack_horizontal: int = 1,
+            output_channels: int = 3,
             num_layers: int = 5,
             features_start: int = 64,
             bilinear: bool = False
@@ -37,12 +36,12 @@ class ModifiedUNet(nn.Module):
             layers.append(Up(feats, feats // 2, bilinear))
             feats //= 2
 
-        layers.append(nn.Conv2d(feats, num_classes, kernel_size=1))
+        layers.append(nn.Conv2d(feats, output_channels, kernel_size=1))
 
         self.layers = nn.ModuleList(layers)
 
         # WIP: should we combine them with a single convolutional layer? no non-linearity?
-        self.final_conv = nn.Conv2d(2 * input_channels, input_channels, kernel_size=1)
+        self.final_conv = nn.Conv2d(2 * output_channels, output_channels, kernel_size=3, padding=1)
 
 
     def forward(self, x):
@@ -57,7 +56,11 @@ class ModifiedUNet(nn.Module):
         orig_output = self.layers[-1](xi[-1])
 
         # WIP: add additional connection straight from input to output
-        input_concat_output = torch.cat([orig_output, x], dim=1)
+        # TODO: double check that the first frame is the "latest frame"
+        input = x[:, 0:3, :, :]
+        input_concat_output = torch.cat([input, orig_output], dim=1)
         new_output = self.final_conv(input_concat_output)
 
-        return orig_output, new_output
+        # TODO: output both orig_output and new_output to visualize the shift
+
+        return new_output
