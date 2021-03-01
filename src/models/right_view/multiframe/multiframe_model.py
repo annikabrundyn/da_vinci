@@ -1,23 +1,21 @@
+import os.path
+from argparse import ArgumentParser
+
 import torch
 import torch.nn.functional as F
 import torchvision
-
-import os.path
+from torchvision.utils import make_grid
 import numpy as np
-
-from argparse import ArgumentParser
+import matplotlib.pyplot as plt
 
 import pytorch_lightning as pl
 from pytorch_lightning.metrics.functional import ssim, psnr
 import lpips
 
-import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
-
 from data.multiframe_data import MFDaVinciDataModule
 from models.right_view.multiframe.multiframe_unet import MultiFrameUNet
 from losses import Perceptual, L1_Perceptual, L1_SSIM
-
 from metrics import FIDCallback
 
 
@@ -31,18 +29,17 @@ class MultiFrameModel(pl.LightningModule):
         bilinear: bool,
         features_start: int = 64,
         lr: float = 0.001,
-        log_tb_imgs: bool = False,
+        log_tb_imgs: bool = True,
         tb_img_freq: int = 10000,
         **kwargs
     ):
         super().__init__()
+        self.save_hyperparameters()
         self.num_frames = num_frames
         self.combine_fn = combine_fn
         self.loss = loss
 
         self.criterion = self._determine_loss_fn()
-
-        self.save_hyperparameters()
 
         # by default assuming color input and output (3 channels)
         self.net = MultiFrameUNet(num_frames=num_frames,
@@ -76,43 +73,63 @@ class MultiFrameModel(pl.LightningModule):
         return self.net(x)
 
     def training_step(self, batch, batch_idx):
+        # predict right view
         img, target = batch
         pred = self(img)
 
+        # calculate loss
         loss_val = self.criterion(pred, target)
+
+        # calculate metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-        lpips_val = self.LPIPS(pred, target)
+        lpips_val = self.LPIPS(pred, target).mean()
 
-        # TODO: is there a clean way to do this - not logging train metrics atm
-        #logs = {'train_loss': loss_val, 'train_ssim': ssim_val, 'train_psnr': psnr_val}
-        self.log('train_loss', loss_val)
-        self.log('train_ssim', ssim_val)
-        self.log('train_psnr', psnr_val)
-        self.log('train_lpips', lpips_val)
+        # log loss + metrics
+        logs = {'train_loss': loss_val, 'train_ssim': ssim_val, 'train_psnr': psnr_val, 'train_lpips': lpips_val}
+        self.log_dict(logs)
+
+        # log predicted images
+        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+            # pick random element in batch to visualize
+            idx = np.random.choice(len(img))
+            self._log_images(img[idx], target[idx], pred[idx], step_name="train")
 
         return loss_val
 
     def validation_step(self, batch, batch_idx):
+        # predict right view
         img, target = batch
         pred = self(img)
 
+        # calculate loss
         loss_val = self.criterion(pred, target)
+
+        # calculate metrics
         ssim_val = ssim(pred, target)
         psnr_val = psnr(pred, target)
-        lpips_val = self.LPIPS(pred, target)
+        lpips_val = self.LPIPS(pred, target).mean()
 
-        # TODO: find cleaner way
-        # logs = {'val_loss': loss_val, 'val_ssim': ssim_val, 'val_psnr': psnr_val}
-        self.log('val_loss', loss_val)
-        self.log('val_ssim', ssim_val)
-        self.log('val_psnr', psnr_val)
-        self.log('val_lpips', lpips_val)
+        # log loss + metrics
+        logs = {'val_loss': loss_val, 'val_ssim': ssim_val, 'val_psnr': psnr_val, 'val_lpips': lpips_val}
+        self.log_dict(logs)
+
+        # log predicted images
+        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+            # pick random element in batch to visualize
+            idx = np.random.choice(len(img))
+            self._log_images(img[idx], target[idx], pred[idx], step_name="val")
 
     def configure_optimizers(self):
         # TODO: should this not be net parameters?
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
         return [opt]
+
+    def _log_images(self, img, target, pred, step_name):
+
+        self.logger.experiment.add_image(f'{step_name}_input_left', make_grid(img), self.trainer.global_step)
+        self.logger.experiment.add_image(f'{step_name}_target_right', make_grid(target), self.trainer.global_step)
+        self.logger.experiment.add_image(f'{step_name}_pred_right', make_grid(pred), self.trainer.global_step)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -133,7 +150,7 @@ class MultiFrameModel(pl.LightningModule):
         parser.add_argument("--num_workers", type=int, default=8)
 
         # logging
-        parser.add_argument("--log_tb_imgs", action='store_true', default=False)
+        parser.add_argument("--log_tb_imgs", action='store_true', default=True)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
         parser.add_argument("--save_img_freq", type=int, default=50)
         parser.add_argument("--fid_freq", type=int, default=500)
@@ -183,7 +200,7 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback("real_stats.pickle", dm, num_samples=5)])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[FIDCallback("real_stats.pickle", dm, num_samples=5)], log_every_n_steps=1)
     #trainer = pl.Trainer.from_argparse_args(args)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

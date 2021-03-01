@@ -17,6 +17,8 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 from data.right_data import RightDaVinciDataModule
 from models.unet.unet_plain import UNet
 
+from metrics import FIDCallback
+
 
 class UNet2DModel(pl.LightningModule):
     def __init__(
