@@ -96,6 +96,7 @@ if __name__ == "__main__":
     print("model instance created")
     print("lightning version", pl.__version__)
 
+    # fid metric callback
     fid = FIDCallback("./real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
 
     # train
