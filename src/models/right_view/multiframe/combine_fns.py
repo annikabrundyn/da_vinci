@@ -7,7 +7,7 @@ from models.unet.unet_components import DoubleConvMF, DownMF, Up
 
 class CombineConv3D(nn.Module):
     """
-    Combine multiple embeddings using a CNN
+    Combine multiple embeddings using a 3D CNN
     """
 
     def __init__(self, in_ch:int, out_ch: int = 1, kernel_size:int = 1, stride:int = 1):
@@ -28,6 +28,7 @@ class CombineMax(nn.Module):
     def forward(self, x):
         x = x.max(dim=1)[0]
         return x
+
 
 class CombineAverage(nn.Module):
     def forward(self, x):
