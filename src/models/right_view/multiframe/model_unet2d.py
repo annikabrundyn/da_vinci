@@ -6,7 +6,7 @@ import lpips
 from torchvision.utils import make_grid
 
 from models.right_view.base_model import BaseModel
-from models.unet import UNet
+from models.unet import UNet, UNetExtraSkip
 from data.right_data import RightDaVinciDataModule
 from metrics import FIDCallback
 
@@ -17,6 +17,7 @@ class UNet2DModel(BaseModel):
             num_frames: int,
             combine_fn: None,
             loss: str,
+            extra_skip: bool,
             num_layers: int,
             bilinear: bool,
             features_start: int = 64,
@@ -25,7 +26,8 @@ class UNet2DModel(BaseModel):
             tb_img_freq: int = 10000,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, num_layers, bilinear, features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear,
+                         features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         self.save_hyperparameters()
         self.num_frames = num_frames
@@ -35,14 +37,24 @@ class UNet2DModel(BaseModel):
 
         self.input_channels = 3 * self.num_frames
 
-        self.net = UNet(
-            input_channels = self.input_channels,
-            output_channels = 3,
-            num_layers = self.hparams.num_layers,
-            features_start = self.hparams.features_start,
-            bilinear = self.hparams.bilinear)
-
         self.LPIPS = lpips.LPIPS(net='alex')
+
+        if not self.hparams.extra_skip:
+            print("no skip")
+            self.net = UNet(
+                input_channels = self.input_channels,
+                output_channels = 3,
+                num_layers = self.hparams.num_layers,
+                features_start = self.hparams.features_start,
+                bilinear = self.hparams.bilinear)
+        else:
+            print("with skip")
+            self.net = UNetExtraSkip(
+                input_channels=self.input_channels,
+                output_channels=3,
+                num_layers=self.hparams.num_layers,
+                features_start=self.hparams.features_start,
+                bilinear=self.hparams.bilinear)
 
     def _log_images(self, img, target, pred, step_name):
         # unstack multiple frames to visualize
@@ -97,10 +109,10 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # fid metric callback
-    #fid = FIDCallback("real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
+    fid = FIDCallback("real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
 
     # train
-    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid], log_every_n_steps=1)
-    trainer = pl.Trainer.from_argparse_args(args, log_every_n_steps=1)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid], log_every_n_steps=1)
+    #trainer = pl.Trainer.from_argparse_args(args, log_every_n_steps=1)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

@@ -25,6 +25,7 @@ class BaseModel(pl.LightningModule):
         num_frames: int,
         combine_fn: str,
         loss: str,
+        extra_skip: bool,
         num_layers: int,
         bilinear: bool,
         features_start: int = 64,
@@ -139,6 +140,7 @@ class BaseModel(pl.LightningModule):
         parser.add_argument("--num_frames", type=int, help="number of consecutive frames to include")
         parser.add_argument("--combine_fn", type=str, help="how to combine multiple frames")
         parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'L1_SSIM'], help="loss function")
+        parser.add_argument("--extra_skip", action='store_true', help="add extra skip connection straight from input to output")
         parser.add_argument("--bilinear", action='store_true', help="bilinear (True) vs. transposed convolution (False)")
         parser.add_argument("--num_layers", type=int, help="number of layers/blocks in u-net")
 

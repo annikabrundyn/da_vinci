@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from data.right_data import RightDaVinciDataModule
-from models.right_view.std_unet.model_unet2d import UNet2DModel
+from models.right_view.multiframe.model_unet2d import UNet2DModel
 from models.unet import UNetExtraSkip
 
 
@@ -23,6 +23,7 @@ class ExtraSkipModel(UNet2DModel):
     def __init__(
             self,
             num_frames: int,
+            combine_fn: str,
             loss: str,
             num_layers: int,
             bilinear: bool,
@@ -32,7 +33,7 @@ class ExtraSkipModel(UNet2DModel):
             tb_img_freq: int = 10000,
             **kwargs
     ):
-        super().__init__(num_frames, loss, num_layers, bilinear, features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
+        super().__init__(num_frames, combine_fn, loss, num_layers, bilinear, features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
         self.save_hyperparameters()
         self.num_frames = num_frames
         self.loss = loss

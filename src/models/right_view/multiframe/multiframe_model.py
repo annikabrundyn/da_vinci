@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 import lpips
 
 from models.right_view.base_model import BaseModel
-from models.unet import MultiFrameUNet
+from models.unet import MultiFrameUNet, MultiFrameUNetExtraSkip
 from data.multiframe_data import MFDaVinciDataModule
 from metrics import FIDCallback
 
@@ -15,6 +15,7 @@ class MultiFrameModel(BaseModel):
             num_frames: int,
             combine_fn: str,
             loss: str,
+            extra_skip: bool,
             num_layers: int,
             bilinear: bool,
             features_start: int = 64,
@@ -23,7 +24,7 @@ class MultiFrameModel(BaseModel):
             tb_img_freq: int = 10000,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, num_layers, bilinear, features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         self.save_hyperparameters()
         self.num_frames = num_frames
@@ -32,15 +33,23 @@ class MultiFrameModel(BaseModel):
 
         self.criterion = self._determine_loss_fn()
 
-        # by default assuming color input and output (3 channels)
-        self.net = MultiFrameUNet(num_frames=num_frames,
-                                  combine_fn=combine_fn,
-                                  num_layers=num_layers,
-                                  features_start=features_start,
-                                  bilinear=bilinear)
-
         self.LPIPS = lpips.LPIPS(net='alex')
 
+        # UNet without extra skip connection (normal)
+        if not self.hparams.extra_skip:
+            print("Normal UNet *without* extra skip connection")
+            self.net = MultiFrameUNet(num_frames=num_frames,
+                                      combine_fn=combine_fn,
+                                      num_layers=num_layers,
+                                      features_start=features_start,
+                                      bilinear=bilinear)
+        else:
+            print("Modified UNet *with* extra skip connection")
+            self.net = MultiFrameUNetExtraSkip(num_frames=num_frames,
+                                               combine_fn=combine_fn,
+                                               num_layers=num_layers,
+                                               features_start=features_start,
+                                               bilinear=bilinear)
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
