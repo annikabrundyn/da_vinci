@@ -121,7 +121,6 @@ class BaseModel(pl.LightningModule):
             self._log_images(img[idx], target[idx], pred[idx], step_name="val")
 
     def configure_optimizers(self):
-        # TODO: should this not be net parameters?
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
         return [opt]
 

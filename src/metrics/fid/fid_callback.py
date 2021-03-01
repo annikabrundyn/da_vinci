@@ -91,8 +91,8 @@ class FIDCallback(pl.callbacks.base.Callback):
             print(f"FID: {fid}\n")
 
             # log FID
-            # pl_module.log("val_fid", fid) - doesnt work???
-            pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
+            pl_module.log("val_fid", fid)
+            # pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
             #self.to(torch.device('cpu'))
 
         #self.last_global_step = trainer.global_step
