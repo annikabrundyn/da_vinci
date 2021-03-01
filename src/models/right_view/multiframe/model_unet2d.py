@@ -97,9 +97,9 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # fid metric callback
-    fid = FIDCallback("./real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
+    fid = FIDCallback("real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
 
     # train
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid], log_every_n_steps=1)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid] ,log_every_n_steps=1)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
