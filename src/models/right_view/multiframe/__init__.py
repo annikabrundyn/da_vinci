@@ -1,2 +1,2 @@
-from models.right_view.multiframe.multiframe_model import MultiFrameModel
+#from models.right_view.multiframe.multiframe_model import MultiFrameModel
 from models.right_view.multiframe.multiframe_unet import MultiFrameUNet
