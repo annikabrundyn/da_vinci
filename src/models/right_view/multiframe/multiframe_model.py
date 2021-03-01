@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 import lpips
 
 from models.right_view.base_model import BaseModel
-from models.right_view.multiframe import MultiFrameUNet
+from models.unet import MultiFrameUNet
 from data.multiframe_data import MFDaVinciDataModule
 from metrics import FIDCallback
 

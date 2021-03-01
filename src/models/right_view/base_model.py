@@ -16,7 +16,7 @@ from losses import Perceptual, L1_Perceptual, L1_SSIM
 from metrics import FIDCallback
 
 from data.multiframe_data import MFDaVinciDataModule
-from models.right_view.multiframe import MultiFrameUNet
+from models.unet import MultiFrameUNet
 
 
 class BaseModel(pl.LightningModule):

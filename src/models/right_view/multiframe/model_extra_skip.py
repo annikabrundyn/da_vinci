@@ -16,7 +16,7 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 
 from data.right_data import RightDaVinciDataModule
 from models.right_view.std_unet.model_unet2d import UNet2DModel
-from models.unet.unet_extra_skip import UNetExtraSkip
+from models.unet import UNetExtraSkip
 
 
 class ExtraSkipModel(UNet2DModel):
