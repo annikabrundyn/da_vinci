@@ -92,8 +92,8 @@ class BaseModel(pl.LightningModule):
         # log predicted images
         if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
             # pick random element in batch to visualize
-            idx = np.random.choice(len(img))
-            self._log_images(img[idx], target[idx], pred[idx], step_name="train")
+            #idx = np.random.choice(len(img))
+            self._log_images(img[0], target[0], pred[0], step_name="train")
 
         return loss_val
 
@@ -117,8 +117,8 @@ class BaseModel(pl.LightningModule):
         # log predicted images
         if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
             # pick random element in batch to visualize
-            idx = np.random.choice(len(img))
-            self._log_images(img[idx], target[idx], pred[idx], step_name="val")
+            #idx = np.random.choice(len(img))
+            self._log_images(img[0], target[0], pred[0], step_name="val")
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
@@ -152,6 +152,8 @@ class BaseModel(pl.LightningModule):
         parser.add_argument("--log_tb_imgs", action='store_true', default=True)
         parser.add_argument("--tb_img_freq", type=int, default=10000)
         parser.add_argument("--save_img_freq", type=int, default=50)
-        parser.add_argument("--fid_freq", type=int, default=500)
+        parser.add_argument("--fid_epoch_freq", type=int, default=5, help="number of epochs between each fid calculation")
+        parser.add_argument("--fid_n_samples", type=int, default=5, help="number of samples to use in fid")
+
         return parser
 
