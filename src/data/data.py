@@ -16,25 +16,20 @@ class DaVinciDataSet(Dataset):
                  sample_list: list,
                  frames_per_sample: int,
                  frames_to_drop: int,
-                 include_right_view: bool = False,  # whether to include right images
-                 stack_horizontal: bool = False,
-                 is_color_input: bool = False,
-                 is_color_output: bool = False,
+                 channel_stack_frames: bool,
+                 target_dir = 'image_1',
+                 is_color_input: bool = True,
+                 is_color_output: bool = True,
                  extra_info: bool = False,
-                 target_dir='disparity'
                  ):
         self.data_dir = data_dir
         self.sample_list = sample_list
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
-        self.include_right_view = include_right_view
-        self.stack_horizontal = stack_horizontal
-        self.is_color_input = is_color_input
-        self.is_color_output = is_color_output
-        self.extra_info = extra_info
+        self.channel_stack_frames = channel_stack_frames
         self.target_dir = target_dir
 
-        self._img_transforms()
+        self.extra_info = extra_info
 
     def _img_transforms(self):
 
@@ -55,8 +50,6 @@ class DaVinciDataSet(Dataset):
         image_set, frames = self.sample_list[index]
 
         images = []
-        if self.include_right_view:
-            right_images = []
 
         for frame in frames:
             img_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'image_0', "{:s}".format(frame))
@@ -64,21 +57,10 @@ class DaVinciDataSet(Dataset):
             image = self.img_transform(image)
             images.append(image)
 
-            if self.include_right_view:
-                img_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'image_1', "{:s}".format(frame))
-                image = Image.open(img_path)
-                image = self.img_transform(image)
-                right_images.append(image)
-
-        if self.stack_horizontal:
-            stack_dim = 2
-        elif not self.stack_horizontal:
-            stack_dim = 0
-
-        image_tensor = torch.cat(images, dim=stack_dim)
-        if self.include_right_view:
-            right_image_tensor = torch.cat(right_images, dim=stack_dim)
-            image_tensor = torch.cat((image_tensor, right_image_tensor), dim=stack_dim)
+        if self.channel_stack_frames:
+            image_tensor = torch.cat(images, dim=0)
+        else:
+            image_tensor = torch.stack(images)
 
         # target is only the first frame
         target_path = os.path.join(self.data_dir, "{:s}".format(image_set), self.target_dir, "{:s}".format(frames[0]))
@@ -100,10 +82,8 @@ class DaVinciDataModule(pl.LightningDataModule):
             data_dir: str,
             frames_per_sample: int,
             frames_to_drop: int,
-            include_right_view: bool = False,
-            stack_horizontal: bool = False,
-            is_color_input: bool = False,
-            is_color_output: bool = False,
+            is_color_input: bool = True,
+            is_color_output: bool = True,
             extra_info: bool = False,
             val_split: float = 0.2,
             test_split: float = 0.1,
@@ -117,10 +97,6 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.data_dir = data_dir if data_dir is not None else os.getcwd()
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
-        self.include_right_view = include_right_view
-        self.stack_horizontal = stack_horizontal
-        self.is_color_input = is_color_input
-        self.is_color_output = is_color_output
         self.extra_info = extra_info
         self.val_split = val_split
         self.test_split = test_split
@@ -160,6 +136,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         for (name, frame_list) in img_sets:
             for i in range(0, len(frame_list) - self.frames_per_sample + 1, step_size):
                 frames = frame_list[i:i + self.frames_per_sample]
+
                 # Randomly drop frames - only do this if we have 3 or more frames
                 if self.frames_per_sample > 2:
                     max_frames_to_drop = self.frames_per_sample - 2  # cant drop more than this
@@ -169,6 +146,7 @@ class DaVinciDataModule(pl.LightningDataModule):
                     for i in range(self.frames_to_drop):
                         rand_idx = random.randint(1, len(frames) - 1)
                         _ = frames.pop(rand_idx)
+
                 split_samples += [(name, frames)]
 
                 if val_set and (name, frames[0]) in self.vis_img_list_names:
@@ -228,8 +206,6 @@ class DaVinciDataModule(pl.LightningDataModule):
                                           sample_list=self.train_samples,
                                           frames_per_sample=self.frames_per_sample,
                                           frames_to_drop=self.frames_to_drop,
-                                          include_right_view=self.include_right_view,
-                                          stack_horizontal=self.stack_horizontal,
                                           is_color_input=self.is_color_input,
                                           is_color_output=self.is_color_output,
                                           extra_info=self.extra_info)
@@ -238,8 +214,6 @@ class DaVinciDataModule(pl.LightningDataModule):
                                         sample_list=self.val_samples,
                                         frames_per_sample=self.frames_per_sample,
                                         frames_to_drop=self.frames_to_drop,
-                                        include_right_view=self.include_right_view,
-                                        stack_horizontal=self.stack_horizontal,
                                         is_color_input=self.is_color_input,
                                         is_color_output=self.is_color_output,
                                         extra_info=self.extra_info)
@@ -248,8 +222,6 @@ class DaVinciDataModule(pl.LightningDataModule):
                                          sample_list=self.test_samples,
                                          frames_per_sample=self.frames_per_sample,
                                          frames_to_drop=self.frames_to_drop,
-                                         include_right_view=self.include_right_view,
-                                         stack_horizontal=self.stack_horizontal,
                                          is_color_input=self.is_color_input,
                                          is_color_output=self.is_color_output,
                                          extra_info=self.extra_info)
@@ -258,8 +230,6 @@ class DaVinciDataModule(pl.LightningDataModule):
                                         sample_list=self.vis_img_list,
                                         frames_per_sample=self.frames_per_sample,
                                         frames_to_drop=self.frames_to_drop,
-                                        include_right_view=self.include_right_view,
-                                        stack_horizontal=self.stack_horizontal,
                                         is_color_input=self.is_color_input,
                                         is_color_output=self.is_color_output,
                                         extra_info=self.extra_info)
