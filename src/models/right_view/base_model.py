@@ -91,8 +91,7 @@ class BaseModel(pl.LightningModule):
 
         # log predicted images
         if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
-            # pick random element in batch to visualize
-            #idx = np.random.choice(len(img))
+            # pick random element in batch to visualize (train dataloader is shuffled)
             self._log_images(img[0], target[0], pred[0], step_name="train")
 
         return loss_val
@@ -116,15 +115,19 @@ class BaseModel(pl.LightningModule):
 
         # log predicted images
         if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
-            # pick random element in batch to visualize
-            #idx = np.random.choice(len(img))
-            self._log_images(img[0], target[0], pred[0], step_name="val")
+            # pick random element in batch to visualize - val dataloader is not shuffled
+            idx = np.random.choice(len(img))
+            self._log_images(img[idx], target[idx], pred[idx], step_name="val")
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
         return [opt]
 
     def _log_images(self, img, target, pred, step_name):
+
+        # first frame is latest --> flip so that first frame is earliest and last frame is latest in visualization
+        # dim 0 is frame axis
+        img = img.flip(dims=[0])
 
         self.logger.experiment.add_image(f'{step_name}_input_left', make_grid(img), self.trainer.global_step)
         self.logger.experiment.add_image(f'{step_name}_target_right', make_grid(target), self.trainer.global_step)

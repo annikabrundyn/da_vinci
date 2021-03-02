@@ -61,6 +61,9 @@ class UNet2DModel(BaseModel):
         c, h, w = img.shape
         img = img.reshape(c // 3, 3, h, w)
 
+        # flip so that earliest frame is first and latest frame is last
+        img = img.flip(dims=[0])
+
         self.logger.experiment.add_image(f'{step_name}_input_left', make_grid(img), self.trainer.global_step)
         self.logger.experiment.add_image(f'{step_name}_target_right', make_grid(target), self.trainer.global_step)
         self.logger.experiment.add_image(f'{step_name}_pred_right', make_grid(pred), self.trainer.global_step)
