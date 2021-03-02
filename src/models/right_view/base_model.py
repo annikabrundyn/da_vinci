@@ -1,20 +1,14 @@
-import os.path
 from argparse import ArgumentParser
 
 import torch
-import torch.nn.functional as F
-import torchvision
 from torchvision.utils import make_grid
-import numpy as np
-import matplotlib.pyplot as plt
 
 import pytorch_lightning as pl
 from pytorch_lightning.metrics.functional import ssim, psnr
 import lpips
+import numpy as np
 
 from losses import Perceptual, L1_Perceptual, L1_SSIM
-from metrics import FIDCallback
-
 from models.unet_architecture import MultiFrameUNet
 
 
@@ -34,21 +28,21 @@ class BaseModel(pl.LightningModule):
         **kwargs
     ):
         super().__init__()
-        # self.save_hyperparameters()
-        # self.num_frames = num_frames
-        # self.combine_fn = combine_fn
-        # self.loss = loss
-        #
-        # self.criterion = self._determine_loss_fn()
-        #
-        # # by default assuming color input and output (3 channels)
-        # self.net = MultiFrameUNet(num_frames=num_frames,
-        #                           combine_fn=combine_fn,
-        #                           num_layers=num_layers,
-        #                           features_start=features_start,
-        #                           bilinear=bilinear)
-        #
-        # self.LPIPS = lpips.LPIPS(net='alex')
+        self.save_hyperparameters()
+        self.num_frames = num_frames
+        self.combine_fn = combine_fn
+        self.loss = loss
+
+        self.criterion = self._determine_loss_fn()
+
+        self.LPIPS = lpips.LPIPS(net='alex')
+
+        ### NOTE: for all the different models, this is essentially the only thing that changes (architecture)
+        self.net = MultiFrameUNet(num_frames=num_frames,
+                                  combine_fn=combine_fn,
+                                  num_layers=num_layers,
+                                  features_start=features_start,
+                                  bilinear=bilinear)
 
     def _determine_loss_fn(self):
         if self.loss == "l1":
@@ -56,7 +50,7 @@ class BaseModel(pl.LightningModule):
         elif self.loss == "mse":
             self.criterion = torch.nn.MSELoss()
         elif self.loss == "ssim":
-            self.criterion = SSIM()
+            self.criterion = pl.metrics.SSIM()
         elif self.loss == "perceptual":
             self.criterion = Perceptual()
         elif self.loss == "l1_perceptual":
