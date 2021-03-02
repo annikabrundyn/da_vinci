@@ -1,5 +1,5 @@
 from data.data import DaVinciDataModule
-from models.depth_map.model import Model
+from deprecated.depth_map.model import Model
 
 import os.path
 from argparse import ArgumentParser
@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 from mpl_toolkits.axes_grid1 import ImageGrid
-from models.callbacks.save_pred_img_callback import SavePredImgCallback
-from models.callbacks.fid_callback import FidCallback
+from deprecated.callbacks.save_pred_img_callback import SavePredImgCallback
+from deprecated.callbacks import FidCallback
 
 
 class LeftRightDepthMap(Model):

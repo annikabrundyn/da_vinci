@@ -1,16 +1,14 @@
 import os.path
 from argparse import ArgumentParser
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
-from models.depth_map.unet import UNet
+from deprecated.depth_map import UNet
 
 from metrics.fid import calculate_fid
-from data.data import DaVinciDataModule
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid

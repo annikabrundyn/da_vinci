@@ -1,21 +1,9 @@
-import torch
-import torch.nn.functional as F
-
-import os.path
-import numpy as np
-
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
-from pytorch_lightning.metrics.functional import ssim, psnr
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import ImageGrid
 
 from models.right_view.base_model import BaseRightModel
 from data.right_data import RightDaVinciDataModule
-from models.callbacks.right_callback import RightCallback
-from models.right_view.right_unet import RightUNet
 
 
 class DirectRightModel(BaseRightModel):

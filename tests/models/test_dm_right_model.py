@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 
 from models.right_view.dm_right_model import DepthMapRightModel
 from data.right_data import RightDaVinciDataModule
-from models.callbacks.right_dm_callback import RightDepthMapCallback
+from deprecated.callbacks import RightDepthMapCallback
 
 
 # TODO: dont know how to make this cleaner

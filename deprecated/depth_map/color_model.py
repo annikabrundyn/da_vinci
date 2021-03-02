@@ -4,19 +4,14 @@ import os.path
 import numpy as np
 
 import pytorch_lightning as pl
-import torch
-import torch.nn.functional as F
 
-from models.depth_map.base_model import BaseDepthMap
-from models.depth_map.unet import UNet
-from metrics.fid import calculate_fid
+from deprecated.depth_map import BaseDepthMap
+from deprecated.depth_map import UNet
 from data.depth_data import DepthDaVinciDataModule
-from models.callbacks.img_save import SaveImgCallBack
+from deprecated.callbacks import SaveImgCallBack
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
-
-from pytorch_lightning.metrics.functional import ssim, psnr
 
 
 class ColorModel(BaseDepthMap):

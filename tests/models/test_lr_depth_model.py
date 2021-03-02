@@ -1,9 +1,7 @@
 import pytest
 import pytorch_lightning as pl
 from data.depth_data import DepthDaVinciDataModule
-from models.callbacks.save_pred_img_callback import SavePredImgCallback
-from models.callbacks.fid_callback import FidCallback
-from models.depth_map.upperbound_model import UpperBoundModel, UpperBoundImgCallback
+from deprecated.depth_map.upperbound_model import UpperBoundModel, UpperBoundImgCallback
 
 
 @pytest.mark.parametrize("frames_per_sample,frames_to_drop,is_color_input",

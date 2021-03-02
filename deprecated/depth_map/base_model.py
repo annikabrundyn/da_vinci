@@ -7,8 +7,7 @@ import numpy as np
 
 from argparse import ArgumentParser
 
-from models.depth_map.unet import UNet
-from data.data import DaVinciDataModule
+from deprecated.depth_map import UNet
 from pytorch_lightning.metrics.functional import ssim, psnr
 
 import matplotlib.pyplot as plt

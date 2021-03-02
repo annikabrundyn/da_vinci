@@ -4,12 +4,10 @@ import os.path
 import numpy as np
 
 import pytorch_lightning as pl
-import torch
 import torch.nn.functional as F
 
-from models.depth_map.base_model import BaseDepthMap
-from models.depth_map.unet import UNet
-from metrics.fid import calculate_fid
+from deprecated.depth_map import BaseDepthMap
+from deprecated.depth_map import UNet
 from data.depth_data import DepthDaVinciDataModule
 
 import matplotlib.pyplot as plt

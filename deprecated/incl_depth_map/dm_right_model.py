@@ -1,23 +1,15 @@
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
-import torchvision
-
-import os.path
-import numpy as np
 
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 from pytorch_lightning.metrics.functional import ssim, psnr
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import ImageGrid
-
 from data.right_data import RightDaVinciDataModule
-from models.callbacks.right_dm_callback import RightDepthMapCallback
+from deprecated.callbacks import RightDepthMapCallback
 from models.right_view.right_unet import RightUNet
-from models.depth_map.color_model import ColorModel
+from deprecated.depth_map.color_model import ColorModel
 
 
 class DepthMapRightModel(pl.LightningModule):

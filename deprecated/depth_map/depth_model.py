@@ -2,11 +2,9 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 from data.depth_data import DepthDaVinciDataModule
-from models.depth_map.model import Model
+from deprecated.depth_map.model import Model
 
-from models.callbacks.save_pred_img_callback import SavePredImgCallback
-from models.callbacks.img_save import SaveImgCallBack
-from models.callbacks.fid_callback import FidCallback
+from deprecated.callbacks import SaveImgCallBack
 
 
 class DepthModel(Model):

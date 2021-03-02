@@ -1,13 +1,12 @@
 import torch
-import torch.nn.functional as F
 import pytorch_lightning as pl
 
 from argparse import ArgumentParser
 
 from data.right_data import RightDaVinciDataModule
-from pytorch_lightning.metrics.functional import ssim, psnr
+from pytorch_lightning.metrics.functional import ssim
 
-from models.right_view.vae.vae_unet import VariationalUNet
+from deprecated.vae import VariationalUNet
 
 
 class VAEModel(pl.LightningModule):
