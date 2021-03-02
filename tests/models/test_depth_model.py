@@ -1,6 +1,6 @@
 import pytest
 import pytorch_lightning as pl
-from data.depth_data import DepthDaVinciDataModule
+from deprecated.depth_data import DepthDaVinciDataModule
 from deprecated.callbacks import SaveImgCallBack
 from deprecated.depth_map.depth_model import DepthModel
 

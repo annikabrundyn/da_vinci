@@ -7,7 +7,7 @@ from functools import partial
 from tqdm import tqdm
 
 from argparse import ArgumentParser
-from data.baseline_dataset import BaselineDaVinciDataModule
+from deprecated.baseline_dataset import BaselineDaVinciDataModule
 from torch.utils.data import DataLoader
 
 

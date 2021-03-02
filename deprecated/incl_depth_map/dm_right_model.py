@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 import pytorch_lightning as pl
 from pytorch_lightning.metrics.functional import ssim, psnr
 
-from data.right_data import RightDaVinciDataModule
+from deprecated.right_data import RightDaVinciDataModule
 from deprecated.callbacks import RightDepthMapCallback
 from models.right_view.right_unet import RightUNet
 from deprecated.depth_map.color_model import ColorModel

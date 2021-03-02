@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import pytorch_lightning as pl
 
 from models.right_view.base_model import BaseRightModel
-from data.right_data import RightDaVinciDataModule
+from deprecated.right_data import RightDaVinciDataModule
 
 
 class DirectRightModel(BaseRightModel):

@@ -1,22 +1,11 @@
-import torch
-import torch.nn.functional as F
-import torchvision
-
-import os.path
-import numpy as np
-
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
-from pytorch_lightning.metrics.functional import ssim, psnr
 import lpips
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import ImageGrid
-
-from data.right_data import RightDaVinciDataModule
-from models.right_view.multiframe.model_unet2d import UNet2DModel
-from models.unet import UNetExtraSkip
+from deprecated.right_data import RightDaVinciDataModule
+from models.right_view.multiframe.stacked_unet2d import UNet2DModel
+from models.unet_architecture import UNetExtraSkip
 
 
 class ExtraSkipModel(UNet2DModel):

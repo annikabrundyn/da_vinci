@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.unet.unet_components import DoubleConvMF, DownMF, Up
+from models.unet_architecture.unet_components import DoubleConvMF, DownMF, Up
 
 
 class CombineConv3D(nn.Module):

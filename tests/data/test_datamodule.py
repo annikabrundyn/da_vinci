@@ -1,7 +1,4 @@
-import os
-
-from data.depth_data import DepthDaVinciDataModule
-from data.data import DaVinciDataModule
+from deprecated.depth_data import DepthDaVinciDataModule
 
 
 def test_val_test_splits(data_dir):

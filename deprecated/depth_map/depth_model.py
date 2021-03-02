@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
-from data.depth_data import DepthDaVinciDataModule
+from deprecated.depth_data import DepthDaVinciDataModule
 from deprecated.depth_map.model import Model
 
 from deprecated.callbacks import SaveImgCallBack

@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 
 import matplotlib.pyplot as plt
 import pytorch_lightning as pl
-from data.right_data import RightDaVinciDataModule
+from deprecated.right_data import RightDaVinciDataModule
 from deprecated.depth_map.model import Model
 from deprecated.callbacks.save_pred_img_callback import SavePredImgCallback
 from deprecated.callbacks import FidCallback

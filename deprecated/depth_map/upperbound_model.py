@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from deprecated.depth_map import BaseDepthMap
 from deprecated.depth_map import UNet
-from data.depth_data import DepthDaVinciDataModule
+from deprecated.depth_data import DepthDaVinciDataModule
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid

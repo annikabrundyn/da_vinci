@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 
 from argparse import ArgumentParser
 
-from data.right_data import RightDaVinciDataModule
+from deprecated.right_data import RightDaVinciDataModule
 from pytorch_lightning.metrics.functional import ssim
 
 from deprecated.vae import VariationalUNet

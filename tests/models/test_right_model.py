@@ -2,7 +2,7 @@ import pytest
 import pytorch_lightning as pl
 
 from models.right_view.direct_right_model import DirectRightModel
-from data.right_data import RightDaVinciDataModule
+from deprecated.right_data import RightDaVinciDataModule
 from deprecated.callbacks.right_callback import RightCallback
 
 

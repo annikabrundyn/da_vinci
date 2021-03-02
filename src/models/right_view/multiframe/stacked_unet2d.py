@@ -6,7 +6,7 @@ import lpips
 from torchvision.utils import make_grid
 
 from models.right_view.base_model import BaseModel
-from models.unet import UNet, UNetExtraSkip
+from models.unet_architecture import UNet, UNetExtraSkip
 from data import StackedDaVinciDataModule
 from metrics import FIDCallback
 

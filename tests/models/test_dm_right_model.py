@@ -2,7 +2,7 @@ import pytest
 import pytorch_lightning as pl
 
 from models.right_view.dm_right_model import DepthMapRightModel
-from data.right_data import RightDaVinciDataModule
+from deprecated.right_data import RightDaVinciDataModule
 from deprecated.callbacks import RightDepthMapCallback
 
 

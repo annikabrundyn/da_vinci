@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 
 from deprecated.depth_map import BaseDepthMap
 from deprecated.depth_map import UNet
-from data.depth_data import DepthDaVinciDataModule
+from deprecated.depth_data import DepthDaVinciDataModule
 from deprecated.callbacks import SaveImgCallBack
 
 import matplotlib.pyplot as plt

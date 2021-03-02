@@ -1,6 +1,6 @@
 import pytest
 import pytorch_lightning as pl
-from data.depth_data import DepthDaVinciDataModule
+from deprecated.depth_data import DepthDaVinciDataModule
 from deprecated.depth_map.upperbound_model import UpperBoundModel, UpperBoundImgCallback
 
 
