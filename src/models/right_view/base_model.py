@@ -15,7 +15,6 @@ import lpips
 from losses import Perceptual, L1_Perceptual, L1_SSIM
 from metrics import FIDCallback
 
-from data.multiframe_data import MFDaVinciDataModule
 from models.unet import MultiFrameUNet
 
 

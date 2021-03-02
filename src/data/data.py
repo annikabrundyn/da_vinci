@@ -16,7 +16,7 @@ class DaVinciDataSet(Dataset):
                  sample_list: list,
                  frames_per_sample: int,
                  frames_to_drop: int,
-                 channel_stack_frames: bool,
+                 channel_stack_frames: bool = None,
                  target_dir = 'image_1',
                  is_color_input: bool = True,
                  is_color_output: bool = True,
@@ -29,7 +29,12 @@ class DaVinciDataSet(Dataset):
         self.channel_stack_frames = channel_stack_frames
         self.target_dir = target_dir
 
+        self.is_color_input = is_color_input
+        self.is_color_output = is_color_output
+
         self.extra_info = extra_info
+
+        self._img_transforms()
 
     def _img_transforms(self):
 
@@ -97,6 +102,8 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.data_dir = data_dir if data_dir is not None else os.getcwd()
         self.frames_per_sample = frames_per_sample
         self.frames_to_drop = frames_to_drop
+        self.is_color_input = is_color_input
+        self.is_color_output = is_color_output
         self.extra_info = extra_info
         self.val_split = val_split
         self.test_split = test_split

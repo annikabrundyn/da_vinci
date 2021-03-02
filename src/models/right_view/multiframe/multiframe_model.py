@@ -5,7 +5,7 @@ import lpips
 
 from models.right_view.base_model import BaseModel
 from models.unet import MultiFrameUNet, MultiFrameUNetExtraSkip
-from data.multiframe_data import MFDaVinciDataModule
+from data import UnstackedDaVinciDataModule
 from metrics import FIDCallback
 
 
@@ -66,12 +66,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # data
-    dm = MFDaVinciDataModule(
+    dm = UnstackedDaVinciDataModule(
         args.data_dir,
         frames_per_sample=args.num_frames,
         frames_to_drop=0,
-        is_color_input=True,
-        is_color_output=True,
         extra_info=False,
         batch_size=args.batch_size,
         num_workers=args.num_workers,

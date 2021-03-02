@@ -7,7 +7,7 @@ from torchvision.utils import make_grid
 
 from models.right_view.base_model import BaseModel
 from models.unet import UNet, UNetExtraSkip
-from data.right_data import RightDaVinciDataModule
+from data import StackedDaVinciDataModule
 from metrics import FIDCallback
 
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # data
-    dm = RightDaVinciDataModule(
+    dm = StackedDaVinciDataModule(
         args.data_dir,
         frames_per_sample=args.num_frames,
         frames_to_drop=0,
