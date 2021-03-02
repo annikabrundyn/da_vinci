@@ -142,14 +142,14 @@ class BaseModel(pl.LightningModule):
         parser.add_argument("--num_frames", type=int, help="number of consecutive frames to include")
         parser.add_argument("--combine_fn", type=str, help="how to combine multiple frames")
         parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'L1_SSIM'], help="loss function")
-        parser.add_argument("--extra_skip", action='store_true', help="add extra skip connection straight from input to output")
-        parser.add_argument("--bilinear", action='store_true', help="bilinear (True) vs. transposed convolution (False)")
+        parser.add_argument("--extra_skip", type=bool, help="add extra skip connection straight from input to output")
+        parser.add_argument("--bilinear", type=bool, help="bilinear (True) vs. transposed convolution (False)")
         parser.add_argument("--num_layers", type=int, help="number of layers/blocks in u-net")
+        parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
 
         # hyperparameters with a default value
         parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
         parser.add_argument("--batch_size", type=int, default=32, help="size of the batches")
-        parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
         parser.add_argument("--num_workers", type=int, default=8)
 
         # logging
@@ -157,7 +157,7 @@ class BaseModel(pl.LightningModule):
         parser.add_argument("--tb_img_freq", type=int, default=10000)
         parser.add_argument("--save_img_freq", type=int, default=50)
         parser.add_argument("--fid_epoch_freq", type=int, default=5, help="number of epochs between each fid calculation")
-        parser.add_argument("--fid_n_samples", type=int, default=5, help="number of samples to use in fid")
+        parser.add_argument("--fid_n_samples", type=int, default=2000, help="number of samples to use in fid")
 
         return parser
 
