@@ -120,9 +120,7 @@ class BaseModel(pl.LightningModule):
         img, target = batch
         pred = self(img)
 
-        # returns a dictionary with loss and metrics
         logs = self._calculate_loss_metrics(target, pred, "test")
-
         return logs
 
     def configure_optimizers(self):

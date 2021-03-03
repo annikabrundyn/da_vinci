@@ -24,16 +24,8 @@ class MultiFrameModel(BaseModel):
             tb_img_freq: int = 10000,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
-
-        self.save_hyperparameters()
-        self.num_frames = num_frames
-        self.combine_fn = combine_fn
-        self.loss = loss
-
-        self.criterion = self._determine_loss_fn()
-
-        self.LPIPS = lpips.LPIPS(net='alex')
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear,
+                         features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         # UNet without extra skip connection (normal)
         if not self.hparams.extra_skip:
@@ -91,8 +83,12 @@ if __name__ == "__main__":
     print("model instance created")
     print("lightning version", pl.__version__)
 
-    # fid metric callback
-    fid = FIDCallback(args.data_dir, "real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
+    # fid callback
+    fid = FIDCallback(pickle_dir=args.data_dir,
+                      pickle_name="real_stats.pickle",
+                      val_dl=dm.val_dataloader_shuffle(),
+                      num_samples=args.fid_n_samples,
+                      fid_freq=args.fid_epoch_freq)
 
     # train - default logging every 50 steps
     trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
