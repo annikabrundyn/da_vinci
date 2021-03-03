@@ -9,7 +9,7 @@ import lpips
 import numpy as np
 
 from losses import Perceptual, L1_Perceptual, L1_SSIM
-
+from models.unet_architecture import MultiFrameUNet
 
 class BaseModel(pl.LightningModule):
     def __init__(
@@ -27,16 +27,16 @@ class BaseModel(pl.LightningModule):
         **kwargs
     ):
         super().__init__()
-        # self.save_hyperparameters()
-        # self.num_frames = num_frames
-        # self.combine_fn = combine_fn
-        # self.loss = loss
-        #
-        # self.criterion = self._determine_loss_fn()
-        #
-        # self.LPIPS = lpips.LPIPS(net='alex')
-        #
-        # ### NOTE: for all the different models, this is essentially the only thing that changes (architecture)
+        self.save_hyperparameters()
+        self.num_frames = num_frames
+        self.combine_fn = combine_fn
+        self.loss = loss
+
+        self.criterion = self._determine_loss_fn()
+
+        self.LPIPS = lpips.LPIPS(net='alex')
+
+        ### NOTE: for all the different models, this is essentially the only thing that changes (architecture)
         # self.net = MultiFrameUNet(num_frames=num_frames,
         #                           combine_fn=combine_fn,
         #                           num_layers=num_layers,

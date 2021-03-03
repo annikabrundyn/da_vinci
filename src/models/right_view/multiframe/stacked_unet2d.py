@@ -29,15 +29,7 @@ class UNet2DModel(BaseModel):
         super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear,
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
-        self.save_hyperparameters()
-        self.num_frames = num_frames
-        self.loss = loss
-
-        self.criterion = self._determine_loss_fn()
-
         self.input_channels = 3 * self.num_frames
-
-        self.LPIPS = lpips.LPIPS(net='alex')
 
         if not self.hparams.extra_skip:
             print("no skip")
