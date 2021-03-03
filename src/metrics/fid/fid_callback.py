@@ -19,12 +19,14 @@ class FIDCallback(pl.callbacks.base.Callback):
     num_samples - number of samples for calculating FID stats from generated images
     '''
 
-    def __init__(self, db_stats, val_dl, num_samples, fid_freq):
+    def __init__(self, pickle_dir, pickle_name, val_dl, num_samples, fid_freq):
         self.num_samples = num_samples
         self.fid_freq = fid_freq
         self.inception = load_patched_inception_v3()
 
         self.val_dl = val_dl
+
+        db_stats = os.path.join(pickle_dir, pickle_name)
 
         if not os.path.isfile(db_stats):
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

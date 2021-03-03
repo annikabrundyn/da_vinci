@@ -29,7 +29,7 @@ class MultiFrameUNet(nn.Module):
         self.input_channels = input_channels
         self.num_frames = num_frames
 
-        self.combine = self.determine_combine(combine_fn)
+        self.combine = self._determine_combine_fn(combine_fn)
 
         layers = [DoubleConvMF(self.input_channels, features_start)]
         combine_modules = [self.combine]
@@ -49,7 +49,7 @@ class MultiFrameUNet(nn.Module):
         self.layers = nn.ModuleList(layers)
         self.combine_modules = nn.ModuleList(combine_modules)
 
-    def determine_combine(self, combine_fn):
+    def _determine_combine_fn(self, combine_fn):
         if combine_fn == "conv_3d":
             combine = CombineConv3D(self.num_frames)
 

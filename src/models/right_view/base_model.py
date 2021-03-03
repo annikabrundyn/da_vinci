@@ -9,7 +9,6 @@ import lpips
 import numpy as np
 
 from losses import Perceptual, L1_Perceptual, L1_SSIM
-from models.unet_architecture import MultiFrameUNet
 
 
 class BaseModel(pl.LightningModule):
@@ -28,21 +27,21 @@ class BaseModel(pl.LightningModule):
         **kwargs
     ):
         super().__init__()
-        self.save_hyperparameters()
-        self.num_frames = num_frames
-        self.combine_fn = combine_fn
-        self.loss = loss
-
-        self.criterion = self._determine_loss_fn()
-
-        self.LPIPS = lpips.LPIPS(net='alex')
-
-        ### NOTE: for all the different models, this is essentially the only thing that changes (architecture)
-        self.net = MultiFrameUNet(num_frames=num_frames,
-                                  combine_fn=combine_fn,
-                                  num_layers=num_layers,
-                                  features_start=features_start,
-                                  bilinear=bilinear)
+        # self.save_hyperparameters()
+        # self.num_frames = num_frames
+        # self.combine_fn = combine_fn
+        # self.loss = loss
+        #
+        # self.criterion = self._determine_loss_fn()
+        #
+        # self.LPIPS = lpips.LPIPS(net='alex')
+        #
+        # ### NOTE: for all the different models, this is essentially the only thing that changes (architecture)
+        # self.net = MultiFrameUNet(num_frames=num_frames,
+        #                           combine_fn=combine_fn,
+        #                           num_layers=num_layers,
+        #                           features_start=features_start,
+        #                           bilinear=bilinear)
 
     def _determine_loss_fn(self):
         if self.loss == "l1":
@@ -66,11 +65,7 @@ class BaseModel(pl.LightningModule):
     def forward(self, x):
         return self.net(x)
 
-    def training_step(self, batch, batch_idx):
-        # predict right view
-        img, target = batch
-        pred = self(img)
-
+    def _calculate_loss_metrics(self, target, pred, step_name):
         # calculate loss
         loss_val = self.criterion(pred, target)
 
@@ -79,8 +74,21 @@ class BaseModel(pl.LightningModule):
         psnr_val = psnr(pred, target)
         lpips_val = self.LPIPS(pred, target).mean()
 
-        # log loss + metrics
-        logs = {'train_loss': loss_val, 'train_ssim': ssim_val, 'train_psnr': psnr_val, 'train_lpips': lpips_val}
+        # return loss and metric values to log
+        logs = {f'{step_name}_loss': loss_val, f'{step_name}_ssim': ssim_val, f'{step_name}_psnr': psnr_val,
+                f'{step_name}_lpips': lpips_val}
+
+        return logs
+
+    def training_step(self, batch, batch_idx):
+        # predict right view
+        img, target = batch
+        pred = self(img)
+
+        # returns a dictionary with loss and metrics
+        logs = self._calculate_loss_metrics(target, pred, "train")
+
+        # log metrics to tensorboard
         self.log_dict(logs)
 
         # log predicted images
@@ -88,23 +96,17 @@ class BaseModel(pl.LightningModule):
             # pick random element in batch to visualize (train dataloader is shuffled)
             self._log_images(img[0], target[0], pred[0], step_name="train")
 
-        return loss_val
+        return logs['train_loss']
 
     def validation_step(self, batch, batch_idx):
         # predict right view
         img, target = batch
         pred = self(img)
 
-        # calculate loss
-        loss_val = self.criterion(pred, target)
+        # returns a dictionary with loss and metrics
+        logs = self._calculate_loss_metrics(target, pred, "val")
 
-        # calculate metrics
-        ssim_val = ssim(pred, target)
-        psnr_val = psnr(pred, target)
-        lpips_val = self.LPIPS(pred, target).mean()
-
-        # log loss + metrics
-        logs = {'val_loss': loss_val, 'val_ssim': ssim_val, 'val_psnr': psnr_val, 'val_lpips': lpips_val}
+        # log metrics to tensorboard
         self.log_dict(logs)
 
         # log predicted images
@@ -112,6 +114,16 @@ class BaseModel(pl.LightningModule):
             # pick random element in batch to visualize - val dataloader is not shuffled
             idx = np.random.choice(len(img))
             self._log_images(img[idx], target[idx], pred[idx], step_name="val")
+
+    def test_step(self, batch, batch_idx):
+        # predict right view
+        img, target = batch
+        pred = self(img)
+
+        # returns a dictionary with loss and metrics
+        logs = self._calculate_loss_metrics(target, pred, "test")
+
+        return logs
 
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.net.parameters(), lr=self.hparams.lr)
@@ -132,26 +144,28 @@ class BaseModel(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
 
         # Required arguments
-        parser.add_argument("--data_dir", type=str, help="path to davinci data")
-        parser.add_argument("--num_frames", type=int, help="number of consecutive frames to include")
-        parser.add_argument("--combine_fn", type=str, help="how to combine multiple frames")
-        parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'L1_SSIM'], help="loss function")
-        parser.add_argument("--extra_skip", type=bool, help="add extra skip connection straight from input to output")
-        parser.add_argument("--bilinear", type=bool, help="bilinear (True) vs. transposed convolution (False)")
+        parser.add_argument("--data_dir", type=str, help="path to davinci data folder")
+        parser.add_argument("--num_frames", type=int, help="number of consecutive frames per sample")
+        parser.add_argument("--combine_fn", type=str, choices=['conv3d', 'max', 'average'],
+                            help="how to combine multiple frames")
+        parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'l1_ssim'],
+                            help="loss function")
+        parser.add_argument("--extra_skip", type=bool, help="whether to add extra skip connection from input to output")
+        parser.add_argument("--bilinear", type=bool, help="bilinear upsampling (True) vs. transposed convolution")
         parser.add_argument("--num_layers", type=int, help="number of layers/blocks in u-net")
         parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
 
         # hyperparameters with a default value
-        parser.add_argument("--lr", type=float, default=0.001, help="adam: learning rate")
-        parser.add_argument("--batch_size", type=int, default=32, help="size of the batches")
+        parser.add_argument("--lr", type=float, default=0.001, help="learning rate for adam optimizer")
+        parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--num_workers", type=int, default=8)
 
         # logging
         parser.add_argument("--log_tb_imgs", action='store_true', default=True)
-        parser.add_argument("--tb_img_freq", type=int, default=10000)
+        parser.add_argument("--tb_step_freq", type=int, default=10000, help="log image to tensborboard every x steps")
         parser.add_argument("--save_img_freq", type=int, default=50)
         parser.add_argument("--fid_epoch_freq", type=int, default=5, help="number of epochs between each fid calculation")
-        parser.add_argument("--fid_n_samples", type=int, default=2000, help="number of samples to use in fid")
+        parser.add_argument("--fid_n_samples", type=int, default=4000, help="number of samples to use in fid")
 
         return parser
 
