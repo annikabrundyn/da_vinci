@@ -150,3 +150,7 @@ grid_artifacts/
 *yaml
 
 .idea/
+
+*.pickle
+
+*.zip
