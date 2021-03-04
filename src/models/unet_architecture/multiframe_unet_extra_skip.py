@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from models.unet_architecture.unet_components import DoubleConvMF, DownMF, Up
-from models.right_view.multiframe.combine_fns import CombineConv3D, CombineMax, CombineAverage
+from models.right_view.combine_fns import CombineConv3D, CombineMax, CombineAverage
 
 
 class MultiFrameUNetExtraSkip(nn.Module):
