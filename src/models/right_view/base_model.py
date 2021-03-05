@@ -11,6 +11,7 @@ import numpy as np
 from losses import Perceptual, L1_Perceptual, L1_SSIM
 #from models.unet_architecture import MultiFrameUNet
 
+
 class BaseModel(pl.LightningModule):
     def __init__(
         self,
