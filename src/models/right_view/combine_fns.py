@@ -6,7 +6,7 @@ class CombineConv3D(nn.Module):
     Combine multiple embeddings using a 3D CNN
     """
 
-    def __init__(self, in_ch:int, out_ch: int = 1, kernel_size:int = 3, stride:int = 1, padding:int = 2):
+    def __init__(self, in_ch:int, out_ch: int = 1, kernel_size: int = 3, stride: int = 1, padding: int = 1):
         super().__init__()
         # in channels is num_frames
         self.net = nn.Conv3d(in_ch, out_ch, kernel_size=kernel_size, stride=stride, padding=padding)

@@ -37,11 +37,16 @@ class MultiFrameModel(BaseModel):
                                       bilinear=bilinear)
         else:
             print("Modified UNet *with* extra skip connection")
-            self.net = MultiFrameUNetExtraSkip(num_frames=num_frames,
-                                               combine_fn=combine_fn,
-                                               num_layers=num_layers,
-                                               features_start=features_start,
-                                               bilinear=bilinear)
+            self.net = MultiFrameUNet(num_frames=num_frames,
+                                      combine_fn=combine_fn,
+                                      num_layers=num_layers,
+                                      features_start=features_start,
+                                      bilinear=bilinear)
+            # self.net = MultiFrameUNetExtraSkip(num_frames=num_frames,
+            #                                    combine_fn=combine_fn,
+            #                                    num_layers=num_layers,
+            #                                    features_start=features_start,
+            #                                    bilinear=bilinear)
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
