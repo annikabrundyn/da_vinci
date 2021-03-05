@@ -8,7 +8,7 @@ TODO:
 import yaml
 
 import pytorch_lightning as pl
-from models.right_view.stacked_unet2d import UNet2DModel
+from models.right_view.stacked_unet2d import StackedModel
 from data import StackedDaVinciDataModule
 
 CKPT_PATH = "/Users/annikabrundyn/Developer/da_vinci/src/models/right_view/multiframe/lightning_logs/version_1/checkpoints/epoch=3-step=3.ckpt"
@@ -30,7 +30,7 @@ dm = StackedDaVinciDataModule(
 dm.setup()
 
 
-model = UNet2DModel.load_from_checkpoint(
+model = StackedModel.load_from_checkpoint(
     checkpoint_path=CKPT_PATH,
     hparams_file=HPARAMS_PATH,
     map_location=None

@@ -4,12 +4,12 @@ import pytorch_lightning as pl
 import lpips
 
 from models.right_view.base_model import BaseModel
-from models.unet_architecture import MultiFrameUNet, MultiFrameUNetExtraSkip
+from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip
 from data import UnstackedDaVinciDataModule
 #from metrics import FIDCallback
 
 
-class MultiFrameModel(BaseModel):
+class UnstackedModel(BaseModel):
     def __init__(
             self,
             num_frames: int,
@@ -17,7 +17,7 @@ class MultiFrameModel(BaseModel):
             loss: str,
             extra_skip: str,
             num_layers: int,
-            bilinear: bool,
+            bilinear: str,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
@@ -30,18 +30,18 @@ class MultiFrameModel(BaseModel):
         # UNet without extra skip connection (normal)
         if self.hparams.extra_skip in ("False", "F", "false"):
             print("Normal UNet *without* extra skip connection")
-            self.net = MultiFrameUNet(num_frames=num_frames,
-                                      combine_fn=combine_fn,
-                                      num_layers=num_layers,
-                                      features_start=features_start,
-                                      bilinear=bilinear)
+            self.net = UnstackedUNet(num_frames=self.num_frames,
+                                     combine_fn=self.combine_fn,
+                                     num_layers=self.hparams.num_layers,
+                                     features_start=self.hparams.features_start,
+                                     bilinear=self.bilinear)
         else:
             print("Modified UNet *with* extra skip connection")
-            self.net = MultiFrameUNetExtraSkip(num_frames=num_frames,
-                                               combine_fn=combine_fn,
-                                               num_layers=num_layers,
-                                               features_start=features_start,
-                                               bilinear=bilinear)
+            self.net = UnstackedUNetExtraSkip(num_frames=self.num_frames,
+                                              combine_fn=self.combine_fn,
+                                              num_layers=self.hparams.num_layers,
+                                              features_start=self.hparams.features_start,
+                                              bilinear=self.bilinear)
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)
 
     # model args
-    parser = MultiFrameModel.add_model_specific_args(parser)
+    parser = UnstackedModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
     # data
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     print(target.shape)
 
     # model
-    model = MultiFrameModel(**args.__dict__)
+    model = UnstackedModel(**args.__dict__)
     print("model instance created")
     print("lightning version", pl.__version__)
 

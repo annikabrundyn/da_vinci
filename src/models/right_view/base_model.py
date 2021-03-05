@@ -32,6 +32,7 @@ class BaseModel(pl.LightningModule):
         self.num_frames = num_frames
         self.combine_fn = combine_fn
         self.loss = loss
+        self.bilinear = (bilinear in ("True", "T", "true"))
 
         self.criterion = self._determine_loss_fn()
 
@@ -150,7 +151,7 @@ class BaseModel(pl.LightningModule):
         parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'l1_ssim'],
                             help="loss function")
         parser.add_argument("--extra_skip", type=str, help="whether to add extra skip connection from input to output")
-        parser.add_argument("--bilinear", type=bool, help="bilinear upsampling (True) vs. transposed convolution")
+        parser.add_argument("--bilinear", type=str, help="bilinear upsampling ('True', 'T', 'true') vs. transposed convolution")
         parser.add_argument("--num_layers", type=int, help="number of layers/blocks in u-net")
         parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
 

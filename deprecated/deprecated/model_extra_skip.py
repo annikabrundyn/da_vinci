@@ -4,11 +4,11 @@ import pytorch_lightning as pl
 import lpips
 
 from deprecated.right_data import RightDaVinciDataModule
-from models.right_view.stacked_unet2d import UNet2DModel
+from models.right_view.stacked_unet2d import StackedModel
 from models.unet_architecture import UNetExtraSkip
 
 
-class ExtraSkipModel(UNet2DModel):
+class ExtraSkipModel(StackedModel):
     def __init__(
             self,
             num_frames: int,

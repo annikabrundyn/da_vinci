@@ -1,5 +1,5 @@
 from models.unet_architecture.unet_plain import UNet
 from models.unet_architecture.unet_extra_skip import UNetExtraSkip
 
-from models.unet_architecture.multiframe_unet import MultiFrameUNet
-from models.unet_architecture.multiframe_unet_extra_skip import MultiFrameUNetExtraSkip
+from models.unet_architecture.unstacked_unet import UnstackedUNet
+from models.unet_architecture.unstacked_unet_extra_skip import UnstackedUNetExtraSkip

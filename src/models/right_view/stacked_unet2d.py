@@ -11,7 +11,7 @@ from data import StackedDaVinciDataModule
 #from metrics import FIDCallback
 
 
-class UNet2DModel(BaseModel):
+class StackedModel(BaseModel):
     def __init__(
             self,
             num_frames: int,
@@ -19,7 +19,7 @@ class UNet2DModel(BaseModel):
             loss: str,
             extra_skip: str,
             num_layers: int,
-            bilinear: bool,
+            bilinear: str,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
@@ -38,7 +38,7 @@ class UNet2DModel(BaseModel):
                 output_channels=3,
                 num_layers=self.hparams.num_layers,
                 features_start=self.hparams.features_start,
-                bilinear=self.hparams.bilinear)
+                bilinear=self.bilinear)
         else:
             print("with skip")
             self.net = UNetExtraSkip(
@@ -46,7 +46,7 @@ class UNet2DModel(BaseModel):
                 output_channels=3,
                 num_layers=self.hparams.num_layers,
                 features_start=self.hparams.features_start,
-                bilinear=self.hparams.bilinear)
+                bilinear=self.bilinear)
 
     def _log_images(self, img, target, pred, step_name):
         # unstack multiple frames to visualize
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)
 
     # model args
-    parser = UNet2DModel.add_model_specific_args(parser)
+    parser = StackedModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
     # data
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     print(target.shape)
 
     # model
-    model = UNet2DModel(**args.__dict__)
+    model = StackedModel(**args.__dict__)
     print("model instance created")
     print("lightning version", pl.__version__)
 

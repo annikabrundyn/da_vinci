@@ -5,11 +5,10 @@ from models.unet_architecture.unet_components import DoubleConvMF, DownMF, Up
 from models.right_view.combine_fns import CombineConv3D, CombineMax, CombineAverage
 
 
-class MultiFrameUNetExtraSkip(nn.Module):
+class UnstackedUNet(nn.Module):
     """
     Args:
-        num_classes: Number of output classes required
-        num_layers: Number of layers in each side of U-net (default 5)
+        TODO
         features_start: Number of features in first layer (default 64)
         bilinear (bool): Whether to use bilinear interpolation or transposed convolutions (default) for upsampling.
     """
@@ -25,12 +24,11 @@ class MultiFrameUNetExtraSkip(nn.Module):
     ):
         super().__init__()
         self.num_layers = num_layers
-        self.input_channels = input_channels
         self.num_frames = num_frames
 
-        self.combine = self.determine_combine(combine_fn)
+        self.combine = self._determine_combine_fn(combine_fn)
 
-        layers = [DoubleConvMF(self.input_channels, features_start)]
+        layers = [DoubleConvMF(input_channels, features_start)]
         combine_modules = [self.combine]
 
         feats = features_start
@@ -48,11 +46,8 @@ class MultiFrameUNetExtraSkip(nn.Module):
         self.layers = nn.ModuleList(layers)
         self.combine_modules = nn.ModuleList(combine_modules)
 
-        # WIP: should we combine them with a single convolutional layer? no non-linearity?
-        self.final_conv = nn.Conv2d(2 * output_channels, output_channels, kernel_size=3, padding=1)
-
-    def determine_combine(self, combine_fn):
-        if combine_fn == "conv_3d":
+    def _determine_combine_fn(self, combine_fn):
+        if combine_fn == "conv3d":
             combine = CombineConv3D(self.num_frames)
 
         elif combine_fn == "max":
@@ -79,14 +74,6 @@ class MultiFrameUNetExtraSkip(nn.Module):
             comb_xi[-1] = dec_layer(comb_xi[-1], comb_xi[-2 - i])
 
         # Final conv layer of UNet
-        orig_output = self.layers[-1](comb_xi[-1])
+        pred_right = self.layers[-1](comb_xi[-1])
 
-        # WIP: add additional connection straight from input to output
-        # TODO: double check that the first frame is the "latest frame" -- I THINK ITS THE LAST FRAME ACTUALLY
-        input = x[:, 0, :, :, :]
-        input_concat_output = torch.cat([input, orig_output], dim=1)
-        new_output = self.final_conv(input_concat_output)
-
-        # TODO: output both orig_output and new_output to visualize the shift
-
-        return new_output
+        return pred_right
