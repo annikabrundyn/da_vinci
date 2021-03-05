@@ -7,7 +7,6 @@ class Down(nn.Module):
     """
     Downscale with MaxPool => DoubleConvolution block
     """
-
     def __init__(self, in_ch: int, out_ch: int, batch_norm: bool = False):
         super().__init__()
         maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -31,7 +30,6 @@ class DownMF(Down):
     """
     Downscale with MaxPool => DoubleConvolution block
     """
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -54,7 +52,6 @@ class DoubleConv(nn.Module):
     """
     [ Conv2d => BatchNorm (optional) => ReLU ] x 2
     """
-
     def __init__(self, in_ch: int, out_ch: int, batch_norm: bool = False):
         super().__init__()
         conv1 = nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1)
@@ -103,7 +100,6 @@ class Up(nn.Module):
     Upsampling (by either bilinear interpolation or transpose convolutions)
     followed by concatenation of feature map from contracting path, followed by DoubleConv.
     """
-
     def __init__(self, in_ch: int, out_ch: int, bilinear: bool = False):
         super().__init__()
         self.upsample = None
