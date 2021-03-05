@@ -8,7 +8,11 @@ from models.right_view.combine_fns import CombineConv3D, CombineMax, CombineAver
 class UnstackedUNet(nn.Module):
     """
     Args:
-        TODO
+        num_frames: Number of consecutive video frames to use as input
+        combine_fn: How to combine features across temporal dimension after each convolutional 'Down' block
+        input_channels: Number of channels for input frames (3/color)
+        output_channels: Number of channels in output (3/color)
+        num_layers: Number of convolutional blocks in each side of UNet
         features_start: Number of features in first layer (default 64)
         bilinear (bool): Whether to use bilinear interpolation or transposed convolutions (default) for upsampling.
     """
