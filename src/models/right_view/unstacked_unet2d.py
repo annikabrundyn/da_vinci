@@ -15,7 +15,7 @@ class MultiFrameModel(BaseModel):
             num_frames: int,
             combine_fn: str,
             loss: str,
-            extra_skip: bool,
+            extra_skip: str,
             num_layers: int,
             bilinear: bool,
             features_start: int = 64,
@@ -28,7 +28,7 @@ class MultiFrameModel(BaseModel):
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         # UNet without extra skip connection (normal)
-        if not self.hparams.extra_skip:
+        if self.hparams.extra_skip in ("False", "F", "false"):
             print("Normal UNet *without* extra skip connection")
             self.net = MultiFrameUNet(num_frames=num_frames,
                                       combine_fn=combine_fn,
@@ -37,16 +37,11 @@ class MultiFrameModel(BaseModel):
                                       bilinear=bilinear)
         else:
             print("Modified UNet *with* extra skip connection")
-            self.net = MultiFrameUNet(num_frames=num_frames,
-                                      combine_fn=combine_fn,
-                                      num_layers=num_layers,
-                                      features_start=features_start,
-                                      bilinear=bilinear)
-            # self.net = MultiFrameUNetExtraSkip(num_frames=num_frames,
-            #                                    combine_fn=combine_fn,
-            #                                    num_layers=num_layers,
-            #                                    features_start=features_start,
-            #                                    bilinear=bilinear)
+            self.net = MultiFrameUNetExtraSkip(num_frames=num_frames,
+                                               combine_fn=combine_fn,
+                                               num_layers=num_layers,
+                                               features_start=features_start,
+                                               bilinear=bilinear)
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED

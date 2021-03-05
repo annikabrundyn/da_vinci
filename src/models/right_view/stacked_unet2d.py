@@ -17,7 +17,7 @@ class UNet2DModel(BaseModel):
             num_frames: int,
             combine_fn: None,
             loss: str,
-            extra_skip: bool,
+            extra_skip: str,
             num_layers: int,
             bilinear: bool,
             features_start: int = 64,
@@ -31,7 +31,7 @@ class UNet2DModel(BaseModel):
 
         self.input_channels = 3 * self.num_frames
 
-        if not self.hparams.extra_skip:
+        if self.hparams.extra_skip in ("False", "F", "false") :
             print("no skip")
             self.net = UNet(
                 input_channels=self.input_channels,
