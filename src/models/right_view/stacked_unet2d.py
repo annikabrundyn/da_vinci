@@ -34,11 +34,11 @@ class UNet2DModel(BaseModel):
         if not self.hparams.extra_skip:
             print("no skip")
             self.net = UNet(
-                input_channels = self.input_channels,
-                output_channels = 3,
-                num_layers = self.hparams.num_layers,
-                features_start = self.hparams.features_start,
-                bilinear = self.hparams.bilinear)
+                input_channels=self.input_channels,
+                output_channels=3,
+                num_layers=self.hparams.num_layers,
+                features_start=self.hparams.features_start,
+                bilinear=self.hparams.bilinear)
         else:
             print("with skip")
             self.net = UNetExtraSkip(

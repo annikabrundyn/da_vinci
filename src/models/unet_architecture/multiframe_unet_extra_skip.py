@@ -90,8 +90,3 @@ class MultiFrameUNetExtraSkip(nn.Module):
         # TODO: output both orig_output and new_output to visualize the shift
 
         return new_output
-
-
-x = torch.rand(2, 5, 3, 100, 100)
-model = MultiFrameUNetExtraSkip(num_frames = 5, combine_fn="max")
-out = model(x)

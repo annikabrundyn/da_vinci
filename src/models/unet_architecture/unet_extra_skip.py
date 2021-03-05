@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from models.unet_architecture.unet_components import DoubleConv, Up, Down
 
