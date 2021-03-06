@@ -48,12 +48,13 @@ class BaseModel(pl.LightningModule):
         #                           bilinear=bilinear)
 
     def _determine_loss_fn(self):
+
         if self.loss == "l1":
             self.criterion = torch.nn.L1Loss()
         elif self.loss == "mse":
             self.criterion = torch.nn.MSELoss()
-        #elif self.loss == "ssim":
-        #    self.criterion = SSIM()
+        elif self.loss == "ssim":
+           self.criterion = ssim
         elif self.loss == "perceptual":
             self.criterion = Perceptual()
         elif self.loss == "l1_perceptual":

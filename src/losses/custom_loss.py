@@ -1,8 +1,9 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 from losses.perceptual_loss import Perceptual
-from pytorch_lightning.metrics import SSIM
+from pytorch_lightning.metrics.functional import ssim
 
 
 class L1_Perceptual(nn.Module):
@@ -24,8 +25,6 @@ class L1_SSIM(nn.Module):
         Equal weight for L1 + SSIM
         '''
         super().__init__()
-        self.l1 = nn.L1Loss()
-        self.ssim = SSIM()
 
     def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
-        return self.l1(y_true, y_pred) + self.ssim(y_true, y_pred)
+        return F.l1_loss(y_true, y_pred) + ssim(y_true, y_pred)
