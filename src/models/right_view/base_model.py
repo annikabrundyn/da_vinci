@@ -9,6 +9,9 @@ import lpips
 import numpy as np
 
 from losses import Perceptual, L1_Perceptual, L1_SSIM
+
+from ignite.metrics import SSIM
+
 #from models.unet_architecture import MultiFrameUNet
 
 
@@ -51,7 +54,7 @@ class BaseModel(pl.LightningModule):
         elif self.loss == "mse":
             self.criterion = torch.nn.MSELoss()
         elif self.loss == "ssim":
-            self.criterion = pl.metrics.SSIM()
+            self.criterion = SSIM()
         elif self.loss == "perceptual":
             self.criterion = Perceptual()
         elif self.loss == "l1_perceptual":
