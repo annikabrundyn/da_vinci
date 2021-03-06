@@ -245,33 +245,38 @@ class DaVinciDataModule(pl.LightningDataModule):
         loader = DataLoader(self.train_dataset,
                             batch_size=self.batch_size,
                             shuffle=True,
-                            num_workers=self.num_workers)
+                            num_workers=self.num_workers,
+                            pin_memory=True)
         return loader
 
     def val_dataloader(self):
         loader = DataLoader(self.val_dataset,
                             batch_size=self.batch_size,
                             shuffle=False,
-                            num_workers=self.num_workers)
+                            num_workers=self.num_workers,
+                            pin_memory=True)
         return loader
 
     def val_dataloader_shuffle(self):
         loader = DataLoader(self.val_dataset,
                             batch_size=self.batch_size,
                             shuffle=True,
-                            num_workers=self.num_workers)
+                            num_workers=self.num_workers,
+                            pin_memory=True)
         return loader
 
     def test_dataloader(self):
         loader = DataLoader(self.test_dataset,
                             batch_size=self.batch_size,
                             shuffle=False,
-                            num_workers=self.num_workers)
+                            num_workers=self.num_workers,
+                            pin_memory=True)
         return loader
 
     def vis_img_dataloader(self):
         loader = DataLoader(self.vis_dataset,
                             batch_size=1,
                             shuffle=False,
-                            num_workers=self.num_workers)
+                            num_workers=self.num_workers,
+                            pin_memory=True)
         return loader

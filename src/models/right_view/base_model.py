@@ -10,7 +10,6 @@ import numpy as np
 
 from losses import Perceptual, L1_Perceptual, L1_SSIM
 
-#from ignite.metrics import SSIM
 #from models.unet_architecture import MultiFrameUNet
 
 
@@ -75,7 +74,7 @@ class BaseModel(pl.LightningModule):
         loss_val = self.criterion(pred, target)
 
         # calculate metrics
-        ssim_val = ssim(pred, target)
+        ssim_val = ssim(pred, target.type(pred.dtype))
         psnr_val = psnr(pred, target)
         lpips_val = self.LPIPS(pred, target).mean()
 
