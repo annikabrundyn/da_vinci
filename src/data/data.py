@@ -17,7 +17,7 @@ class DaVinciDataSet(Dataset):
                  frames_per_sample: int,
                  frames_to_drop: int,
                  channel_stack_frames: bool = None,
-                 target_dir = 'image_1',
+                 target_dir: str = 'image_1',
                  is_color_input: bool = True,
                  is_color_output: bool = True,
                  extra_info: bool = False,
@@ -110,7 +110,6 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.num_pred_img_samples = num_pred_img_samples
-        self.dataset = DaVinciDataSet
 
     # helper
     def _read_image_list(self, filename):

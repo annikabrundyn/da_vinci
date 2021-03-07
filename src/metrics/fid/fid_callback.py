@@ -75,7 +75,8 @@ class FIDCallback(pl.callbacks.base.Callback):
             pl_module.eval()
 
             with torch.no_grad():
-                self.to(pl_module.device)
+                self.inception = self.inception.to(pl_module.device)
+                #self.to(pl_module.device)
                 features = []
 
                 samples_used = 0
@@ -84,7 +85,7 @@ class FIDCallback(pl.callbacks.base.Callback):
                     if samples_used >= self.num_samples:
                         break
 
-                    pred = pl_module(img)
+                    pred = pl_module(img.to(pl_module.device))
 
                     feat = self.inception(pred)[0].view(pred.shape[0], -1)  # compute features
                     features.append(feat.to('cpu'))
