@@ -1,95 +1,50 @@
+import logging
 import multiprocessing
 import numpy as np
 import pytorch_lightning as pl
 import sys
+import torch
+import torch.nn as nn
 
+from collections import defaultdict
 from functools import partial
 from tqdm import tqdm
 
 from argparse import ArgumentParser
-from deprecated.baseline_dataset import BaselineDaVinciDataModule
+from data.data import DaVinciDataModule
+from losses.loss_registry import LossRegistry
 from torch.utils.data import DataLoader
 
 
-def mean_abs_mismatch(slice0, slice1):
-    """ Mean absoute difference between images
-    """
-    return np.mean(np.abs(slice0 - slice1))
-
-
-def x_trans_slice(img_slice, x_vox_trans):
-    """ Return copy of `img_slice` translated by `x_vox_trans` voxels
-
-    Parameters
-    ----------
-    img_slice : array shape (H, W, num_channels)
-        2D image to transform with translation `x_vox_trans`
-    x_vox_trans : int
-        Number of pixels (voxels) to translate `img_slice`; can be
-        positive or negative.
-
-    Returns
-    -------
-    img_slice_transformed : array shape (M, N)
-        2D image translated by `x_vox_trans` pixels (voxels).
-    """
-    # Make a 0-filled array of same shape as `img_slice`
-    trans_slice = np.zeros(img_slice.shape)
-    # Use slicing to select voxels out of the image and move them
-    # up or down on the first (x) axis
-    if x_vox_trans < 0:
-        trans_slice[:, :x_vox_trans, :] = img_slice[:, -x_vox_trans:, :]
-    elif x_vox_trans == 0:
-        trans_slice[:, :, :] = img_slice
-    else:
-        trans_slice[:, x_vox_trans:, :] = img_slice[:, :-x_vox_trans, :]
-    return trans_slice
-
-
-def calc_mae_translation(img, target, mae_list, args):
-    index = args[0]
-    translation = args[1]
-
-    img = img.numpy()
-    target = target.numpy()
-    img = img.transpose(1, 2, 0)
-    target = target.transpose(1, 2, 0)
-
-    # Make the translated image Y_t
-    shifted = x_trans_slice(img, translation)
-    # Calculate the mismatch
-    mae = mean_abs_mismatch(shifted, target)
-    mae_list[index] += mae
-
-
-class BaselineModel:
-    INPUT_IMG_WIDTH = 384
+class BaselineModel(nn.Module):
+    SUPPORTED_FILLS = {"zeros", "roll", "copy_left"}
 
     def __init__(self):
-        self.global_disparity = 0
+        super(BaselineModel, self).__init__()
 
-    def fit(self, dataloader: DataLoader):
-        half_width = int(self.INPUT_IMG_WIDTH / 2)
-        translations = range(-half_width, half_width)  # Candidate values for t
+    def forward(self, x, x_trans, fill="copy_left"):
+        orig_x = torch.clone(x)
+        out = torch.roll(x, x_trans, 2)
+        img_width = x.size()[3]
 
-        manager = multiprocessing.Manager()
-        mae_list = manager.list([0] * len(translations))
-        p = multiprocessing.Pool()
+        if x_trans <= 0:
+            empty_slice_start = img_width + x_trans
+            empty_slice_end = img_width
+        else:
+            empty_slice_start = 0
+            empty_slice_end = img_width - x_trans
 
-        with p:
-            for batch_idx, batch in enumerate(tqdm(dataloader)):
-                imgs, targets = batch
-                for img, target in zip(imgs, targets):
-                    func = partial(calc_mae_translation, img, target, mae_list)
-                    p.map(func, enumerate(translations))
-        p.close()
-        p.join()
+        if fill == "zeros":
+            out[:, :, :, empty_slice_start:empty_slice_end] = 0
+        elif fill == "copy_left":
+            out[:, :, :, empty_slice_start:empty_slice_end] = orig_x[:, :, :,
+                                                                     empty_slice_start:empty_slice_end]
+        elif "roll":
+            pass
+        else:
+            raise RuntimeError("Unsupported fill operation")
 
-        mae_list = np.array(mae_list)
-        mae = mae_list / len(dataloader.dataset)
-        min_mae_pos = mae.argmin()
-        self.global_disparity = translations[min_mae_pos]
-        return mae[min_mae_pos]
+        return out
 
 
 if __name__ == "__main__":
@@ -101,29 +56,68 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # CUDA for PyTorch
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda:0" if use_cuda else "cpu")
+
     # data
-    dm = BaselineDaVinciDataModule(args.data_dir)
+    dm = DaVinciDataModule(data_dir=args.data_dir, frames_per_sample=1,
+                           frames_to_drop=0, num_workers=16)
     dm.setup()
-    print("dm setup")
+    val_dataloader = dm.val_dataloader()
+    sample_img = next(iter(val_dataloader))[0][0]
 
     # sanity check
     print("size of trainset:", len(dm.train_samples))
     print("size of validset:", len(dm.val_samples))
     print("size of testset:", len(dm.test_samples))
 
-    img, target = next(iter(dm.val_dataloader()))
-    print(img.shape)
-    print(target.shape)
-
     # model
-    model = BaselineModel()
-    print("model instance created")
+    model = BaselineModel().to(device)
+    model.eval()
 
-    # train
-    min_mae = model.fit(dm.val_dataloader())
-    global_disparity = model.global_disparity
+    loss_module_dict = {}
+    loss_result_dict = defaultdict(lambda: defaultdict(float))
+    losses_registry = LossRegistry.get_registry()
+    print(losses_registry)
 
+    # Instatiate each loss
+    for loss in losses_registry:
+        loss_module_dict[loss] = losses_registry[loss]().to(device)
+
+    # Candidate x-coord shifts for input imgs
+    img_width = len(sample_img[0][0])
+    half_width = int(img_width / 2)
+    translations = range(-half_width, half_width)
+
+    # Train
+    with torch.no_grad():
+        for x_tran in tqdm(translations):
+            for batch_idx, sample in enumerate(val_dataloader):
+                inputs, targets = sample
+                inputs, targets = inputs.squeeze(1).to(device), targets.to(device)
+                shifted_inputs = model(inputs, x_tran)
+
+                for loss in loss_module_dict:
+                    loss_result_dict[loss][x_tran] += loss_module_dict[loss](
+                        y_true=targets.to(device), y_pred=shifted_inputs).cpu().item() / len(inputs)
+
+            for loss in loss_module_dict:
+                loss_module_dict[loss].reset()
+
+            if x_tran == -188:
+                break
+
+        torch.cuda.empty_cache()
+
+    # Get min loss value and corresponding disparity for each loss
+    final_results_dict = {}
+    for loss in loss_result_dict:
+        min_x_trans = min(loss_result_dict[loss], key=loss_result_dict[loss].get)
+        min_loss = loss_result_dict[loss][min_x_trans]
+        final_results_dict[loss] = {"min_loss": min_loss, "min_x_trans": min_x_trans}
+
+    # Write results to file
     with open("baseline_results.txt", "w") as f:
         sys.stdout = f  # Change the standard output to the file we created.
-        print(f"min mae: {min_mae}")
-        print(f"best global disparity: {global_disparity}")
+        print(f"{final_results_dict}")

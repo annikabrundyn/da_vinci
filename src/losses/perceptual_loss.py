@@ -1,4 +1,6 @@
 import torch
+
+from losses.loss_registry import LossRegistry
 from torch import nn
 from torch.nn import functional as F
 from torchvision import models
@@ -25,6 +27,7 @@ class VGG16FeatureExtractor(nn.Module):
         return results[1:]
 
 
+# @LossRegistry.register('perceptual')
 class Perceptual(nn.Module):
     def __init__(self) -> None:
         super().__init__()

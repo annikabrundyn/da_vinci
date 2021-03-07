@@ -110,6 +110,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.num_pred_img_samples = num_pred_img_samples
+        self.dataset = DaVinciDataSet
 
     # helper
     def _read_image_list(self, filename):
