@@ -13,6 +13,12 @@ from tqdm import tqdm
 from argparse import ArgumentParser
 from data.data import DaVinciDataModule
 from losses.loss_registry import LossRegistry
+from metrics.fid.fid_callback import FIDCallback
+
+import lpips
+
+from pytorch_lightning.metrics.functional import psnr
+from pytorch_lightning.metrics.functional import ssim
 from torch.utils.data import DataLoader
 
 
@@ -105,17 +111,34 @@ if __name__ == "__main__":
             for loss in loss_module_dict:
                 loss_module_dict[loss].reset()
 
-            if x_tran == -188:
-                break
-
-        torch.cuda.empty_cache()
-
     # Get min loss value and corresponding disparity for each loss
     final_results_dict = {}
     for loss in loss_result_dict:
         min_x_trans = min(loss_result_dict[loss], key=loss_result_dict[loss].get)
         min_loss = loss_result_dict[loss][min_x_trans]
         final_results_dict[loss] = {"min_loss": min_loss, "min_x_trans": min_x_trans}
+
+    # Calculate metrics for the optimal shift for each loss
+    fid = FIDCallback(args.data_dir, "real_stats.pickle", val_dataloader, len(dm.val_samples), 1)
+    lpips = lpips.LPIPS(net='alex')
+    ssim_val, psnr_val, lpips_val = 0, 0, 0
+
+    for loss in loss_result_dict:
+        fid_val = fid._calc_fid(model, final_results_dict[loss]["min_x_trans"])
+
+        for batch_idx, sample in enumerate(val_dataloader):
+            inputs, targets = sample
+            inputs, targets = inputs.squeeze(1).to(device), targets.to(device)
+            shifted_inputs = model(inputs, final_results_dict[loss]["min_x_trans"])
+
+            ssim_val += ssim(shifted_inputs, targets.type(targets.dtype)) / len(inputs)
+            psnr_val += psnr(shifted_inputs, targets) / len(inputs)
+            lpips_val += lpips(shifted_inputs, targets).mean() / len(inputs)
+
+        final_results_dict[loss]['SSIM'] = ssim_val.item()
+        final_results_dict[loss]['PSNR'] = psnr_val.item()
+        final_results_dict[loss]['LPIPS'] = lpips_val.item()
+        final_results_dict[loss]['FID'] = fid_val
 
     # Write results to file
     with open("baseline_results.txt", "w") as f:

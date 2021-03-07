@@ -73,32 +73,39 @@ class FIDCallback(pl.callbacks.base.Callback):
 
             with torch.no_grad():
                 self.to(pl_module.device)
-                features = []
 
-                samples_used = 0
-                for i, (img, target) in enumerate(tqdm(self.val_dl, desc="Getting features for generated images.")):
-                    samples_used += len(target)
-                    if samples_used >= self.num_samples:
-                        break
+                fid = self._calc_fid(pl_module)
 
-                    pred = pl_module(img)
-
-                    feat = self.inception(pred)[0].view(pred.shape[0], -1)  # compute features
-                    features.append(feat.to('cpu'))
-
-                features = torch.cat(features, 0).numpy()
-
-                sample_mean = np.mean(features, 0)
-                sample_cov = np.cov(features, rowvar=False)
-
-                fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
                 print(f"FID: {fid}\n")
 
                 # log FID
                 pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
-                #self.to(torch.device('cpu'))
+                # self.to(torch.device('cpu'))
 
             #self.last_global_step = trainer.global_step
 
         else:
             return 0
+
+    def _calc_fid(self, pl_module, *args):
+        features = []
+
+        samples_used = 0
+        for i, (img, target) in enumerate(tqdm(self.val_dl, desc="Getting features for generated images.")):
+            samples_used += len(target)
+            if samples_used >= self.num_samples:
+                break
+
+            pred = pl_module(img.squeeze(1), *args)
+
+            feat = self.inception(pred)[0].view(pred.shape[0], -1)  # compute features
+            features.append(feat.to('cpu'))
+
+        features = torch.cat(features, 0).numpy()
+
+        sample_mean = np.mean(features, 0)
+        sample_cov = np.cov(features, rowvar=False)
+
+        fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
+
+        return fid
