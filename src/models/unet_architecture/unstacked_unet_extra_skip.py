@@ -52,7 +52,7 @@ class UnstackedUNetExtraSkip(nn.Module):
         self.final_conv = nn.Conv2d(2 * output_channels, output_channels, kernel_size=3, padding=1)
 
     def determine_combine(self, combine_fn):
-        if combine_fn == "conv_3d":
+        if combine_fn == "conv3d":
             combine = CombineConv3D(self.num_frames)
 
         elif combine_fn == "max":

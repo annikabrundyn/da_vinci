@@ -11,8 +11,8 @@ import pytorch_lightning as pl
 from models.right_view.stacked_unet2d import StackedModel
 from data import StackedDaVinciDataModule
 
-CKPT_PATH = "/Users/annikabrundyn/Developer/da_vinci/src/models/right_view/multiframe/lightning_logs/version_1/checkpoints/epoch=3-step=3.ckpt"
-HPARAMS_PATH = "/Users/annikabrundyn/Developer/da_vinci/src/models/right_view/multiframe/lightning_logs/version_1/hparams.yaml"
+CKPT_PATH = ""
+HPARAMS_PATH = "/Users/annikabrundyn/Downloads/hparams.yaml"
 
 
 with open(HPARAMS_PATH, "r") as stream:
