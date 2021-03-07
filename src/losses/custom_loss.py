@@ -1,12 +1,22 @@
-import torch
+from pytorch_lightning.metrics import SSIM
+from losses.loss_registry import LossRegistry
+from losses.perceptual_loss import Perceptual
 from torch import nn
 import torch.nn.functional as F
 
 from losses.perceptual_loss import Perceptual
 from pytorch_lightning.metrics.functional import ssim
+import torch
+import abc
 
 
-class L1_Perceptual(nn.Module):
+class CustomLoss(nn.Module):
+    def reset(self):
+        pass
+
+
+# @LossRegistry.register('l1_perceptual')
+class L1_Perceptual(CustomLoss):
     def __init__(self) -> None:
         '''
         Equal weight for L1 + Perceptual Loss
@@ -19,7 +29,8 @@ class L1_Perceptual(nn.Module):
         return self.l1(y_true, y_pred) + self.perceptual(y_true, y_pred)
 
 
-class L1_SSIM(nn.Module):
+@LossRegistry.register('l1_ssim')
+class L1_SSIM(CustomLoss):
     def __init__(self) -> None:
         '''
         Equal weight for L1 + SSIM
@@ -28,3 +39,4 @@ class L1_SSIM(nn.Module):
 
     def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
         return F.l1_loss(y_true, y_pred) + ssim(y_true, y_pred)
+
