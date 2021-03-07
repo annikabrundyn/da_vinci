@@ -7,7 +7,7 @@ from torchvision.utils import make_grid
 
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UNet, UNetExtraSkip
-from data import StackedDaVinciDataModule
+from data.multiframe_data import StackedDaVinciDataModule
 from metrics import FIDCallback
 
 
