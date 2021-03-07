@@ -62,8 +62,11 @@ class FIDCallback(pl.callbacks.base.Callback):
             self.real_mean = embeds['mean']
             self.real_cov = embeds['cov']
 
+
     def to(self, device):
         self.inception = self.inception.to(device)
+        self.val_dl = self.val_dl.to(device)
+
 
     @rank_zero_only
     def on_validation_epoch_start(self, trainer, pl_module):
@@ -99,6 +102,3 @@ class FIDCallback(pl.callbacks.base.Callback):
                 #self.to(torch.device('cpu'))
 
             #self.last_global_step = trainer.global_step
-
-        else:
-            return 0
