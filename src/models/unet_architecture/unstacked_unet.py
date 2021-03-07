@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 
 from models.unet_architecture.unet_components import DoubleConvMF, DownMF, Up
-from models.right_view.combine_fns import CombineConv3D, CombineMax, CombineAverage
+#from models.right_view.combine_fns import CombineConv3D, CombineMax, CombineAverage
+from models.right_view.combine_fns import CombineMax, CombineAverage
 
 
 class UnstackedUNet(nn.Module):

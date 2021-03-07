@@ -8,7 +8,7 @@ from torchvision.utils import make_grid
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UNet, UNetExtraSkip
 from data import StackedDaVinciDataModule
-#from metrics import FIDCallback
+from metrics import FIDCallback
 
 
 class StackedModel(BaseModel):
@@ -104,11 +104,9 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # fid metric callback
-    # fid = FIDCallback(args.data_dir, "real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
+    fid = FIDCallback(args.data_dir, "real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
 
     # train - by default logging every 50 steps (in train)
-    trainer = pl.Trainer.from_argparse_args(args)
-    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
-    #trainer = pl.Trainer.from_argparse_args(args, log_every_n_steps=1)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

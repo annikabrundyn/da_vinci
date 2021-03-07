@@ -11,12 +11,14 @@ import pytorch_lightning as pl
 from models.right_view.stacked_unet2d import StackedModel
 from data import StackedDaVinciDataModule
 
-CKPT_PATH = ""
+CKPT_PATH = "/Users/annikabrundyn/Downloads/epoch=2-step=5453.ckpt"
 HPARAMS_PATH = "/Users/annikabrundyn/Downloads/hparams.yaml"
 
 
 with open(HPARAMS_PATH, "r") as stream:
     args = yaml.load(stream)
+
+args['data_dir'] = "/Users/annikabrundyn/Developer/da_vinci/daVinci_data"
 
 
 dm = StackedDaVinciDataModule(
