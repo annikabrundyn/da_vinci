@@ -25,7 +25,7 @@ class BaseModel(pl.LightningModule):
         features_start: int = 64,
         lr: float = 0.001,
         log_tb_imgs: bool = True,
-        tb_img_freq: int = 10000,
+        tb_img_freq: int = 8000,
         **kwargs
     ):
         super().__init__()
@@ -164,7 +164,7 @@ class BaseModel(pl.LightningModule):
 
         # logging
         parser.add_argument("--log_tb_imgs", action='store_true', default=True)
-        parser.add_argument("--tb_step_freq", type=int, default=10000, help="log image to tensborboard every x steps")
+        parser.add_argument("--tb_step_freq", type=int, default=8000, help="log image to tensborboard every x steps")
         parser.add_argument("--save_img_freq", type=int, default=50)
         parser.add_argument("--fid_epoch_freq", type=int, default=5, help="number of epochs between each fid calculation")
         parser.add_argument("--fid_n_samples", type=int, default=4000, help="number of samples to use in fid")
