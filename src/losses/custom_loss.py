@@ -40,3 +40,14 @@ class L1_SSIM(CustomLoss):
     def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
         return F.l1_loss(y_true, y_pred) + ssim(y_true, y_pred)
 
+
+@LossRegistry.register('l1')
+class L1(CustomLoss):
+    def __init__(self) -> None:
+        '''
+        Equal weight for L1
+        '''
+        super().__init__()
+
+    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+        return F.l1_loss(y_true, y_pred)

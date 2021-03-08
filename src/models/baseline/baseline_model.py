@@ -4,6 +4,7 @@ import numpy as np
 import pytorch_lightning as pl
 import sys
 import torch
+import json
 import torch.nn as nn
 
 from collections import defaultdict
@@ -98,7 +99,7 @@ if __name__ == "__main__":
 
     # Train
     with torch.no_grad():
-        for x_tran in tqdm(translations):
+        for x_tran in tqdm(translations, desc="Training model"):
             for batch_idx, sample in enumerate(val_dataloader):
                 inputs, targets = sample
                 inputs, targets = inputs.to(device), targets.to(device)
@@ -120,13 +121,13 @@ if __name__ == "__main__":
 
     # Calculate metrics for the optimal shift for each loss
     fid = FIDCallback(args.data_dir, "real_stats.pickle", val_dataloader, len(dm.val_samples), 1)
-    lpips = lpips.LPIPS(net='alex')
-    ssim_val, psnr_val, lpips_val = 0, 0, 0
+    lpips = lpips.LPIPS(net='alex').to(device)
 
     for loss in loss_result_dict:
         fid_val = fid._calc_fid(model, final_results_dict[loss]["min_x_trans"])
+        ssim_val, psnr_val, lpips_val = 0, 0, 0
 
-        for batch_idx, sample in enumerate(val_dataloader):
+        for batch_idx, sample in tqdm(enumerate(val_dataloader), desc=f"Calculating metrics for {loss}"):
             inputs, targets = sample
             inputs, targets = inputs.to(device), targets.to(device)
             shifted_inputs = model(inputs, final_results_dict[loss]["min_x_trans"])
@@ -143,4 +144,4 @@ if __name__ == "__main__":
     # Write results to file
     with open("baseline_results.txt", "w") as f:
         sys.stdout = f  # Change the standard output to the file we created.
-        print(f"{final_results_dict}")
+        print(json.dumps(final_results_dict, sort_keys=True, indent=4))
