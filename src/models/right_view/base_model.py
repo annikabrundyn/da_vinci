@@ -160,7 +160,7 @@ class BaseModel(pl.LightningModule):
         # hyperparameters with a default value
         parser.add_argument("--lr", type=float, default=0.001, help="learning rate for adam optimizer")
         parser.add_argument("--batch_size", type=int, default=16)
-        parser.add_argument("--num_workers", type=int, default=8)
+        parser.add_argument("--num_workers", type=int, default=4)
 
         # logging
         parser.add_argument("--log_tb_imgs", action='store_true', default=True)
