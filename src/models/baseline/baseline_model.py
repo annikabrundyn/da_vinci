@@ -11,7 +11,7 @@ from functools import partial
 from tqdm import tqdm
 
 from argparse import ArgumentParser
-from data.data import DaVinciDataModule
+from data.multiframe_data import StackedDaVinciDataModule
 from losses.loss_registry import LossRegistry
 from metrics.fid.fid_callback import FIDCallback
 
@@ -67,8 +67,8 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if use_cuda else "cpu")
 
     # data
-    dm = DaVinciDataModule(data_dir=args.data_dir, frames_per_sample=1,
-                           frames_to_drop=0, num_workers=16)
+    dm = StackedDaVinciDataModule(data_dir=args.data_dir, frames_per_sample=1,
+                                  frames_to_drop=0, num_workers=16)
     dm.setup()
     val_dataloader = dm.val_dataloader()
     sample_img = next(iter(val_dataloader))[0][0]
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         for x_tran in tqdm(translations):
             for batch_idx, sample in enumerate(val_dataloader):
                 inputs, targets = sample
-                inputs, targets = inputs.squeeze(1).to(device), targets.to(device)
+                inputs, targets = inputs.to(device), targets.to(device)
                 shifted_inputs = model(inputs, x_tran)
 
                 for loss in loss_module_dict:
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
         for batch_idx, sample in enumerate(val_dataloader):
             inputs, targets = sample
-            inputs, targets = inputs.squeeze(1).to(device), targets.to(device)
+            inputs, targets = inputs.to(device), targets.to(device)
             shifted_inputs = model(inputs, final_results_dict[loss]["min_x_trans"])
 
             ssim_val += ssim(shifted_inputs, targets.type(targets.dtype)) / len(inputs)
