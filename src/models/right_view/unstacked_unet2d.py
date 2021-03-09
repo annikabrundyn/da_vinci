@@ -6,7 +6,7 @@ import lpips
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip
 from data.multiframe_data import UnstackedDaVinciDataModule
-from metrics import FIDCallback
+#from metrics import FIDCallback
 
 
 class UnstackedModel(BaseModel):
@@ -84,13 +84,14 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # fid callback
-    fid = FIDCallback(pickle_dir=args.data_dir,
-                      pickle_name="real_stats.pickle",
-                      val_dl=dm.val_dataloader_shuffle(),
-                      num_samples=args.fid_n_samples,
-                      fid_freq=args.fid_epoch_freq)
+    # fid = FIDCallback(pickle_dir=args.data_dir,
+    #                   pickle_name="real_stats.pickle",
+    #                   val_dl=dm.val_dataloader_shuffle(),
+    #                   num_samples=args.fid_n_samples,
+    #                   fid_freq=args.fid_epoch_freq)
 
     # train - default logging every 50 steps
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
+    trainer = pl.Trainer.from_argparse_args(args)
+    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
