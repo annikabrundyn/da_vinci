@@ -34,23 +34,31 @@ class CombineConv3D(nn.Module):
         # [b, 1, d1, d2, d3] --> [b, d1, d2, d3]
         x = x.squeeze(1)
         return x
-#
-#
+
+
 # class CombineConv1DAvgPool(nn.Module):
 #     """
-#     Combine multiple embeddings using a 3D CNN
+#     Combine multiple embeddings using a 1D Convolution --> Adaptive avg pool to match paper
 #     """
 #
-#     def __init__(self, in_ch: int, out_ch: int = 1, temporal_kernel_size: int = 3, temporal_stride: int = 1, temporal_padding: int = 0):
+#     def __init__(self, in_ch: int, out_ch: int = 1,
+#                  temporal_kernel_size: int = 3,
+#                  temporal_stride: int = 1,
+#                  temporal_padding: int = 0):
 #         super().__init__()
 #         # in channels and out channels are the same as feature dim
-#         self.net = nn.Conv1d(in_ch, out_ch,
-#                              kernel_size=[temporal_kernel_size, 1, 1],
-#                              stride=[temporal_stride, 1, 1],
-#                              padding=[temporal_padding, 0, 0])
+#         self.conv = nn.Conv3d(in_ch, out_ch,
+#                               kernel_size=[temporal_kernel_size, 1, 1],
+#                               stride=[temporal_stride, 1, 1],
+#                               padding=[temporal_padding, 0, 0])
 #
+#         self.avgpool = nn.AdaptiveAvgPool3d
 #     def forward(self, x):
-#         x = self.net(x)
+#         # [b, t, c, h, w] --> [b, c, t, h, w]
+#         x = x.permute(0, 2, 1, 3, 4)
+#
+#         x = self.conv(x)
+#         x = self.avgpool(x)
 #
 #         # [b, 1, d1, d2, d3] --> [b, d1, d2, d3]
 #         x = x.squeeze(1)
