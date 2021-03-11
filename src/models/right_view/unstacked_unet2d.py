@@ -6,6 +6,7 @@ from models.right_view.base_model import BaseModel
 from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip
 from data.multiframe_data import UnstackedDaVinciDataModule
 from metrics import FIDCallback
+from callbacks import SaveImgCallBack
 
 
 class UnstackedModel(BaseModel):
@@ -89,7 +90,10 @@ if __name__ == "__main__":
                       num_samples=args.fid_n_samples,
                       fid_freq=args.fid_epoch_freq)
 
+    # save val imgs callback
+    save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
+
     # train - default logging every 50 steps
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

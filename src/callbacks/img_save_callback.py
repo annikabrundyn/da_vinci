@@ -11,21 +11,7 @@ class SaveImgCallBack(Callback):
         self.epoch_logging_freq = epoch_logging_freq
         self.dl = dl
 
-    def on_sanity_check_end(self, trainer, pl_module):
-        '''save the input + target images only once'''
-
-        print("do this only once")
-        base_dir = os.path.split(trainer.checkpoint_callback.dirpath)[0]
-        self.targets_dir_path = os.path.join(base_dir, "targets")
-
-        os.makedirs(self.targets_dir_path)
-
-        for i, (_, target) in enumerate(self.dl):
-            target_path = os.path.join(self.targets_dir_path, f"target_{i}.png")
-            save_image(target, target_path)
-
     def on_validation_epoch_end(self, trainer, pl_module):
-        '''save only the predicted '''
 
         if trainer.current_epoch % self.epoch_logging_freq == 0:
             print('save predicted val images')

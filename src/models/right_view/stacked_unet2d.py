@@ -106,7 +106,10 @@ if __name__ == "__main__":
     # fid metric callback
     fid = FIDCallback(args.data_dir, "real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
 
+    # save val imgs callback
+    save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
+
     # train - by default logging every 50 steps (in train)
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, SaveImgCallBack(dm.vis_img_dataloader())])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
