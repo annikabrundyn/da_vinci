@@ -8,7 +8,7 @@ from pytorch_lightning.metrics.functional import ssim, psnr
 import lpips
 import numpy as np
 
-from losses import Perceptual, L1_Perceptual, L1_SSIM
+from losses import Perceptual, L1_Perceptual, L1_SSIM, ssim_loss
 
 #from models.unet_architecture import MultiFrameUNet
 
@@ -53,7 +53,7 @@ class BaseModel(pl.LightningModule):
         elif self.loss == "mse":
             self.criterion = torch.nn.MSELoss()
         elif self.loss == "ssim":
-           self.criterion = ssim
+           self.criterion = ssim_loss
         elif self.loss == "perceptual":
             self.criterion = Perceptual()
         elif self.loss == "l1_perceptual":
