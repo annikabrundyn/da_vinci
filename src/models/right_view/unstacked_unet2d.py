@@ -96,6 +96,8 @@ if __name__ == "__main__":
     # save val imgs callback
     save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
 
+    print(args.sigmoid_on_output)
+
     # train - default logging every 50 steps
     trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds], num_sanity_val_steps=0)
     print("trainer created")
