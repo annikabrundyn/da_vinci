@@ -1,13 +1,10 @@
-import math
 import os
-import random
 
-import pytorch_lightning as pl
 import torch
-from PIL import Image
-from sklearn.utils import shuffle
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from torchvision import transforms
+
+from PIL import Image
 
 
 class DaVinciDataSet(Dataset):
