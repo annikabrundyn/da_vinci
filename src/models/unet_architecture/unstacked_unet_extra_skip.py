@@ -21,12 +21,14 @@ class UnstackedUNetExtraSkip(nn.Module):
             output_channels: int = 3,
             num_layers: int = 5,
             features_start: int = 64,
-            bilinear: bool = False
+            bilinear: bool = False,
+            sigmoid_on_output: bool = False
     ):
         super().__init__()
         self.num_layers = num_layers
         self.input_channels = input_channels
         self.num_frames = num_frames
+        self.sigmoid_on_output = sigmoid_on_output
 
         combine_model = self._determine_combine_fn(combine_fn)
 
@@ -50,6 +52,8 @@ class UnstackedUNetExtraSkip(nn.Module):
 
         # WIP: should we combine them with a single convolutional layer? no non-linearity?
         self.final_conv = nn.Conv2d(2 * output_channels, output_channels, kernel_size=3, padding=1)
+
+        self.sigmoid = nn.Sigmoid()
 
     def _determine_combine_fn(self, combine_fn):
         if combine_fn == "conv3d":
@@ -88,5 +92,7 @@ class UnstackedUNetExtraSkip(nn.Module):
         new_output = self.final_conv(input_concat_output)
 
         # TODO: output both orig_output and new_output to visualize the shift
+        if self.sigmoid_on_output:
+            new_output = self.sigmoid(new_output)
 
         return new_output

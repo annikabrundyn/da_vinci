@@ -1,19 +1,14 @@
-import logging
-import multiprocessing
-import numpy as np
 import pytorch_lightning as pl
 import sys
 import torch
 import torch.nn as nn
 
 from collections import defaultdict
-from functools import partial
 from tqdm import tqdm
 
 from argparse import ArgumentParser
-from data.data import DaVinciDataModule
+from deprecated.data import DaVinciDataModule
 from losses.loss_registry import LossRegistry
-from torch.utils.data import DataLoader
 
 
 class BaselineModel(nn.Module):

@@ -1,8 +1,4 @@
-import math
-import os
-
-from sklearn.utils import shuffle
-from data.data import DaVinciDataSet, DaVinciDataModule
+from deprecated.data import DaVinciDataSet, DaVinciDataModule
 
 
 class RightDaVinciDataSet(DaVinciDataSet):

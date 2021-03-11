@@ -1,12 +1,12 @@
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
-import lpips
 
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip
 from data.multiframe_data import UnstackedDaVinciDataModule
 from metrics import FIDCallback
+from callbacks import SaveImgCallBack
 
 
 class UnstackedModel(BaseModel):
@@ -18,13 +18,14 @@ class UnstackedModel(BaseModel):
             extra_skip: str,
             num_layers: int,
             bilinear: str,
+            sigmoid_on_output: bool,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
             tb_img_freq: int = 10000,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear,
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output,
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         # UNet without extra skip connection (normal)
@@ -34,14 +35,16 @@ class UnstackedModel(BaseModel):
                                      combine_fn=self.combine_fn,
                                      num_layers=self.hparams.num_layers,
                                      features_start=self.hparams.features_start,
-                                     bilinear=self.bilinear)
+                                     bilinear=self.bilinear,
+                                     sigmoid_on_output=self.hparams.sigmoid_on_output)
         else:
             print("Modified UNet *with* extra skip connection")
             self.net = UnstackedUNetExtraSkip(num_frames=self.num_frames,
                                               combine_fn=self.combine_fn,
                                               num_layers=self.hparams.num_layers,
                                               features_start=self.hparams.features_start,
-                                              bilinear=self.bilinear)
+                                              bilinear=self.bilinear,
+                                              sigmoid_on_output=self.hparams.sigmoid_on_output)
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
@@ -90,7 +93,10 @@ if __name__ == "__main__":
                       num_samples=args.fid_n_samples,
                       fid_freq=args.fid_epoch_freq)
 
+    # save val imgs callback
+    save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
+
     # train - default logging every 50 steps
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds], num_sanity_val_steps=0)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

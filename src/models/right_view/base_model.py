@@ -8,7 +8,7 @@ from pytorch_lightning.metrics.functional import ssim, psnr
 import lpips
 import numpy as np
 
-from losses import Perceptual, L1_Perceptual, L1_SSIM
+from losses import Perceptual, L1_Perceptual, L1_SSIM, ssim_loss
 
 #from models.unet_architecture import MultiFrameUNet
 
@@ -22,6 +22,7 @@ class BaseModel(pl.LightningModule):
         extra_skip: str,
         num_layers: int,
         bilinear: str,
+        sigmoid_on_output: bool,
         features_start: int = 64,
         lr: float = 0.001,
         log_tb_imgs: bool = True,
@@ -53,7 +54,7 @@ class BaseModel(pl.LightningModule):
         elif self.loss == "mse":
             self.criterion = torch.nn.MSELoss()
         elif self.loss == "ssim":
-           self.criterion = ssim
+           self.criterion = ssim_loss
         elif self.loss == "perceptual":
             self.criterion = Perceptual()
         elif self.loss == "l1_perceptual":
@@ -95,7 +96,7 @@ class BaseModel(pl.LightningModule):
         # log metrics to tensorboard
         self.log_dict(logs)
 
-        # log predicted images
+        # log predicted images every 10k steps
         if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
             # pick random element in batch to visualize (train dataloader is shuffled)
             self._log_images(img[0], target[0], pred[0], step_name="train")
@@ -113,11 +114,11 @@ class BaseModel(pl.LightningModule):
         # log metrics to tensorboard
         self.log_dict(logs)
 
-        # log predicted images
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
-            # pick random element in batch to visualize - val dataloader is not shuffled
-            idx = np.random.choice(len(img))
-            self._log_images(img[idx], target[idx], pred[idx], step_name="val")
+        # log predicted images - already saving same val images - not logging to tb [new change: 03/11]
+        # if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_batch_freq == 0:
+        #     # pick random element in batch to visualize - val dataloader is not shuffled
+        #     idx = np.random.choice(len(img))
+        #     self._log_images(img[idx], target[idx], pred[idx], step_name="val")
 
     def test_step(self, batch, batch_idx):
         # predict right view
@@ -147,14 +148,15 @@ class BaseModel(pl.LightningModule):
 
         # Required arguments
         parser.add_argument("--data_dir", type=str, help="path to davinci data folder")
-        parser.add_argument("--num_frames", type=int, help="number of consecutive frames per sample")
+        parser.add_argument("--num_frames", type=int, default=1, help="number of consecutive frames per sample")
         parser.add_argument("--combine_fn", type=str, choices=['conv3d', 'max', 'average'],
                             help="how to combine multiple frames")
-        parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'l1_ssim'],
+        parser.add_argument("--loss", type=str, default='mse', choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'l1_ssim'],
                             help="loss function")
-        parser.add_argument("--extra_skip", type=str, help="whether to add extra skip connection from input to output")
-        parser.add_argument("--bilinear", type=str, help="bilinear upsampling ('True', 'T', 'true') vs. transposed convolution")
-        parser.add_argument("--num_layers", type=int, help="number of layers/blocks in u-net")
+        parser.add_argument("--extra_skip", type=str, default='False', help="whether to add extra skip connection from input to output")
+        parser.add_argument("--bilinear", type=str, default='False', help="bilinear upsampling ('True', 'T', 'true') vs. transposed convolution")
+        parser.add_argument("--sigmoid_on_output", action='store_true', default=False, help="apply sigmoid on output")
+        parser.add_argument("--num_layers", type=int, default=5, help="number of layers/blocks in u-net")
         parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
 
         # hyperparameters with a default value
@@ -164,10 +166,10 @@ class BaseModel(pl.LightningModule):
 
         # logging
         parser.add_argument("--log_tb_imgs", action='store_true', default=True)
-        parser.add_argument("--tb_step_freq", type=int, default=8000, help="log image to tensborboard every x steps")
-        parser.add_argument("--save_img_freq", type=int, default=50)
+        parser.add_argument("--tb_step_freq", type=int, default=10000, help="log image to tensborboard every x steps")
+        parser.add_argument("--save_epoch_freq", type=int, default=10)
         parser.add_argument("--fid_epoch_freq", type=int, default=5, help="number of epochs between each fid calculation")
-        parser.add_argument("--fid_n_samples", type=int, default=4000, help="number of samples to use in fid")
+        parser.add_argument("--fid_n_samples", type=int, default=10000, help="number of samples to use in fid")
 
         return parser
 
