@@ -113,7 +113,7 @@ class BaseModel(pl.LightningModule):
         # log metrics to tensorboard
         self.log_dict(logs)
 
-        # log predicted images - already saving same val images - not logging to tb
+        # log predicted images - already saving same val images - not logging to tb [new change: 03/11]
         # if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_batch_freq == 0:
         #     # pick random element in batch to visualize - val dataloader is not shuffled
         #     idx = np.random.choice(len(img))
