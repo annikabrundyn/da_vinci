@@ -1,7 +1,6 @@
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
-import lpips
 
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip

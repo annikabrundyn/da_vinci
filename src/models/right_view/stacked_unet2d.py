@@ -1,7 +1,6 @@
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
-import lpips
 
 from torchvision.utils import make_grid
 
