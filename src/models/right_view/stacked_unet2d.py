@@ -20,13 +20,14 @@ class StackedModel(BaseModel):
             extra_skip: str,
             num_layers: int,
             bilinear: str,
+            sigmoid_on_output: bool,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
             tb_img_freq: int = 10000,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear,
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output,
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         self.input_channels = 3 * self.num_frames
@@ -38,7 +39,8 @@ class StackedModel(BaseModel):
                 output_channels=3,
                 num_layers=self.hparams.num_layers,
                 features_start=self.hparams.features_start,
-                bilinear=self.bilinear)
+                bilinear=self.bilinear,
+                sigmoid_on_output=self.hparams.sigmoid_on_output)
         else:
             print("with skip")
             self.net = UNetExtraSkip(
@@ -46,7 +48,8 @@ class StackedModel(BaseModel):
                 output_channels=3,
                 num_layers=self.hparams.num_layers,
                 features_start=self.hparams.features_start,
-                bilinear=self.bilinear)
+                bilinear=self.bilinear,
+                sigmoid_on_output=self.hparams.sigmoid_on_output)
 
     def _log_images(self, img, target, pred, step_name):
         # unstack multiple frames to visualize
@@ -108,6 +111,8 @@ if __name__ == "__main__":
 
     # save val imgs callback
     save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
+
+    print(args.sigmoid_on_output)
 
     # train - by default logging every 50 steps (in train)
     trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds], num_sanity_val_steps=0)

@@ -22,6 +22,7 @@ class BaseModel(pl.LightningModule):
         extra_skip: str,
         num_layers: int,
         bilinear: str,
+        sigmoid_on_output: bool,
         features_start: int = 64,
         lr: float = 0.001,
         log_tb_imgs: bool = True,
@@ -152,9 +153,10 @@ class BaseModel(pl.LightningModule):
                             help="how to combine multiple frames")
         parser.add_argument("--loss", type=str, choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'l1_ssim'],
                             help="loss function")
-        parser.add_argument("--extra_skip", type=str, help="whether to add extra skip connection from input to output")
-        parser.add_argument("--bilinear", type=str, help="bilinear upsampling ('True', 'T', 'true') vs. transposed convolution")
-        parser.add_argument("--num_layers", type=int, help="number of layers/blocks in u-net")
+        parser.add_argument("--extra_skip", type=str, default='False', help="whether to add extra skip connection from input to output")
+        parser.add_argument("--bilinear", type=str, default='False', help="bilinear upsampling ('True', 'T', 'true') vs. transposed convolution")
+        parser.add_argument("--sigmoid_on_output", action='store_true', default=False, help="apply sigmoid on output")
+        parser.add_argument("--num_layers", type=int, default=5, help="number of layers/blocks in u-net")
         parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
 
         # hyperparameters with a default value

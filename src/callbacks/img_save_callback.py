@@ -24,4 +24,4 @@ class SaveImgCallBack(Callback):
                 pred = pl_module(input)
 
                 pred_path = os.path.join(epoch_dir_path, f"pred_{i}.png")
-                save_image(pred, pred_path)
+                save_image(pred, fp=pred_path)

@@ -24,11 +24,13 @@ class UnstackedUNet(nn.Module):
             output_channels: int = 3,
             num_layers: int = 5,
             features_start: int = 64,
-            bilinear: bool = False
+            bilinear: bool = False,
+            sigmoid_on_output: bool = False
     ):
         super().__init__()
         self.num_layers = num_layers
         self.num_frames = num_frames
+        self.sigmoid_on_output = sigmoid_on_output
 
         combine_model = self._determine_combine_fn(combine_fn)
 
@@ -49,6 +51,8 @@ class UnstackedUNet(nn.Module):
 
         self.layers = nn.ModuleList(layers)
         self.combine_modules = nn.ModuleList(combine_modules)
+
+        self.sigmoid = nn.Sigmoid()
 
     def _determine_combine_fn(self, combine_fn):
         if combine_fn == "conv3d":
@@ -79,6 +83,9 @@ class UnstackedUNet(nn.Module):
 
         # Final conv layer of UNet
         pred_right = self.layers[-1](comb_xi[-1])
+
+        if self.sigmoid_on_output:
+            pred_right = self.sigmoid(pred_right)
 
         return pred_right
 
