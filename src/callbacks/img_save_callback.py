@@ -7,7 +7,6 @@ from torchvision.utils import save_image
 class SaveImgCallBack(Callback):
 
     def __init__(self, dl, epoch_logging_freq: int = 10):
-        # save predictions every 50 epochs
         self.epoch_logging_freq = epoch_logging_freq
         self.dl = dl
 
@@ -17,12 +16,12 @@ class SaveImgCallBack(Callback):
             print('save predicted val images')
 
             base_dir = os.path.split(trainer.checkpoint_callback.dirpath)[0]
-            epoch_preds_dir_path = os.path.join(base_dir, f"epoch_{trainer.current_epoch}")
-            os.makedirs(epoch_preds_dir_path)
+            epoch_dir_path = os.path.join(base_dir, f"epoch_{trainer.current_epoch}")
+            os.makedirs(epoch_dir_path)
 
             for i, (input, _) in enumerate(self.dl):
                 input = input.to(pl_module.device)
                 pred = pl_module(input)
 
-                pred_path = os.path.join(epoch_preds_dir_path, f"pred_{i}.png")
+                pred_path = os.path.join(epoch_dir_path, f"pred_{i}.png")
                 save_image(pred, pred_path)

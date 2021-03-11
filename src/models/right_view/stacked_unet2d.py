@@ -110,6 +110,6 @@ if __name__ == "__main__":
     save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
 
     # train - by default logging every 50 steps (in train)
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds], num_sanity_val_steps=0)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
