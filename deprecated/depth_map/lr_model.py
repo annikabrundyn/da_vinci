@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import pytorch_lightning as pl
 
 from deprecated.depth_map import UNet
-from data.data import DaVinciDataModule
+from deprecated.data import DaVinciDataModule
 from models.depth_model import DepthMap
 
 
