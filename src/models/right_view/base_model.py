@@ -148,8 +148,8 @@ class BaseModel(pl.LightningModule):
 
         # Required arguments
         parser.add_argument("--data_dir", type=str, help="path to davinci data folder")
-        parser.add_argument("--num_frames", type=int, default=1, help="number of consecutive frames per sample")
-        parser.add_argument("--combine_fn", type=str, choices=['conv3d', 'max', 'average'],
+        parser.add_argument("--num_frames", type=int, default=5, help="number of consecutive frames per sample")
+        parser.add_argument("--combine_fn", type=str, default='conv3d', choices=['conv3d', 'max', 'average'],
                             help="how to combine multiple frames")
         parser.add_argument("--loss", type=str, default='mse', choices=['l1', 'mse', 'ssim', 'perceptual', 'l1_perceptual', 'l1_ssim'],
                             help="loss function")
