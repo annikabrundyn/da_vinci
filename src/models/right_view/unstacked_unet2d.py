@@ -85,10 +85,10 @@ if __name__ == "__main__":
     print(target.shape)
 
     # model
-    if args.ckpt_path is not None:
-        model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
-    else:
-        model = UnstackedModel(**args.__dict__)
+    # if args.ckpt_path is not None:
+    #     model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
+    # else:
+    model = UnstackedModel(**args.__dict__)
 
     print("model instance created")
     print("lightning version", pl.__version__)
