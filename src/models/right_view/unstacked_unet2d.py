@@ -1,5 +1,7 @@
 from argparse import ArgumentParser
 
+import torch
+
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 
@@ -20,6 +22,7 @@ class UnstackedModel(BaseModel):
             num_layers: int,
             bilinear: str,
             sigmoid_on_output: bool,
+            batch_size: int,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
@@ -27,7 +30,7 @@ class UnstackedModel(BaseModel):
             checkpoint_dir: str = None,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output,
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output, batch_size,
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         # UNet without extra skip connection (normal)
@@ -49,9 +52,11 @@ class UnstackedModel(BaseModel):
                                               bilinear=self.bilinear,
                                               sigmoid_on_output=self.hparams.sigmoid_on_output)
 
+        self.save_hyperparameters()
+
+
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
-    print("start right multiframe model")
     pl.seed_everything(42)
 
     parser = ArgumentParser()
@@ -63,7 +68,16 @@ if __name__ == "__main__":
     parser = UnstackedModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
-    # data
+    # if resuming training from a saved checkpoint
+    if args.ckpt_path is not None:
+        print("loading saved checkpoint...")
+        hparams = torch.load(args.ckpt_path)['hyper_parameters']
+        args.data_dir = hparams['data_dir']
+        args.num_frames = hparams['num_frames']
+        args.batch_size = hparams['batch_size']
+        args.num_workers = hparams['num_workers']
+
+    # data module
     dm = UnstackedDaVinciDataModule(
         args.data_dir,
         frames_per_sample=args.num_frames,
@@ -73,7 +87,7 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
     )
     dm.setup()
-    print("dm setup")
+    print("datamodule initialized...")
 
     # sanity check
     print("size of trainset:", len(dm.train_samples))
@@ -88,15 +102,14 @@ if __name__ == "__main__":
     # if args.ckpt_path is not None:
     #     model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
     # else:
-    model = UnstackedModel(**args.__dict__)
+    #model = UnstackedModel(**args.__dict__)
 
-    print("model instance created")
     print("lightning version", pl.__version__)
 
     # fid callback
     fid = FIDCallback(pickle_dir=args.data_dir,
                       pickle_name="real_stats.pickle",
-                      val_dl=dm.val_dataloader_shuffle(),
+                      val_dl=dm.val_dataloader(),
                       num_samples=args.fid_n_samples,
                       fid_freq=args.fid_epoch_freq)
 
@@ -110,6 +123,15 @@ if __name__ == "__main__":
                                  mode="min")
 
     # train - default logging every 50 steps
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
-    print("trainer created")
+    if args.ckpt_path is None:
+        model = UnstackedModel(**args.__dict__)
+        trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
+    else:
+        model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
+        trainer = pl.Trainer.from_argparse_args(args,
+                                                resume_from_checkpoint=args.ckpt_path,
+                                                callbacks=[checkpoint, fid, save_preds],
+                                                num_sanity_val_steps=0)
+
+    print("start training model...")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

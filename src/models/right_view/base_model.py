@@ -23,6 +23,7 @@ class BaseModel(pl.LightningModule):
         num_layers: int,
         bilinear: str,
         sigmoid_on_output: bool,
+        batch_size: int,
         features_start: int = 64,
         lr: float = 0.001,
         log_tb_imgs: bool = True,
