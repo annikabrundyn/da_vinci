@@ -110,6 +110,6 @@ if __name__ == "__main__":
                                  mode="min")
 
     # train - default logging every 50 steps
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0, gpus=1)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
