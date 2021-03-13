@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip
@@ -23,6 +24,7 @@ class UnstackedModel(BaseModel):
             lr: float = 0.001,
             log_tb_imgs: bool = True,
             tb_img_freq: int = 10000,
+            checkpoint_dir: str = None,
             **kwargs
     ):
         super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output,
@@ -37,6 +39,7 @@ class UnstackedModel(BaseModel):
                                      features_start=self.hparams.features_start,
                                      bilinear=self.bilinear,
                                      sigmoid_on_output=self.hparams.sigmoid_on_output)
+
         else:
             print("Modified UNet *with* extra skip connection")
             self.net = UnstackedUNetExtraSkip(num_frames=self.num_frames,
@@ -82,7 +85,11 @@ if __name__ == "__main__":
     print(target.shape)
 
     # model
+    # if args.ckpt_path is not None:
+    #     model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
+    # else:
     model = UnstackedModel(**args.__dict__)
+
     print("model instance created")
     print("lightning version", pl.__version__)
 
@@ -96,7 +103,13 @@ if __name__ == "__main__":
     # save val imgs callback
     save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
 
+    # 3. Init ModelCheckpoint callback, monitoring 'val_loss'
+    checkpoint = ModelCheckpoint(monitor='val_loss',
+                                 filename='{epoch:03d}-{val_loss:.4f}',
+                                 save_last=True,
+                                 mode="min")
+
     # train - default logging every 50 steps
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds], num_sanity_val_steps=0)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0, gpus=1)
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
