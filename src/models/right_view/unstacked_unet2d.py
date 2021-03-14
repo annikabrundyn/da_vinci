@@ -22,7 +22,6 @@ class UnstackedModel(BaseModel):
             num_layers: int,
             bilinear: str,
             sigmoid_on_output: bool,
-            batch_size: int,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
@@ -30,12 +29,12 @@ class UnstackedModel(BaseModel):
             checkpoint_dir: str = None,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output, batch_size,
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output,
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         # UNet without extra skip connection (normal)
         if self.hparams.extra_skip in ("False", "F", "false"):
-            print("Normal UNet *without* extra skip connection")
+            print("Architecture: Normal UNet *without* extra skip connection")
             self.net = UnstackedUNet(num_frames=self.num_frames,
                                      combine_fn=self.combine_fn,
                                      num_layers=self.hparams.num_layers,
@@ -44,7 +43,7 @@ class UnstackedModel(BaseModel):
                                      sigmoid_on_output=self.hparams.sigmoid_on_output)
 
         else:
-            print("Modified UNet *with* extra skip connection")
+            print("Architecture: Modified UNet *with* extra skip connection")
             self.net = UnstackedUNetExtraSkip(num_frames=self.num_frames,
                                               combine_fn=self.combine_fn,
                                               num_layers=self.hparams.num_layers,
@@ -68,16 +67,20 @@ if __name__ == "__main__":
     parser = UnstackedModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
-    # if resuming training from a saved checkpoint
-    if args.ckpt_path is not None:
-        print("loading saved checkpoint...")
-        hparams = torch.load(args.ckpt_path)['hyper_parameters']
-        args.data_dir = hparams['data_dir']
-        args.num_frames = hparams['num_frames']
-        args.batch_size = hparams['batch_size']
-        args.num_workers = hparams['num_workers']
+    # initialize model, load from checkpoint if passed and update saved dm parameters
+    if args.ckpt_path is None:
+        print("no model checkpoint provided")
+        model = UnstackedModel(**args.__dict__)
+    else:
+        print("load pretrained model checkpoint")
+        # only parameter that we change is the learning rate provided
+        model = UnstackedModel.load_from_checkpoint(args.ckpt_path, lr=args.lr)
+        args.data_dir = model.hparams.data_dir
+        args.num_frames = model.hparams.num_frames
+        args.batch_size = model.hparams.batch_size
+        args.num_workers = model.hparams.num_workers
 
-    # data module
+    print("initialize datamodule...")
     dm = UnstackedDaVinciDataModule(
         args.data_dir,
         frames_per_sample=args.num_frames,
@@ -87,7 +90,6 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
     )
     dm.setup()
-    print("datamodule initialized...")
 
     # sanity check
     print("size of trainset:", len(dm.train_samples))
@@ -95,16 +97,8 @@ if __name__ == "__main__":
     print("size of testset:", len(dm.test_samples))
 
     img, target = next(iter(dm.train_dataloader()))
-    print(img.shape)
-    print(target.shape)
-
-    # model
-    # if args.ckpt_path is not None:
-    #     model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
-    # else:
-    #model = UnstackedModel(**args.__dict__)
-
-    print("lightning version", pl.__version__)
+    print('input shape: ', img.shape)
+    print('target shape: ', target.shape)
 
     # fid callback
     fid = FIDCallback(pickle_dir=args.data_dir,
@@ -116,22 +110,23 @@ if __name__ == "__main__":
     # save val imgs callback
     save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
 
-    # 3. Init ModelCheckpoint callback, monitoring 'val_loss'
+    # model checkpoint callback
     checkpoint = ModelCheckpoint(monitor='val_loss',
                                  filename='{epoch:03d}-{val_loss:.4f}',
                                  save_last=True,
-                                 mode="min")
+                                 mode="min",
+                                 every_n_val_epochs=1)
 
-    # train - default logging every 50 steps
+    # init pl trainer
+    print("initialize trainer")
     if args.ckpt_path is None:
-        model = UnstackedModel(**args.__dict__)
         trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
     else:
-        model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
         trainer = pl.Trainer.from_argparse_args(args,
                                                 resume_from_checkpoint=args.ckpt_path,
                                                 callbacks=[checkpoint, fid, save_preds],
                                                 num_sanity_val_steps=0)
+
 
     print("start training model...")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
