@@ -114,8 +114,7 @@ if __name__ == "__main__":
     checkpoint = ModelCheckpoint(monitor='val_loss',
                                  filename='{epoch:03d}-{val_loss:.4f}',
                                  save_last=True,
-                                 mode="min",
-                                 every_n_val_epochs=1)
+                                 mode="min")
 
     # init pl trainer
     print("initialize trainer")
