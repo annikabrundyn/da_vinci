@@ -75,8 +75,6 @@ if __name__ == "__main__":
         print("load pretrained model checkpoint")
         # only parameter that we change is the learning rate provided
         model = UnstackedModel.load_from_checkpoint(args.ckpt_path, lr=args.lr)
-        print("lr:", model.hparams.lr)
-        print('num_frames:', model.hparams.num_frames)
         args.data_dir = model.hparams.data_dir
         args.num_frames = model.hparams.num_frames
         args.batch_size = model.hparams.batch_size
@@ -116,7 +114,8 @@ if __name__ == "__main__":
     checkpoint = ModelCheckpoint(monitor='val_loss',
                                  filename='{epoch:03d}-{val_loss:.4f}',
                                  save_last=True,
-                                 mode="min")
+                                 mode="min",
+                                 every_n_val_epochs=1)
 
     # init pl trainer
     print("initialize trainer")
