@@ -68,16 +68,17 @@ if __name__ == "__main__":
     parser = UnstackedModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
-    # if resuming training from a saved checkpoint
-    if args.ckpt_path is not None:
-        print("loading saved checkpoint...")
-        hparams = torch.load(args.ckpt_path)['hyper_parameters']
-        args.data_dir = hparams['data_dir']
-        args.num_frames = hparams['num_frames']
-        args.batch_size = hparams['batch_size']
-        args.num_workers = hparams['num_workers']
+    # initialize model, load from checkpoint if passed and update saved dm parameters
+    if args.ckpt_path is None:
+        model = UnstackedModel(**args.__dict__)
+    else:
+        model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
+        args.data_dir = model.hparams.data_dir
+        args.num_frames = model.hparams.num_frames
+        args.batch_size = model.hparams.batch_size
+        args.num_workers = model.hparams.num_workers
 
-    # data module
+    print("initialize datamodule...")
     dm = UnstackedDaVinciDataModule(
         args.data_dir,
         frames_per_sample=args.num_frames,
@@ -87,7 +88,6 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
     )
     dm.setup()
-    print("datamodule initialized...")
 
     # sanity check
     print("size of trainset:", len(dm.train_samples))
@@ -95,16 +95,8 @@ if __name__ == "__main__":
     print("size of testset:", len(dm.test_samples))
 
     img, target = next(iter(dm.train_dataloader()))
-    print(img.shape)
-    print(target.shape)
-
-    # model
-    # if args.ckpt_path is not None:
-    #     model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
-    # else:
-    #model = UnstackedModel(**args.__dict__)
-
-    print("lightning version", pl.__version__)
+    print('input shape: ', img.shape)
+    print('target shape: ', target.shape)
 
     # fid callback
     fid = FIDCallback(pickle_dir=args.data_dir,
@@ -116,22 +108,21 @@ if __name__ == "__main__":
     # save val imgs callback
     save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
 
-    # 3. Init ModelCheckpoint callback, monitoring 'val_loss'
+    # model checkpoint callback
     checkpoint = ModelCheckpoint(monitor='val_loss',
                                  filename='{epoch:03d}-{val_loss:.4f}',
                                  save_last=True,
                                  mode="min")
 
-    # train - default logging every 50 steps
+    # init pl trainer
     if args.ckpt_path is None:
-        model = UnstackedModel(**args.__dict__)
         trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
     else:
-        model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
         trainer = pl.Trainer.from_argparse_args(args,
                                                 resume_from_checkpoint=args.ckpt_path,
                                                 callbacks=[checkpoint, fid, save_preds],
                                                 num_sanity_val_steps=0)
+
 
     print("start training model...")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
