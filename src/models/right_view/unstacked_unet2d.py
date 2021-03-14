@@ -22,7 +22,6 @@ class UnstackedModel(BaseModel):
             num_layers: int,
             bilinear: str,
             sigmoid_on_output: bool,
-            batch_size: int,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
@@ -30,7 +29,7 @@ class UnstackedModel(BaseModel):
             checkpoint_dir: str = None,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output, batch_size,
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output,
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         # UNet without extra skip connection (normal)
@@ -72,7 +71,9 @@ if __name__ == "__main__":
     if args.ckpt_path is None:
         model = UnstackedModel(**args.__dict__)
     else:
-        model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
+        # only parameter that we change is the learning rate provided
+        model = UnstackedModel.load_from_checkpoint(args.ckpt_path, lr=args.lr)
+        print("lr:", model.hparams.lr)
         args.data_dir = model.hparams.data_dir
         args.num_frames = model.hparams.num_frames
         args.batch_size = model.hparams.batch_size
