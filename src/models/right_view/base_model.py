@@ -25,7 +25,7 @@ class BaseModel(pl.LightningModule):
         sigmoid_on_output: bool,
         features_start: int = 64,
         lr: float = 0.001,
-        log_tb_imgs: bool = True,
+        log_tb_imgs: bool = False,
         tb_img_freq: int = 8000,
         **kwargs
     ):
@@ -114,7 +114,6 @@ class BaseModel(pl.LightningModule):
         # log metrics to tensorboard
         self.log_dict(logs)
 
-
         # log predicted images - already saving same val images - not logging to tb [new change: 03/11]
         # if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_batch_freq == 0:
         #     # pick random element in batch to visualize - val dataloader is not shuffled
@@ -167,7 +166,7 @@ class BaseModel(pl.LightningModule):
 
         # logging
         parser.add_argument("--ckpt_path", type=str, default=None, help="load checkpoint provided at this path")
-        parser.add_argument("--log_tb_imgs", action='store_true', default=True)
+        parser.add_argument("--log_tb_imgs", action='store_true', default=False)
         parser.add_argument("--tb_step_freq", type=int, default=10000, help="log image to tensborboard every x steps")
         parser.add_argument("--save_epoch_freq", type=int, default=10)
         parser.add_argument("--fid_epoch_freq", type=int, default=5, help="number of epochs between each fid calculation")
