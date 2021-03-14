@@ -17,7 +17,7 @@ class DaVinciDataSet(Dataset):
                  frames_per_sample: int,
                  frames_to_drop: int,
                  channel_stack_frames: bool = None,
-                 target_dir = 'image_1',
+                 target_dir: str = 'image_1',
                  is_color_input: bool = True,
                  is_color_output: bool = True,
                  extra_info: bool = False,
@@ -110,7 +110,6 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.num_pred_img_samples = num_pred_img_samples
-        self.dataset = DaVinciDataSet
 
     # helper
     def _read_image_list(self, filename):
@@ -207,8 +206,10 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.test_samples = self._sliding_window(self.test_sets)
 
         self.train_samples = shuffle(self.train_samples, random_state=42)
-        self.val_samples = shuffle(self.val_samples, random_state=42)
-        self.test_samples = shuffle(self.test_samples, random_state=42)
+
+        # new change [09/03/2021] don't shuffle these so we can view in video format
+        #self.val_samples = shuffle(self.val_samples, random_state=42)
+        #self.test_samples = shuffle(self.test_samples, random_state=42)
 
         self.train_dataset = self.dataset(data_dir=self.data_dir,
                                           sample_list=self.train_samples,

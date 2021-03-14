@@ -64,6 +64,7 @@ class FIDCallback(pl.callbacks.base.Callback):
 
     def to(self, device):
         self.inception = self.inception.to(device)
+        self.val_dl = self.val_dl.to(device)
 
     @rank_zero_only
     def on_validation_epoch_start(self, trainer, pl_module):
@@ -72,23 +73,17 @@ class FIDCallback(pl.callbacks.base.Callback):
             pl_module.eval()
 
             with torch.no_grad():
-                self.to(pl_module.device)
-
                 fid = self._calc_fid(pl_module)
 
                 print(f"FID: {fid}\n")
 
                 # log FID
                 pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
-                # self.to(torch.device('cpu'))
-
-            #self.last_global_step = trainer.global_step
-
-        else:
-            return 0
 
     def _calc_fid(self, pl_module, *args):
         features = []
+
+        self.inception = self.inception.to(pl_module.device)
 
         samples_used = 0
         for i, (img, target) in enumerate(tqdm(self.val_dl, desc="Getting features for generated images.")):
@@ -96,7 +91,7 @@ class FIDCallback(pl.callbacks.base.Callback):
             if samples_used >= self.num_samples:
                 break
 
-            pred = pl_module(img, *args)
+            pred = pl_module(img.to(pl_module.device))
 
             feat = self.inception(pred)[0].view(pred.shape[0], -1)  # compute features
             features.append(feat.to('cpu'))

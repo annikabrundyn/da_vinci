@@ -51,3 +51,7 @@ class L1(CustomLoss):
 
     def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
         return F.l1_loss(y_true, y_pred)
+
+
+def ssim_loss(pred, target):
+    return -1.0 * ssim(pred, target)

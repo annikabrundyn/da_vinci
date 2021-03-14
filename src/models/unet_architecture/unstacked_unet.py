@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 
 from models.unet_architecture.unet_components import DoubleConvMF, DownMF, Up
-#from models.right_view.combine_fns import CombineConv3D, CombineMax, CombineAverage
-from models.right_view.combine_fns import CombineMax, CombineAverage
+from models.right_view.combine_fns import CombineConv3D, CombineMax, CombineAverage
 
 
 class UnstackedUNet(nn.Module):
@@ -25,25 +24,27 @@ class UnstackedUNet(nn.Module):
             output_channels: int = 3,
             num_layers: int = 5,
             features_start: int = 64,
-            bilinear: bool = False
+            bilinear: bool = False,
+            sigmoid_on_output: bool = False
     ):
         super().__init__()
         self.num_layers = num_layers
         self.num_frames = num_frames
+        self.sigmoid_on_output = sigmoid_on_output
 
-        self.combine = self._determine_combine_fn(combine_fn)
+        combine_model = self._determine_combine_fn(combine_fn)
 
         layers = [DoubleConvMF(input_channels, features_start)]
-        combine_modules = [self.combine]
+        combine_modules = [combine_model(features_start, num_frames)]
 
         feats = features_start
         for _ in range(num_layers - 1):
             layers.append(DownMF(feats, feats * 2))
+            combine_modules.append(combine_model(feats * 2, num_frames))
             feats *= 2
 
         for _ in range(num_layers - 1):
             layers.append(Up(feats, feats // 2, bilinear))
-            combine_modules.append(self.combine)
             feats //= 2
 
         layers.append(nn.Conv2d(feats, output_channels, kernel_size=1))
@@ -51,15 +52,17 @@ class UnstackedUNet(nn.Module):
         self.layers = nn.ModuleList(layers)
         self.combine_modules = nn.ModuleList(combine_modules)
 
+        self.sigmoid = nn.Sigmoid()
+
     def _determine_combine_fn(self, combine_fn):
         if combine_fn == "conv3d":
-            combine = CombineConv3D(self.num_frames)
+            combine = CombineConv3D
 
         elif combine_fn == "max":
-            combine = CombineMax()
+            combine = CombineMax
 
         elif combine_fn == "average":
-            combine = CombineAverage()
+            combine = CombineAverage
 
         return combine
 
@@ -81,4 +84,8 @@ class UnstackedUNet(nn.Module):
         # Final conv layer of UNet
         pred_right = self.layers[-1](comb_xi[-1])
 
+        if self.sigmoid_on_output:
+            pred_right = self.sigmoid(pred_right)
+
         return pred_right
+

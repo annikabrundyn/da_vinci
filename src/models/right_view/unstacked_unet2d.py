@@ -1,12 +1,15 @@
 from argparse import ArgumentParser
 
+import torch
+
 import pytorch_lightning as pl
-import lpips
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip
-from data import UnstackedDaVinciDataModule
-#from metrics import FIDCallback
+from data.multiframe_data import UnstackedDaVinciDataModule
+from metrics import FIDCallback
+from callbacks import SaveImgCallBack
 
 
 class UnstackedModel(BaseModel):
@@ -18,34 +21,41 @@ class UnstackedModel(BaseModel):
             extra_skip: str,
             num_layers: int,
             bilinear: str,
+            sigmoid_on_output: bool,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
             tb_img_freq: int = 10000,
+            checkpoint_dir: str = None,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear,
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output,
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         # UNet without extra skip connection (normal)
         if self.hparams.extra_skip in ("False", "F", "false"):
-            print("Normal UNet *without* extra skip connection")
+            print("Architecture: Normal UNet *without* extra skip connection")
             self.net = UnstackedUNet(num_frames=self.num_frames,
                                      combine_fn=self.combine_fn,
                                      num_layers=self.hparams.num_layers,
                                      features_start=self.hparams.features_start,
-                                     bilinear=self.bilinear)
+                                     bilinear=self.bilinear,
+                                     sigmoid_on_output=self.hparams.sigmoid_on_output)
+
         else:
-            print("Modified UNet *with* extra skip connection")
+            print("Architecture: Modified UNet *with* extra skip connection")
             self.net = UnstackedUNetExtraSkip(num_frames=self.num_frames,
                                               combine_fn=self.combine_fn,
                                               num_layers=self.hparams.num_layers,
                                               features_start=self.hparams.features_start,
-                                              bilinear=self.bilinear)
+                                              bilinear=self.bilinear,
+                                              sigmoid_on_output=self.hparams.sigmoid_on_output)
+
+        self.save_hyperparameters()
+
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
-    print("start right multiframe model")
     pl.seed_everything(42)
 
     parser = ArgumentParser()
@@ -57,7 +67,20 @@ if __name__ == "__main__":
     parser = UnstackedModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
-    # data
+    # initialize model, load from checkpoint if passed and update saved dm parameters
+    if args.ckpt_path is None:
+        print("no model checkpoint provided")
+        model = UnstackedModel(**args.__dict__)
+    else:
+        print("load pretrained model checkpoint")
+        # only parameter that we change is the learning rate provided
+        model = UnstackedModel.load_from_checkpoint(args.ckpt_path, lr=args.lr)
+        args.data_dir = model.hparams.data_dir
+        args.num_frames = model.hparams.num_frames
+        args.batch_size = model.hparams.batch_size
+        args.num_workers = model.hparams.num_workers
+
+    print("initialize datamodule...")
     dm = UnstackedDaVinciDataModule(
         args.data_dir,
         frames_per_sample=args.num_frames,
@@ -67,7 +90,6 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
     )
     dm.setup()
-    print("dm setup")
 
     # sanity check
     print("size of trainset:", len(dm.train_samples))
@@ -75,23 +97,35 @@ if __name__ == "__main__":
     print("size of testset:", len(dm.test_samples))
 
     img, target = next(iter(dm.train_dataloader()))
-    print(img.shape)
-    print(target.shape)
-
-    # model
-    model = UnstackedModel(**args.__dict__)
-    print("model instance created")
-    print("lightning version", pl.__version__)
+    print('input shape: ', img.shape)
+    print('target shape: ', target.shape)
 
     # fid callback
-    # fid = FIDCallback(pickle_dir=args.data_dir,
-    #                   pickle_name="real_stats.pickle",
-    #                   val_dl=dm.val_dataloader_shuffle(),
-    #                   num_samples=args.fid_n_samples,
-    #                   fid_freq=args.fid_epoch_freq)
+    fid = FIDCallback(pickle_dir=args.data_dir,
+                      pickle_name="real_stats.pickle",
+                      val_dl=dm.val_dataloader(),
+                      num_samples=args.fid_n_samples,
+                      fid_freq=args.fid_epoch_freq)
 
-    # train - default logging every 50 steps
-    trainer = pl.Trainer.from_argparse_args(args)
-    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
-    print("trainer created")
+    # save val imgs callback
+    save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
+
+    # model checkpoint callback
+    checkpoint = ModelCheckpoint(monitor='val_loss',
+                                 filename='{epoch:03d}-{val_loss:.4f}',
+                                 save_last=True,
+                                 mode="min")
+
+    # init pl trainer
+    print("initialize trainer")
+    if args.ckpt_path is None:
+        trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
+    else:
+        trainer = pl.Trainer.from_argparse_args(args,
+                                                resume_from_checkpoint=args.ckpt_path,
+                                                callbacks=[checkpoint, fid, save_preds],
+                                                num_sanity_val_steps=0)
+
+
+    print("start training model...")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
