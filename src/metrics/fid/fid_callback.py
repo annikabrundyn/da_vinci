@@ -91,7 +91,7 @@ class FIDCallback(pl.callbacks.base.Callback):
             if samples_used >= self.num_samples:
                 break
 
-            pred = pl_module(img.to(pl_module.device))
+            pred = pl_module(img.to(pl_module.device), *args)
 
             feat = self.inception(pred)[0].view(pred.shape[0], -1)  # compute features
             features.append(feat.to('cpu'))

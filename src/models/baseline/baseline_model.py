@@ -24,6 +24,8 @@ class BaselineModel(nn.Module):
 
     def __init__(self):
         super(BaselineModel, self).__init__()
+        use_cuda = torch.cuda.is_available()
+        self.device = torch.device("cuda:0" if use_cuda else "cpu")
 
     def forward(self, x, x_trans, fill="copy_left"):
         orig_x = torch.clone(x)
@@ -103,9 +105,11 @@ if __name__ == "__main__":
 
                 for loss in loss_module_dict:
                     loss_result_dict[loss][x_tran] += loss_module_dict[loss](
-                        y_true=targets.to(device), y_pred=shifted_inputs).cpu().item() / len(inputs)
+                        y_true=targets.to(device), y_pred=shifted_inputs).cpu().item()
 
             for loss in loss_module_dict:
+                loss_result_dict[loss][x_tran] = loss_result_dict[loss][x_tran] / \
+                    len(val_dataloader)
                 loss_module_dict[loss].reset()
 
     # Get min loss value and corresponding disparity for each loss
@@ -128,13 +132,13 @@ if __name__ == "__main__":
             inputs, targets = inputs.to(device), targets.to(device)
             shifted_inputs = model(inputs, final_results_dict[loss]["min_x_trans"])
 
-            ssim_val += ssim(shifted_inputs, targets.type(targets.dtype)) / len(inputs)
-            psnr_val += psnr(shifted_inputs, targets) / len(inputs)
-            lpips_val += lpips(shifted_inputs, targets).mean() / len(inputs)
+            ssim_val += ssim(shifted_inputs, targets.type(targets.dtype)).mean()
+            psnr_val += psnr(shifted_inputs, targets).mean()
+            lpips_val += lpips(shifted_inputs, targets).mean()
 
-        final_results_dict[loss]['SSIM'] = ssim_val.item()
-        final_results_dict[loss]['PSNR'] = psnr_val.item()
-        final_results_dict[loss]['LPIPS'] = lpips_val.item()
+        final_results_dict[loss]['SSIM'] = ssim_val.item() / len(val_dataloader)
+        final_results_dict[loss]['PSNR'] = psnr_val.item() / len(val_dataloader)
+        final_results_dict[loss]['LPIPS'] = lpips_val.item() / len(val_dataloader)
         final_results_dict[loss]['FID'] = fid_val
 
     # Write results to file

@@ -4,7 +4,7 @@ from losses.perceptual_loss import Perceptual
 from torch import nn
 import torch.nn.functional as F
 
-from losses.perceptual_loss import Perceptual
+from losses.perceptual_loss import Perceptual as PerceptualLoss
 from pytorch_lightning.metrics.functional import ssim
 import torch
 import abc
@@ -29,7 +29,7 @@ class L1_Perceptual(CustomLoss):
         return self.l1(y_true, y_pred) + self.perceptual(y_true, y_pred)
 
 
-@LossRegistry.register('l1_ssim')
+# @LossRegistry.register('l1_ssim')
 class L1_SSIM(CustomLoss):
     def __init__(self) -> None:
         '''
@@ -41,17 +41,50 @@ class L1_SSIM(CustomLoss):
         return F.l1_loss(y_true, y_pred) + ssim(y_true, y_pred)
 
 
-@LossRegistry.register('l1')
-class L1(CustomLoss):
+@LossRegistry.register('ssim')
+class SSIM(CustomLoss):
     def __init__(self) -> None:
         '''
-        Equal weight for L1
+        SSIM
         '''
         super().__init__()
 
     def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
-        return F.l1_loss(y_true, y_pred)
+        return -1.0 * ssim(y_pred, y_true)
 
 
-def ssim_loss(pred, target):
-    return -1.0 * ssim(pred, target)
+@LossRegistry.register('mse')
+class MSE(CustomLoss):
+    def __init__(self) -> None:
+        '''
+        MSE
+        '''
+        super().__init__()
+
+    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+        return F.mse_loss(y_pred, y_true)
+
+
+@LossRegistry.register('l1')
+class L1(CustomLoss):
+    def __init__(self) -> None:
+        '''
+        L1
+        '''
+        super().__init__()
+
+    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+        return F.l1_loss(y_pred, y_true)
+
+
+@LossRegistry.register('perceptual')
+class Perceptual(CustomLoss):
+    def __init__(self) -> None:
+        '''
+        Perceptual Loss
+        '''
+        super().__init__()
+        self.perceptual = PerceptualLoss()
+
+    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+        return self.perceptual(y_true, y_pred)
