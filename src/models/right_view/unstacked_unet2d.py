@@ -34,7 +34,7 @@ class UnstackedModel(BaseModel):
 
         # UNet without extra skip connection (normal)
         if self.hparams.extra_skip in ("False", "F", "false"):
-            print("Normal UNet *without* extra skip connection")
+            print("Architecture: Normal UNet *without* extra skip connection")
             self.net = UnstackedUNet(num_frames=self.num_frames,
                                      combine_fn=self.combine_fn,
                                      num_layers=self.hparams.num_layers,
@@ -43,7 +43,7 @@ class UnstackedModel(BaseModel):
                                      sigmoid_on_output=self.hparams.sigmoid_on_output)
 
         else:
-            print("Modified UNet *with* extra skip connection")
+            print("Architecture: Modified UNet *with* extra skip connection")
             self.net = UnstackedUNetExtraSkip(num_frames=self.num_frames,
                                               combine_fn=self.combine_fn,
                                               num_layers=self.hparams.num_layers,
@@ -69,11 +69,14 @@ if __name__ == "__main__":
 
     # initialize model, load from checkpoint if passed and update saved dm parameters
     if args.ckpt_path is None:
+        print("no model checkpoint provided")
         model = UnstackedModel(**args.__dict__)
     else:
+        print("load pretrained model checkpoint")
         # only parameter that we change is the learning rate provided
         model = UnstackedModel.load_from_checkpoint(args.ckpt_path, lr=args.lr)
         print("lr:", model.hparams.lr)
+        print('num_frames:', model.hparams.num_frames)
         args.data_dir = model.hparams.data_dir
         args.num_frames = model.hparams.num_frames
         args.batch_size = model.hparams.batch_size
@@ -116,6 +119,7 @@ if __name__ == "__main__":
                                  mode="min")
 
     # init pl trainer
+    print("initialize trainer")
     if args.ckpt_path is None:
         trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
     else:
