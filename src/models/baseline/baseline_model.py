@@ -29,7 +29,7 @@ class BaselineModel(nn.Module):
 
     def forward(self, x, x_trans, fill="copy_left"):
         orig_x = torch.clone(x)
-        out = torch.roll(x, x_trans, 2)
+        out = torch.roll(x, x_trans, 3)
         img_width = x.size()[3]
 
         if x_trans <= 0:
@@ -42,8 +42,8 @@ class BaselineModel(nn.Module):
         if fill == "zeros":
             out[:, :, :, empty_slice_start:empty_slice_end] = 0
         elif fill == "copy_left":
-            out[:, :, :, empty_slice_start:empty_slice_end] = orig_x[:, :, :,
-                                                                     empty_slice_start:empty_slice_end]
+            out[:, :,
+                :, empty_slice_start:empty_slice_end] = orig_x[:, :, :, empty_slice_start:empty_slice_end]
         elif "roll":
             pass
         else:
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     # data
     dm = StackedDaVinciDataModule(data_dir=args.data_dir, frames_per_sample=1,
-                                  frames_to_drop=0, num_workers=16)
+                                  frames_to_drop=0, num_workers=16, batch_size=32)
     dm.setup()
     val_dataloader = dm.val_dataloader()
     sample_img = next(iter(val_dataloader))[0][0]
@@ -93,6 +93,7 @@ if __name__ == "__main__":
     # Candidate x-coord shifts for input imgs
     img_width = len(sample_img[0][0])
     half_width = int(img_width / 2)
+
     translations = range(-half_width, half_width)
 
     # Train
