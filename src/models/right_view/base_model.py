@@ -8,7 +8,7 @@ from pytorch_lightning.metrics.functional import ssim, psnr
 import lpips
 import numpy as np
 
-from losses import Perceptual, L1_Perceptual, L1_SSIM, ssim_loss
+from losses import Perceptual, L1_Perceptual, L1_SSIM, SSIM
 
 #from models.unet_architecture import MultiFrameUNet
 
@@ -40,7 +40,7 @@ class BaseModel(pl.LightningModule):
 
         self.LPIPS = lpips.LPIPS(net='alex')
 
-        ### NOTE: for all the different models, this is essentially the only thing that changes (architecture)
+        # NOTE: for all the different models, this is essentially the only thing that changes (architecture)
         # self.net = MultiFrameUNet(num_frames=num_frames,
         #                           combine_fn=combine_fn,
         #                           num_layers=num_layers,
@@ -54,7 +54,7 @@ class BaseModel(pl.LightningModule):
         elif self.loss == "mse":
             self.criterion = torch.nn.MSELoss()
         elif self.loss == "ssim":
-           self.criterion = ssim_loss
+            self.criterion = SSIM()
         elif self.loss == "perceptual":
             self.criterion = Perceptual()
         elif self.loss == "l1_perceptual":
