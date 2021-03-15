@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-
+import sys
 import torch
 
 import pytorch_lightning as pl
@@ -54,7 +54,9 @@ class UnstackedModel(BaseModel):
         self.save_hyperparameters()
 
 
-if __name__ == "__main__":
+def main(args):
+    print(torch.cuda.device_count())
+
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
     pl.seed_everything(42)
 
@@ -65,7 +67,7 @@ if __name__ == "__main__":
 
     # model args
     parser = UnstackedModel.add_model_specific_args(parser)
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     # initialize model, load from checkpoint if passed and update saved dm parameters
     if args.ckpt_path is None:
@@ -119,13 +121,17 @@ if __name__ == "__main__":
     # init pl trainer
     print("initialize trainer")
     if args.ckpt_path is None:
-        trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
+        trainer = pl.Trainer.from_argparse_args(
+            args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
     else:
         trainer = pl.Trainer.from_argparse_args(args,
                                                 resume_from_checkpoint=args.ckpt_path,
                                                 callbacks=[checkpoint, fid, save_preds],
                                                 num_sanity_val_steps=0)
 
-
     print("start training model...")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
