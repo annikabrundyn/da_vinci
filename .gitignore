@@ -139,7 +139,10 @@ cython_debug/
 
 *.DS_Store
 
+# data folders
 daVinci_data
+inputs
+targets
 
 grid_artifacts/
 
@@ -147,7 +150,7 @@ grid_artifacts/
 
 *cifar-10*
 
-*yaml
+*yml
 
 .idea/
 
