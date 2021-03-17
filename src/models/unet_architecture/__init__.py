@@ -3,3 +3,4 @@ from models.unet_architecture.unet_extra_skip import UNetExtraSkip
 
 from models.unet_architecture.unstacked_unet import UnstackedUNet
 from models.unet_architecture.unstacked_unet_extra_skip import UnstackedUNetExtraSkip
+from models.unet_architecture.unstacked_unet_temp_enc import UnstackedTempEncUNet
