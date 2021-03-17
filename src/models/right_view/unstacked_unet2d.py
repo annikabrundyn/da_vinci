@@ -75,7 +75,7 @@ if __name__ == "__main__":
         print("load pretrained model checkpoint")
         # only parameter that we change is the learning rate provided
         model = UnstackedModel.load_from_checkpoint(args.ckpt_path, lr=args.lr)
-        args.data_dir = model.hparams.data_dir
+        #args.data_dir = model.hparams.data_dir
         args.num_frames = model.hparams.num_frames
         args.batch_size = model.hparams.batch_size
         args.num_workers = model.hparams.num_workers
