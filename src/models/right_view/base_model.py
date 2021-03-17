@@ -166,8 +166,8 @@ class BaseModel(pl.LightningModule):
 
         # logging
         parser.add_argument("--ckpt_path", type=str, default=None, help="load checkpoint provided at this path")
-        parser.add_argument("--log_tb_imgs", action='store_true', default=False)
-        parser.add_argument("--tb_step_freq", type=int, default=10000, help="log image to tensborboard every x steps")
+        parser.add_argument("--log_tb_imgs", action='store_true', default=True)
+        parser.add_argument("--tb_step_freq", type=int, default=5000, help="log image to tensborboard every x steps")
         parser.add_argument("--save_epoch_freq", type=int, default=10)
         parser.add_argument("--fid_epoch_freq", type=int, default=5, help="number of epochs between each fid calculation")
         parser.add_argument("--fid_n_samples", type=int, default=10000, help="number of samples to use in fid")
