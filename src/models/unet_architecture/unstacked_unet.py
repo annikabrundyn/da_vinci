@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from models.unet_architecture.unet_components import DoubleConvMF, DownMF, Up
-from models.right_view.combine_fns import CombineConv3D, CombineMax, CombineAverage
+from models.right_view.combine_fns import CombineConv3D, CombineConvLSTM, CombineMax, CombineAverage
 
 
 class UnstackedUNet(nn.Module):
@@ -57,6 +57,9 @@ class UnstackedUNet(nn.Module):
     def _determine_combine_fn(self, combine_fn):
         if combine_fn == "conv3d":
             combine = CombineConv3D
+
+        elif combine_fn == "convlstm":
+            combine = CombineConvLSTM
 
         elif combine_fn == "max":
             combine = CombineMax

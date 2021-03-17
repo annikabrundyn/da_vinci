@@ -9,6 +9,7 @@ class CombineConvLSTM(nn.Module):
 
     def __init__(self,
                  channels: int,
+                 num_frames: int,
                  kernel_size: tuple = (3, 3),
                  padding: int = 1,
                  num_layers: int = 1,
@@ -22,7 +23,7 @@ class CombineConvLSTM(nn.Module):
 
     def forward(self, x):
         # [b, t, c, h, w] --> [b, c, t, h, w]
-        x = x.permute(0, 2, 1, 3, 4)
+        #x = x.permute(0, 2, 1, 3, 4)
 
         # [b, c, t, h, w] --> [b, c, d1, d2]
         x = self.net(x)
