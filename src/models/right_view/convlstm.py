@@ -88,7 +88,9 @@ class ConvLSTM(nn.Module):
         spatial_size = x.size()[3:]
         state_size = [batch_size, self.hidden_size] + list(spatial_size)
 
-        if torch.cuda.is_available():
-            return (Variable(torch.zeros(state_size)).cuda(), Variable(torch.zeros(state_size)).cuda())
-        else:
-            return (Variable(torch.zeros(state_size)), Variable(torch.zeros(state_size)))
+        # if torch.cuda.is_available():
+        #     return (Variable(torch.zeros(state_size)).cuda(), Variable(torch.zeros(state_size)).cuda())
+        # else:
+        #     return (Variable(torch.zeros(state_size)), Variable(torch.zeros(state_size)))
+
+        return (Variable(torch.zeros(state_size)), Variable(torch.zeros(state_size)))
