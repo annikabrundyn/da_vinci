@@ -21,14 +21,17 @@ class CombineConvLSTM(nn.Module):
         self.net = ConvLSTM(channels, channels, kernel_size=kernel_size, padding=padding,
                             num_layers=num_layers, batch_first=batch_first, bias=bias)
 
-    def forward(self, x):
+    def forward(self, x, temp_enc=False):
         # [b, t, c, h, w] --> [b, c, t, h, w]
         #x = x.permute(0, 2, 1, 3, 4)
 
         # [b, c, t, h, w] --> [b, c, d1, d2]
         x = self.net(x)
 
-        return x[:, -1, ...]
+        if temp_enc:
+            return x
+        else:
+            return x[:, -1, ...]
 
 
 class CombineConv3D(nn.Module):

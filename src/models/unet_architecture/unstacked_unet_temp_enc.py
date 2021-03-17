@@ -72,12 +72,14 @@ class UnstackedTempEncUNet(nn.Module):
     def forward(self, x):
 
         ### Encoder
-        xi = self.layers[0](x)
-        comb_xi = [self.combine_modules[0](xi)]
+        x0 = self.layers[0](x)
+        xi = [self.combine_modules[0](x0, temp_enc=True)]
+        comb_xi = [xi[0][:, -1, ...]]
 
         for enc_layer, combine in zip(self.layers[1:self.num_layers], self.combine_modules[1:]):
-            out_feats = combine(enc_layer(comb_xi[-1]))
-            comb_xi.append(out_feats)
+            out_feats = combine(enc_layer(xi[-1]), temp_enc=True)
+            xi.append(out_feats)
+            comb_xi.append(out_feats[:, -1, ...])
 
         ### Decoder
         for i, dec_layer in enumerate(self.layers[self.num_layers:-1]):
