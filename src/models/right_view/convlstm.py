@@ -92,5 +92,3 @@ class ConvLSTM(nn.Module):
             return (Variable(torch.zeros(state_size)).cuda(), Variable(torch.zeros(state_size)).cuda())
         else:
             return (Variable(torch.zeros(state_size)), Variable(torch.zeros(state_size)))
-
-print("hey")

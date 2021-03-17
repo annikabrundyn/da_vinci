@@ -25,7 +25,7 @@ class CombineConvLSTM(nn.Module):
         x = x.permute(0, 2, 1, 3, 4)
 
         # [b, c, t, h, w] --> [b, c, d1, d2]
-        output = self.net(x)
+        x = self.net(x)
 
         return x[:, -1, ...]
 
@@ -82,8 +82,3 @@ class CombineAverage(nn.Module):
     def forward(self, x):
         x = x.mean(dim=1)
         return x
-
-
-
-
-
