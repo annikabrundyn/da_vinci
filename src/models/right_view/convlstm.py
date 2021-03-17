@@ -9,7 +9,7 @@ class ConvLSTMCell(nn.Module):
     """
 
     def __init__(self, input_size, hidden_size, kernel_size, padding, bias=True):
-        super(ConvLSTMCell,self).__init__()
+        super(ConvLSTMCell, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.gates = nn.Conv2d(input_size + hidden_size, 4 * hidden_size, kernel_size, padding=padding, bias=bias)
@@ -93,4 +93,4 @@ class ConvLSTM(nn.Module):
         # else:
         #     return (Variable(torch.zeros(state_size)), Variable(torch.zeros(state_size)))
 
-        return (Variable(torch.zeros(state_size)), Variable(torch.zeros(state_size)))
+        return (Variable(torch.zeros(state_size).type_as(x)), Variable(torch.zeros(state_size).type_as(x)))
