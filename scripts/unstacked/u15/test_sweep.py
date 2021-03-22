@@ -7,9 +7,8 @@ from models.right_view.unstacked_unet2d import main as unstacked_main
 
 def retreve_config(sweep_step):
     grid = {
-        "lr": [0.001, 0.0001, 0.00001],
+        "lr": [0.0001],
         "loss": ["l1"],
-        "extra_skip": [True],
     }
 
     grid_setups = list(
@@ -20,11 +19,11 @@ def retreve_config(sweep_step):
     config = [
         "--lr", str(step_grid["lr"]),
         "--loss", str(step_grid["loss"]),
-        "--num_layers", str(step_grid["extra_skip"]),
+        "--extra_skip", "True",
         "--gpus", "1",
         "--precision", "16",
         "--batch_size", "64",
-        "--default_root_dir", "/scratch/js11133/da_vinci/exps/unstacked/u20",
+        "--default_root_dir", "/scratch/js11133/da_vinci/exps/unstacked/u15",
         "--data_dir", "/scratch/js11133/da_vinci/raw_data"
     ]
 
