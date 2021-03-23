@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import torch
 
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, GPUStatsMonitor
 
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip
@@ -116,10 +116,12 @@ if __name__ == "__main__":
                                  save_last=True,
                                  mode="min")
 
+    gpu_stats = GPUStatsMonitor()
+
     # init pl trainer
     # note i've removed resume from checkpoint in trainer for now
     print("initialize trainer")
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds, checkpoint], num_sanity_val_steps=0)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds, checkpoint, gpu_stats], num_sanity_val_steps=0)
 
 
     print("start training model...")
