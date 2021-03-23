@@ -119,14 +119,8 @@ if __name__ == "__main__":
 
     # init pl trainer
     print("initialize trainer")
-    if args.ckpt_path is None:
-        trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
-    else:
-        trainer = pl.Trainer.from_argparse_args(args,
-                                                resume_from_checkpoint=args.ckpt_path,
-                                                callbacks=[checkpoint, fid, save_preds],
-                                                num_sanity_val_steps=0)
-
+    # note removed resume from checkpoint in trainer
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
 
     print("start training model...")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
