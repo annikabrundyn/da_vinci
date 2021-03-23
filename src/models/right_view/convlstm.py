@@ -74,8 +74,9 @@ class ConvLSTM(nn.Module):
             if i == 0:
                 hidden_state = self.init_hidden(x)
 
-            for t in range(seq_len):
-                hidden_state = layer(current_input[:, t, :, :, :], hidden_state)
+            # note this was a mistake - reading images from most recent to furthest back - now corrected
+            for t in range(1, seq_len + 1):
+                hidden_state = layer(current_input[:, -t, :, :, :], hidden_state)
                 output.append(hidden_state[0])
 
             output = torch.stack(output, dim=1)
