@@ -157,7 +157,7 @@ class BaseModel(pl.LightningModule):
         parser.add_argument("--bilinear", type=str, default='False', help="bilinear upsampling ('True', 'T', 'true') vs. transposed convolution")
         parser.add_argument("--sigmoid_on_output", action='store_true', default=False, help="apply sigmoid on output")
         parser.add_argument("--num_layers", type=int, default=5, help="number of layers/blocks in u-net")
-        parser.add_argument("--features_start", type=float, default=64, help="number of features in first layer")
+        parser.add_argument("--features_start", type=int, default=64, help="number of features in first layer")
 
         # hyperparameters with a default value
         parser.add_argument("--lr", type=float, default=0.001, help="learning rate for adam optimizer")
