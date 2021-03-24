@@ -33,7 +33,7 @@ def concat_images(image_paths, size, shape, exp_paths, padding=3, include_inputs
     image = Image.new('RGB', image_size)
 
     # Paste images into final image
-    for row, name in zip(range(shape[0]), exp_paths):
+    for row, name in zip(range(num_y), exp_paths):
 
         # Draw text label
         img = Image.new('RGB', (IMAGE_WIDTH, IMAGE_HEIGHT), "white")
@@ -102,6 +102,8 @@ if __name__ == "__main__":
         for fname in sorted(os.listdir(inputs_fol)):
             if fname == ".DS_Store":
                 continue
+            if int(fname) not in args.imgs:
+                continue
             path = os.path.join(inputs_fol, fname)
             if os.path.isdir(path):
                 max_num = max(int(x[:6]) for x in os.listdir(path) if x != ".DS_Store")
@@ -109,8 +111,12 @@ if __name__ == "__main__":
 
         # Generate list of image paths for targets
         targets_fol = os.path.join(args.exp_dir, "targets")
-        image_paths.extend([os.path.join(targets_fol, f)
-                            for f in sorted(os.listdir(targets_fol)) if f.endswith('.png')])
+        if args.imgs:
+            image_paths.extend([os.path.join(targets_fol, f)
+                                for f in [sorted(os.listdir(targets_fol))[i] for i in args.imgs] if f.endswith('.png')])
+        else:
+            image_paths.extend([os.path.join(targets_fol, f)
+                                for f in sorted(os.listdir(targets_fol)) if f.endswith('.png')])
 
     # Generate list of images in the experiment paths (use the last epoch)
     for top_exp_folder in exp_paths:
