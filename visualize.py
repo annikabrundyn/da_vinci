@@ -55,18 +55,10 @@ def concat_images(image_paths, size, shape, exp_paths, padding=3, include_inputs
         image.paste(img, (0, (height + padding) * row))
 
         # Paste images
-        if imgs:
-            img_col = 1
-            for img in imgs:
-                offset = (width+padding) * img_col, (height + padding) * row
-                idx = row * (num_x-1) + img
-                image.paste(images[idx], offset)
-                img_col += 1
-        else:
-            for col in range(1, num_x):
-                offset = (width+padding) * col, (height + padding) * row
-                idx = row * (num_x-1) + col
-                image.paste(images[idx-1], offset)
+        for col in range(1, num_x):
+            offset = (width+padding) * col, (height + padding) * row
+            idx = row * (num_x-1) + col
+            image.paste(images[idx-1], offset)
 
     return image
 
