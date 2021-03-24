@@ -30,7 +30,7 @@ def concat_images(image_paths, size, shape, exp_paths, padding=3, include_inputs
     shape = shape if shape else (1, len(images))
     image_size = (width * num_x) + (padding * (num_x -
                                                1)), (height * num_y) + (padding * (num_y - 1))
-    image = Image.new('RGB', image_size)
+    image = Image.new('RGB', image_size, color=(255, 255, 255, 0))
 
     # Paste images into final image
     for row, name in zip(range(num_y), exp_paths):
