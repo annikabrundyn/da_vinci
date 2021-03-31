@@ -52,7 +52,7 @@ if __name__ == "__main__":
         preds = model(img)
 
         # concat left view and right view
-        left_and_right = torch.cat((img, preds), dim=3).permute(0,2,3,1)
+        left_and_right = torch.cat((img[:, 0, ...], preds), dim=3).permute(0,2,3,1)
         left_and_right = torch.clamp(left_and_right, 0, 1) * 255
         outputs.append(left_and_right)
 
