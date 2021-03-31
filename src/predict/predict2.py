@@ -57,9 +57,10 @@ if __name__ == "__main__":
         outputs.append(left_and_right)
 
         # output in chunks to avoid memory errors
-        if (idx + 1) % 5 == 0:
-            outputs = torch.cat(outputs)
-            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=30)
-            outputs = []
-        outputs = torch.cat(outputs)
-        torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=30)
+        # if (idx + 1) % 5 == 0:
+        #     outputs = torch.cat(outputs).cpu()
+        #     torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=30)
+        #     outputs = []
+
+    outputs = torch.cat(outputs).cpu()
+    torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=30)
