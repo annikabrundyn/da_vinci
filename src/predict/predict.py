@@ -17,7 +17,7 @@ if __name__ == "__main__":
     pl.seed_everything(42)
 
     parser = ArgumentParser()
-    parser.add_argument("--data_dir", type=str, help="path to davinci data")
+    parser.add_argument("--data_dir", type=str, default='.', help="path to davinci data")
     parser.add_argument("--ckpt_path", type=str, help="path to saved model checkpoint")
     parser.add_argument("--save_path", type=str, help="path to saved images")
     parser.add_argument("--num_workers", type=int, default=0)
@@ -28,12 +28,12 @@ if __name__ == "__main__":
     model.eval()
 
     dm = UnstackedDaVinciDataModule(
-        args.data_dir,
+        model.hparams.num_frames,
         frames_per_sample=model.hparams.num_frames,
         frames_to_drop=0,
         extra_info=True,
         batch_size=1,
-        num_workers=args.num_workers,
+        num_workers=model.hparams.num_frames,
     )
     dm.setup()
 
