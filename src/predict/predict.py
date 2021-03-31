@@ -28,7 +28,7 @@ if __name__ == "__main__":
     model.eval()
 
     dm = UnstackedDaVinciDataModule(
-        model.hparams.num_frames,
+        args.data_dir,
         frames_per_sample=model.hparams.num_frames,
         frames_to_drop=0,
         extra_info=True,
