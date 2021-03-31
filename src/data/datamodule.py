@@ -120,6 +120,9 @@ class DaVinciDataModule(pl.LightningDataModule):
         # create separate list of validation images to visualize (hand-picked 14 indices)
         self.vis_samples = self._create_val_img_list()
 
+        # reverse to be from first to last frame for predicting videos since we don't shuffle
+        self.val_samples = self.val_samples[::-1]
+
         self.train_dataset = self.dataset(data_dir=self.data_dir,
                                           sample_list=self.train_samples,
                                           frames_per_sample=self.frames_per_sample,

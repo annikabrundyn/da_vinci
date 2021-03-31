@@ -1,5 +1,5 @@
 import torch.nn as nn
-from convlstm import ConvLSTM
+from .convlstm import ConvLSTM
 
 
 class CombineConvLSTM(nn.Module):

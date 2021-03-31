@@ -1,45 +1,59 @@
-"""
-[WIP] Script to predict given a specific model, checkpoint path and dataset
-TODO:
-    - add cli arguments
-    - test on all our models + dataloader
-    - generalize to take any model
-"""
-import yaml
+import os
+from argparse import ArgumentParser
 
+from tqdm import tqdm
+
+import torch
 import pytorch_lightning as pl
-from models.right_view.stacked_unet2d import StackedModel
-from data import StackedDaVinciDataModule
+from torchvision.utils import save_image
+import torchvision.io
 
-CKPT_PATH = "/Users/annikabrundyn/Downloads/epoch=2-step=5453.ckpt"
-HPARAMS_PATH = "/Users/annikabrundyn/Downloads/hparams.yaml"
-
-
-with open(HPARAMS_PATH, "r") as stream:
-    args = yaml.load(stream)
-
-args['data_dir'] = "/Users/annikabrundyn/Developer/da_vinci/daVinci_data"
+from models.right_view.unstacked_unet2d import UnstackedModel
+from data.multiframe_data import UnstackedDaVinciDataModule
 
 
-dm = StackedDaVinciDataModule(
-    args['data_dir'],
-    frames_per_sample=args['num_frames'],
-    frames_to_drop=0,
-    extra_info=False,
-    batch_size=args['batch_size'],
-    num_workers=args['num_workers'],
-)
-dm.setup()
+if __name__ == "__main__":
+    # sets seed for numpy, torch, python.random and PYTHONHASHSEED
+    pl.seed_everything(42)
 
+    parser = ArgumentParser()
+    parser.add_argument("--data_dir", type=str, help="path to davinci data")
+    parser.add_argument("--ckpt_path", type=str, help="path to saved model checkpoint")
+    parser.add_argument("--save_path", type=str, help="path to saved images")
+    parser.add_argument("--num_workers", type=int, default=0)
 
-model = StackedModel.load_from_checkpoint(
-    checkpoint_path=CKPT_PATH,
-    hparams_file=HPARAMS_PATH,
-    map_location=None
-)
+    args = parser.parse_args()
 
-trainer = pl.Trainer()
+    model = UnstackedModel.load_from_checkpoint(args.ckpt_path)
+    model.eval()
 
-test_results = trainer.test(model, test_dataloaders=dm.vis_img_dataloader())
+    dm = UnstackedDaVinciDataModule(
+        args.data_dir,
+        frames_per_sample=model.hparams.num_frames,
+        frames_to_drop=0,
+        extra_info=True,
+        batch_size=1,
+        num_workers=args.num_workers,
+    )
+    dm.setup()
 
-print(test_results)
+    #outputs = []
+    for idx, (inputs, _, target_frame_name) in enumerate(tqdm(dm.val_dataloader())):
+        pred = model(inputs)
+        left_and_right = torch.cat((inputs[:, 0, ...], pred), dim=3)
+        #outputs.append(left_and_right)
+        pred_path = os.path.join(args.save_path, target_frame_name[0])
+        save_image(left_and_right, fp=pred_path)
+
+        # output in chunks to avoid memory errors
+        # if (idx) % 2 == 0:
+        #     outputs = torch.cat(outputs)
+        #     torchvision.io.write_video(filename=os.path.join(args.save_path, f"{idx}.avi"),
+        #                                video_array=outputs,
+        #                                fps=30)
+        #     outputs = []
+
+        #outputs = torch.cat(outputs)
+        #torchvision.io.write_video(filename=os.path.join(args.save_path, f"{idx}.avi"), video_array=outputs, fps=30)
+
+print("hi")
