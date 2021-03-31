@@ -32,28 +32,31 @@ if __name__ == "__main__":
         frames_per_sample=model.hparams.num_frames,
         frames_to_drop=0,
         extra_info=True,
-        batch_size=1,
-        num_workers=model.hparams.num_frames,
+        batch_size=4,
+        num_workers=model.hparams.num_workers,
     )
     dm.setup()
 
-    #outputs = []
+    outputs = []
     for idx, (inputs, _, target_frame_name) in enumerate(tqdm(dm.val_dataloader())):
-        pred = model(inputs)
-        left_and_right = torch.cat((inputs[:, 0, ...], pred), dim=3)
-        #outputs.append(left_and_right)
-        pred_path = os.path.join(args.save_path, target_frame_name[0])
-        save_image(left_and_right, fp=pred_path)
 
-        # output in chunks to avoid memory errors
-        # if (idx) % 2 == 0:
+        if idx > 1:
+            break
+
+        pred = model(inputs)
+        left_and_right = torch.cat((inputs[:, 0, ...], pred), dim=3).permute(0, 2, 3, 1)
+        outputs.append(left_and_right)
+        #pred_path = os.path.join(args.save_path, target_frame_name[0])
+        #save_image(left_and_right, fp=pred_path)
+
+        #output in chunks to avoid memory errors
+        # if (idx+1) % 2 == 0:
         #     outputs = torch.cat(outputs)
         #     torchvision.io.write_video(filename=os.path.join(args.save_path, f"{idx}.avi"),
         #                                video_array=outputs,
         #                                fps=30)
         #     outputs = []
 
-        #outputs = torch.cat(outputs)
-        #torchvision.io.write_video(filename=os.path.join(args.save_path, f"{idx}.avi"), video_array=outputs, fps=30)
+    outputs = torch.cat(outputs)
+    torchvision.io.write_video(filename=os.path.join(args.save_path, f"{idx}.avi"), video_array=outputs, fps=1)
 
-print("hi")
