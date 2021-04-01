@@ -39,7 +39,7 @@ if __name__ == "__main__":
         frames_per_sample=model.hparams.num_frames,
         frames_to_drop=0,
         extra_info=True,
-        batch_size=model.hparams.batch_size,
+        batch_size=1,
         num_workers=model.hparams.num_workers,
     )
     dm.setup()
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     outputs = []
     for idx, batch in enumerate(tqdm(dm.val_dataloader())):
-        if idx > 1:
+        if idx > 10:
             break
 
         img, target, extra_info = batch
@@ -55,15 +55,18 @@ if __name__ == "__main__":
         preds = model(img)
 
         # concat left view and right view
-        left_and_right = torch.cat((img[:, 0, ...], preds), dim=3).permute(0,2,3,1)
-        left_and_right = torch.clamp(left_and_right, 0, 1) * 255
+        left_and_right = torch.cat((img[:, 0, ...], preds), dim=3)
+
+        # following same steps at torchvision save_image
+        # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
+        left_and_right = torch.mul(left_and_right, 255).add_(0.5).clamp_(0, 255).permute(0, 2, 3, 1)
         outputs.append(left_and_right)
 
         # output in chunks to avoid memory errors
         if (idx + 1) % 5 == 0:
-            outputs = torch.cat(outputs).cpu()
-            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=30)
+            outputs_tensor = torch.cat(outputs).cpu()
+            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs_tensor, fps=1)
             outputs = []
 
-        outputs = torch.cat(outputs).cpu()
-        torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=1)
+        #outputs = torch.cat(outputs).cpu()
+        #torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs, fps=1)
