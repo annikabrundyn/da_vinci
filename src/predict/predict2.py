@@ -75,11 +75,10 @@ if __name__ == "__main__":
             video_idx += 1
 
         # last batch
-        if batch_idx == (len(dm.val_dataloader()) - 1):
+        if (batch_idx + 1) == len(dm.val_dataloader()):
             outputs_tensor = torch.cat(outputs).cpu()
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.mp4"),
                                        video_array=outputs_tensor,
                                        video_codec='h264',
                                        fps=30)
             outputs = []
-            video_idx += 1
