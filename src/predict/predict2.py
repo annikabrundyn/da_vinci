@@ -80,6 +80,6 @@ if __name__ == "__main__":
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.mp4"),
                                        video_array=outputs_tensor,
                                        video_codec='h264',
-                                       fps=5)
+                                       fps=30)
             outputs = []
             video_idx += 1
