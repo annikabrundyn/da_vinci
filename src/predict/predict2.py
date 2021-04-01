@@ -39,16 +39,15 @@ if __name__ == "__main__":
         frames_per_sample=model.hparams.num_frames,
         frames_to_drop=0,
         extra_info=True,
-        batch_size=1,
+        batch_size=args.batch_size,
         num_workers=model.hparams.num_workers,
     )
     dm.setup()
     print("dm setup")
 
+
     outputs = []
-    for idx, batch in enumerate(tqdm(dm.val_dataloader())):
-        if idx > 10:
-            break
+    for batch_idx, batch in enumerate(tqdm(dm.val_dataloader())):
 
         img, target, extra_info = batch
         img = img.to(device)
@@ -63,9 +62,12 @@ if __name__ == "__main__":
         outputs.append(left_and_right)
 
         # output in chunks to avoid memory errors
-        if (idx + 1) % 5 == 0:
+        if (batch_idx + 1) % 2 == 0:
             outputs_tensor = torch.cat(outputs).cpu()
-            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{idx}.avi"), video_array=outputs_tensor, fps=1)
+            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{batch_idx}.mp4"),
+                                       video_array=outputs_tensor,
+                                       video_codec='h264',
+                                       fps=5)
             outputs = []
 
         #outputs = torch.cat(outputs).cpu()
