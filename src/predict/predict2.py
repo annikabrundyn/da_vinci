@@ -62,11 +62,11 @@ if __name__ == "__main__":
         outputs.append(left_and_right)
 
         # output in chunks to avoid memory errors
-        if (batch_idx + 1) % 2 == 0:
+        if (batch_idx + 1) % 500 == 0:
             outputs_tensor = torch.cat(outputs).cpu()
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{batch_idx}.mp4"),
                                        video_array=outputs_tensor,
-                                       video_codec='h264',
+                                       video_codec='h264_nvenc',
                                        fps=5)
             outputs = []
 
