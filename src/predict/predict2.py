@@ -27,6 +27,7 @@ if __name__ == "__main__":
                         type=str, help="output directory")
     parser.add_argument("--freq", required=True,
                         type=int)
+
     args = parser.parse_args()
 
     # model
@@ -69,16 +70,21 @@ if __name__ == "__main__":
             outputs_tensor = torch.cat(outputs).cpu()
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.mp4"),
                                        video_array=outputs_tensor,
-                                       fps=30)
+                                       video_codec='h264',
+                                       fps=20)
             outputs = []
             video_idx += 1
 
         # last batch
         if (batch_idx + 1) == len(dm.val_dataloader()):
+            print("last batch:", batch_idx)
             outputs_tensor = torch.cat(outputs).cpu()
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.mp4"),
                                        video_array=outputs_tensor,
-                                       fps=30)
+                                       video_codec='h264',
+                                       fps=20)
             outputs = []
+
+    print("batch:", batch_idx)
 
 
