@@ -53,12 +53,12 @@ def get_image(base_path, exp_num_or_name, frame_num):
     return image
 
 
-def create_comp_img(img_input, img_a, img_b, q_num):
+def create_comp_img(img_input, img_a, img_b, q_num, font_path):
     canvas = Image.new('RGB', CANVAS_SIZE, color=(255, 255, 255, 0))
 
     # Create question text
     d = ImageDraw.Draw(canvas)
-    font = ImageFont.truetype("/Library/Fonts/Arial Unicode.ttf", size=20)
+    font = ImageFont.truetype(font_path, size=20)
     d.text((15, 25), f"Q{q_num}: " + QUESTION, font=font, fill="black")
 
     canvas.paste(img_a, (CANVAS_SIZE[0] - IMAGE_WIDTH - 20, 90))
@@ -83,8 +83,8 @@ if __name__ == "__main__":
     parser.add_argument('--out_dir', type=str,
                         help='output directory for images', required=True)
     parser.add_argument("--exp_dir", type=str, required=True, help="path to davinci data")
-    parser.add_argument("--padding", type=int, default=3,
-                        required=False, help="padding for images")
+    parser.add_argument("--font_path", type=str, default="/Library/Fonts/Arial Unicode.ttf",
+                        required=False, help="font path")
     args = parser.parse_args()
 
     # create dict of models to frame numbers
@@ -101,5 +101,5 @@ if __name__ == "__main__":
         img_input = get_image(args.exp_dir, "input", frame_num)
 
         # stitch
-        output_img = create_comp_img(img_input, img_a, img_b, q_num)
+        output_img = create_comp_img(img_input, img_a, img_b, q_num, args.font_path)
         output_img.save(os.path.join(args.out_dir, f"Q{q_num}.png"))
