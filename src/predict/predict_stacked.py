@@ -9,8 +9,8 @@ from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 import pytorch_lightning as pl
 
-from models.right_view.unstacked_unet2d import UnstackedModel
-from data.multiframe_data import UnstackedDaVinciDataModule
+from models.right_view.stacked_unet2d import StackedModel
+from data.multiframe_data import StackedDaVinciDataModule
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
 
     # model args
-    parser = UnstackedModel.add_model_specific_args(parser)
+    parser = StackedModel.add_model_specific_args(parser)
     parser.add_argument("--ckpt", required=True,
                         type=str, help="path to model checkpoint")
     parser.add_argument("--output_dir", required=True,
@@ -31,17 +31,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # model
-    model = UnstackedModel.load_from_checkpoint(checkpoint_path=args.ckpt)
+    model = StackedModel.load_from_checkpoint(checkpoint_path=args.ckpt)
     model.to(device)
     model.eval()
     model.freeze()
 
     # data
-    dm = UnstackedDaVinciDataModule(
+    dm = StackedDaVinciDataModule(
         args.data_dir,
         frames_per_sample=model.hparams.num_frames,
         frames_to_drop=0,
-        extra_info=True,
+        extra_info=False,
         batch_size=args.batch_size,
         num_workers=model.hparams.num_workers,
     )
@@ -53,12 +53,15 @@ if __name__ == "__main__":
     video_idx = 0
     for batch_idx, batch in enumerate(tqdm(dm.val_dataloader())):
 
-        img, target, extra_info = batch
+        img, target = batch
         img = img.to(device)
         preds = model(img)
 
         # concat left view and right view
-        left_and_right = torch.cat((img[:, 0, ...], preds), dim=3)
+        if model.hparams.num_frames > 1:
+            img = img[:, 0:3, ...]
+
+        left_and_right = torch.cat((img, preds), dim=3)
 
         # following same steps at torchvision save_image
         # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
