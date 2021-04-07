@@ -61,7 +61,11 @@ if __name__ == "__main__":
         if model.hparams.num_frames > 1:
             img = img[:, 0:3, ...]
 
+        print('left shape:', img.shape)
+        print('right shape:', img.shape)
+
         left_and_right = torch.cat((img, preds), dim=3)
+        print('left and right shape:', img.shape)
 
         # following same steps at torchvision save_image
         # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
