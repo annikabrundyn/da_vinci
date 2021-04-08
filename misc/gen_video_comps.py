@@ -1,6 +1,7 @@
 import os
 import random
 import argparse
+from tqdm import tqdm
 
 from moviepy.editor import VideoFileClip, ColorClip, TextClip, CompositeVideoClip, concatenate_videoclips
 
@@ -39,9 +40,9 @@ def make_comp_clip(q_num, a, b, t_start, clip_len, input_dir):
 
 def make_all_comp_clips(inputs, input_dir, out_dir):
 
-    for (i, a, b, t_start, clip_len) in inputs:
+    for (i, a, b, t_start, clip_len) in tqdm(inputs):
         # make
         output_clip = make_comp_clip(i, a, b, t_start, clip_len, input_dir)
 
         # save
-        output_clip.write_videofile(os.path.join(out_dir, f"Q{i}.mp4"))
+        output_clip.write_videofile(os.path.join(out_dir, f"Q{i}.mp4"), logger=None)
