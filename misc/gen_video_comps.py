@@ -21,10 +21,10 @@ def make_comp_clip(q_num, a, b, t_start, clip_len, input_dir):
     black = ColorClip(size=(1280, 720), color=(0, 0, 0), duration=1)
 
     txt_clip_a = TextClip("Video A", fontsize=35, font='Liberation-Sans-Narrow', color='white')
-    txt_clip_a = txt_clip_a.set_position(("center", "bottom")).set_duration(5)
+    txt_clip_a = txt_clip_a.set_position(("center", "bottom")).set_duration(clip_len)
 
     txt_clip_b = TextClip("Video B", fontsize=35, font='Liberation-Sans-Narrow', color='white')
-    txt_clip_b = txt_clip_b.set_position(("center", "bottom")).set_duration(5)
+    txt_clip_b = txt_clip_b.set_position(("center", "bottom")).set_duration(clip_len)
 
     clip_a = CompositeVideoClip([clip_a, txt_clip_a])
     clip_b = CompositeVideoClip([clip_b, txt_clip_b])
