@@ -40,10 +40,6 @@ def make_comp_clip(q_num, a, b, t_start, clip_len, input_dir):
 def make_all_comp_clips(inputs, input_dir, out_dir):
 
     for (i, a, b, t_start, clip_len) in inputs:
-        print(i)
-        print(a)
-        print(b)
-
         # make
         output_clip = make_comp_clip(i, a, b, t_start, clip_len, input_dir)
 
