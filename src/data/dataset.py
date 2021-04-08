@@ -70,9 +70,7 @@ class DaVinciDataSet(Dataset):
         target = self.target_transform(target)
 
         if self.extra_info:
-            sample_info = {}
-            sample_info['image_set'] = image_set
-            sample_info['frame_nums'] = " ".join(frames)
-            return image_tensor, target, sample_info
+            target_frame_name = str(frames[0])
+            return image_tensor, target, target_frame_name
         else:
             return image_tensor, target
