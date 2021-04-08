@@ -45,4 +45,4 @@ def make_all_comp_clips(inputs, input_dir, out_dir):
         output_clip = make_comp_clip(i, a, b, t_start, clip_len, input_dir)
 
         # save
-        output_clip.write_videofile(os.path.join(out_dir, f"Q{i}.mp4"), logger=None)
+        output_clip.write_videofile(os.path.join(out_dir, f"Q{i}.mp4"), verbose=False)
