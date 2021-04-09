@@ -2,7 +2,6 @@ import numpy as np
 import os
 import torch
 from tqdm import tqdm
-
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
@@ -19,12 +18,13 @@ def concat_left_right(img, preds, num_frames, stacked=False):
     if stacked:
         if num_frames > 1:
             img = img[:, 0:3, ...]
-
         left_and_right = torch.cat((img, preds), dim=3)
     else:
         img = img[:, 0, ...]
         left_and_right = torch.cat((img, preds), dim=3)
+
     return left_and_right
+
 
 
 if __name__ == "__main__":
@@ -113,7 +113,6 @@ if __name__ == "__main__":
                                        #video_codec='rawvideo',
                                        )
             outputs = []
-
     print("last batch:", batch_idx)
 
     print("now concatenate video snippets")
