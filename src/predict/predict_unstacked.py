@@ -148,6 +148,8 @@ if __name__ == "__main__":
     for file in os.listdir(args.output_dir):
         print("start")
         print(file)
+        print(os.path.splitext(file)[1])
+        print(args.video_format)
        #if os.path.splitext(file)[1] == args.video_format:
         if True:
             filePath = os.path.join(args.output_dir, file)
