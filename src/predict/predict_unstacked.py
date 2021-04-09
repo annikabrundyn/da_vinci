@@ -162,7 +162,7 @@ if __name__ == "__main__":
 
     print(len(full_video))
     full_video = concatenate_videoclips(full_video)
-    full_video.to_videofile(f"{args.output_dir}_last.{args.video_format}", fps=args.fps, remove_temp=False)
+    full_video.to_videofile(f"{args.output_dir}_last.{args.video_format}", fps=args.fps)
 
 
 
