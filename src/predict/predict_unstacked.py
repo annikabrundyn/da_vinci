@@ -21,12 +21,10 @@ if __name__ == "__main__":
 
     # model args
     parser = UnstackedModel.add_model_specific_args(parser)
-    parser.add_argument("--ckpt", required=True,
-                        type=str, help="path to model checkpoint")
-    parser.add_argument("--output_dir", required=True,
-                        type=str, help="output directory")
-    parser.add_argument("--freq", required=True,
-                        type=int)
+    parser.add_argument("--ckpt", required=True, type=str, help="path to model checkpoint")
+    parser.add_argument("--output_dir", required=True, type=str, help="output directory")
+    parser.add_argument("--freq", required=True, type=int, help="how frequently to save video snippets")
+    parser.add_argument("--max_frame_exp", type=int, default=10)
 
     args = parser.parse_args()
 
@@ -44,14 +42,14 @@ if __name__ == "__main__":
         extra_info=True,
         batch_size=args.batch_size,
         num_workers=model.hparams.num_workers,
+        videos_drop_k=(args.max_frame_exp - model.hparams.num_frames),
     )
     dm.setup()
     print("dm setup")
 
-
     outputs = []
     video_idx = 0
-    for batch_idx, batch in enumerate(tqdm(dm.val_dataloader())):
+    for batch_idx, batch in enumerate(tqdm(dm.video_dataloader())):
 
         img, target, extra_info = batch
         img = img.to(device)
