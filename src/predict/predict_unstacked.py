@@ -105,7 +105,7 @@ if __name__ == "__main__":
     video_idx = 0
     for batch_idx, batch in enumerate(tqdm(dm.video_dataloader())):
 
-        if batch_idx > 1000:
+        if batch_idx > 40:
             break
 
         img, target, extra_info = batch
@@ -152,6 +152,7 @@ if __name__ == "__main__":
             filePath = os.path.join(args.output_dir, file)
             print(filePath)
             video = VideoFileClip(filePath)
+            print(video)
             full_video.append(video)
 
     print(len(full_video))
