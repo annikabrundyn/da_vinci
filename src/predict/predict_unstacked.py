@@ -14,6 +14,7 @@ from models.right_view.stacked_unet2d import StackedModel
 from data.multiframe_data import UnstackedDaVinciDataModule, StackedDaVinciDataModule
 
 
+
 def concat_left_right(img, preds, num_frames, stacked=False):
     if stacked:
         if num_frames > 1:
@@ -112,6 +113,8 @@ if __name__ == "__main__":
                                        fps=args.fps)
             outputs = []
 
-    print("batch:", batch_idx)
+    print("last batch:", batch_idx)
+
+    print("now concatenate video snippets")
 
 
