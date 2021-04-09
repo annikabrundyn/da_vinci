@@ -126,4 +126,4 @@ if __name__ == "__main__":
 
     print(len(full_video))
     full_video = concatenate_videoclips(full_video)
-    full_video.write_videofile(f"{args.output_dir}_last.{args.video_format}", codec='h264', fps=args.fps)
+    full_video.write_videofile(f"{args.output_dir}_last.{args.video_format}", fps=args.fps)
