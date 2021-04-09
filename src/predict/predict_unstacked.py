@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument("--freq", required=True, type=int, help="how frequently to save video snippets")
     parser.add_argument("--max_frame_exp", type=int, default=10)
     parser.add_argument("--fps", type=int, default=18)
-    parser.add_argument("--stacked", type="stores_true")
+    parser.add_argument("--stacked", action="store_true")
 
     args = parser.parse_args()
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         preds = model(img)
 
         # concat left view and right view
-        left_and_right = concat_left_right(img, preds, stacked=args.stacked, model.hparams.num_frames)
+        left_and_right = concat_left_right(img, preds, stacked=args.stacked, num_frames=model.hparams.num_frames)
 
         # following same steps at torchvision save_image
         # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
