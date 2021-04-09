@@ -154,6 +154,7 @@ if __name__ == "__main__":
             video = VideoFileClip(filePath)
             full_video.append(video)
 
+    print(len(full_video))
     full_video = concatenate_videoclips(full_video)
     full_video.to_videofile("output.mp4", fps=args.fps, remove_temp=False)
 
