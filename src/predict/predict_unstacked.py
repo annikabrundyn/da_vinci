@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser = UnstackedModel.add_model_specific_args(parser)
     parser.add_argument("--ckpt", required=True, type=str, help="path to model checkpoint")
     parser.add_argument("--output_dir", required=True, type=str, help="output directory")
-    parser.add_argument("--freq", required=True, type=int, help="how frequently to save video snippets")
+    parser.add_argument("--freq", required=True, type=int, default=40, help="how frequently to save video snippets")
     parser.add_argument("--max_frame_exp", type=int, default=10)
     parser.add_argument("--fps", type=int, default=18)
     parser.add_argument("--video_format", type=str, default='mp4')
