@@ -41,9 +41,14 @@ if __name__ == "__main__":
     parser.add_argument("--freq", required=True, type=int, help="how frequently to save video snippets")
     parser.add_argument("--max_frame_exp", type=int, default=10)
     parser.add_argument("--fps", type=int, default=18)
+    parser.add_argument("--video_format", type=str, default='.avi')
     parser.add_argument("--stacked", action="store_true")
 
     args = parser.parse_args()
+
+    # make prediction folder if doesnt exist
+    if not os.path.exists('output_dir'):
+        os.makedirs('output_dir')
 
     if args.stacked:
         m = StackedModel
@@ -90,7 +95,7 @@ if __name__ == "__main__":
         # output in chunks to avoid memory errors
         if (batch_idx + 1) % args.freq == 0:
             outputs_tensor = torch.cat(outputs).cpu()
-            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.mp4"),
+            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.{args.video_format}"),
                                        video_array=outputs_tensor,
                                        video_codec='h264',
                                        fps=args.fps)
@@ -101,7 +106,7 @@ if __name__ == "__main__":
         if (batch_idx + 1) == len(dm.val_dataloader()):
             print("last batch:", batch_idx)
             outputs_tensor = torch.cat(outputs).cpu()
-            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.mp4"),
+            torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.{args.video_format}"),
                                        video_array=outputs_tensor,
                                        video_codec='h264',
                                        fps=args.fps)
