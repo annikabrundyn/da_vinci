@@ -15,6 +15,7 @@ from models.right_view.unstacked_unet2d import UnstackedModel
 from models.right_view.stacked_unet2d import StackedModel
 from data.multiframe_data import UnstackedDaVinciDataModule, StackedDaVinciDataModule
 
+from moviepy import VideoFileClip
 
 
 def concat_left_right(img, preds, num_frames, stacked=False):
@@ -139,21 +140,16 @@ if __name__ == "__main__":
     print("last batch:", batch_idx)
 
     print("now concatenate video snippets")
-    stringa = "ffmpeg -i \"concat:"
-    elenco_video = glob.glob("*.mp4")
-    elenco_file_temp = []
-    for f in elenco_video:
-        file = "temp" + str(elenco_video.index(f) + 1) + ".ts"
-        os.system("ffmpeg -i " + f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file)
-        elenco_file_temp.append(file)
-    print(elenco_file_temp)
-    for f in elenco_file_temp:
-        stringa += f
-        if elenco_file_temp.index(f) != len(elenco_file_temp) - 1:
-            stringa += "|"
-        else:
-            stringa += "\" -c copy  -bsf:a aac_adtstoasc output.mp4"
-    print(stringa)
-    os.system(stringa)
+    full_video = []
+
+    for file in os.listdir(args.output_dir):
+        if os.path.splitext(file)[1] == args.video_format:
+            filePath = os.path.join(args.output_dir, file)
+            video = VideoFileClip(filePath)
+            full_video.append(video)
+
+    full_video = concatenate_videoclips(full_video)
+    full_video.to_videofile("output.mp4", fps=args.fps, remove_temp=False)
+
 
 
