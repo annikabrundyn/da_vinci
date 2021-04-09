@@ -105,6 +105,9 @@ if __name__ == "__main__":
     video_idx = 0
     for batch_idx, batch in enumerate(tqdm(dm.video_dataloader())):
 
+        if batch_idx > 3:
+            break
+
         img, target, extra_info = batch
         img = img.to(device)
         preds = model(img)
