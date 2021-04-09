@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     # make prediction folder if doesnt exist
     if not os.path.exists('output_dir'):
-        os.makedirs('output_dir')
+        os.makedirs(args.output_dir)
 
     if args.stacked:
         m = StackedModel
