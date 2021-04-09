@@ -10,7 +10,22 @@ import matplotlib.pyplot as plt
 import pytorch_lightning as pl
 
 from models.right_view.unstacked_unet2d import UnstackedModel
-from data.multiframe_data import UnstackedDaVinciDataModule
+from models.right_view.stacked_unet2d import StackedModel
+from data.multiframe_data import UnstackedDaVinciDataModule, StackedDaVinciDataModule
+
+
+def concat_left_right(img, preds, num_frames, stacked=False):
+    if stacked:
+        if num_frames > 1:
+            img = img[:, 0:3, ...]
+
+        left_and_right = torch.cat((img, preds), dim=3)
+    else:
+        img = img[:, 0, ...]
+        left_and_right = torch.cat((img, preds), dim=3)
+    return left_and_right
+
+
 
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
@@ -25,17 +40,26 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", required=True, type=str, help="output directory")
     parser.add_argument("--freq", required=True, type=int, help="how frequently to save video snippets")
     parser.add_argument("--max_frame_exp", type=int, default=10)
+    parser.add_argument("--fps", type=int, default=18)
+    parser.add_argument("--stacked", type="stores_true")
 
     args = parser.parse_args()
 
+    if args.stacked:
+        m = StackedModel
+        d = StackedDaVinciDataModule
+    else:
+        m = UnstackedModel
+        d = UnstackedDaVinciDataModule
+
     # model
-    model = UnstackedModel.load_from_checkpoint(checkpoint_path=args.ckpt)
+    model = m.load_from_checkpoint(checkpoint_path=args.ckpt)
     model.to(device)
     model.eval()
     model.freeze()
 
     # data
-    dm = UnstackedDaVinciDataModule(
+    dm = d(
         args.data_dir,
         frames_per_sample=model.hparams.num_frames,
         frames_to_drop=0,
@@ -56,7 +80,7 @@ if __name__ == "__main__":
         preds = model(img)
 
         # concat left view and right view
-        left_and_right = torch.cat((img[:, 0, ...], preds), dim=3)
+        left_and_right = concat_left_right(img, preds, stacked=args.stacked, model.hparams.num_frames)
 
         # following same steps at torchvision save_image
         # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
@@ -69,7 +93,7 @@ if __name__ == "__main__":
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.mp4"),
                                        video_array=outputs_tensor,
                                        video_codec='h264',
-                                       fps=20)
+                                       fps=args.fps)
             outputs = []
             video_idx += 1
 
@@ -80,7 +104,7 @@ if __name__ == "__main__":
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.mp4"),
                                        video_array=outputs_tensor,
                                        video_codec='h264',
-                                       fps=20)
+                                       fps=args.fps)
             outputs = []
 
     print("batch:", batch_idx)
