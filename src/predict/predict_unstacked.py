@@ -15,7 +15,7 @@ from models.right_view.unstacked_unet2d import UnstackedModel
 from models.right_view.stacked_unet2d import StackedModel
 from data.multiframe_data import UnstackedDaVinciDataModule, StackedDaVinciDataModule
 
-from moviepy import VideoFileClip
+from moviepy.editor import VideoFileClip, concatenate_videoclips
 
 
 def concat_left_right(img, preds, num_frames, stacked=False):
