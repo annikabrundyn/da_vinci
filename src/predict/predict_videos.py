@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument("--freq", required=True, type=int, default=40, help="how frequently to save video snippets")
     parser.add_argument("--max_frame_exp", type=int, default=10)
     parser.add_argument("--fps", type=int, default=18)
-    parser.add_argument("--video_format", type=str, default='mp4')
+    parser.add_argument("--video_format", type=str, default='avi')
     parser.add_argument("--stacked", action="store_true")
 
     args = parser.parse_args()
