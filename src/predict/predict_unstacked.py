@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument("--freq", required=True, type=int, help="how frequently to save video snippets")
     parser.add_argument("--max_frame_exp", type=int, default=10)
     parser.add_argument("--fps", type=int, default=18)
-    parser.add_argument("--video_format", type=str, default='avi')
+    parser.add_argument("--video_format", type=str, default='mp4')
     parser.add_argument("--stacked", action="store_true")
 
     args = parser.parse_args()
@@ -125,8 +125,9 @@ if __name__ == "__main__":
             outputs_tensor = torch.cat(outputs).cpu()
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.{args.video_format}"),
                                        video_array=outputs_tensor,
-                                       video_codec='rawvideo',
-                                       fps=args.fps)
+                                       fps=args.fps,
+                                       #video_codec='rawvideo',
+                                       )
             outputs = []
             video_idx += 1
 
@@ -136,8 +137,9 @@ if __name__ == "__main__":
             outputs_tensor = torch.cat(outputs).cpu()
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.{args.video_format}"),
                                        video_array=outputs_tensor,
-                                       video_codec='rawvideo',
-                                       fps=args.fps)
+                                       fps=args.fps,
+                                       #video_codec='rawvideo',
+                                       )
             outputs = []
 
     print("last batch:", batch_idx)
@@ -160,7 +162,7 @@ if __name__ == "__main__":
 
     print(len(full_video))
     full_video = concatenate_videoclips(full_video)
-    full_video.to_videofile(f"{args.output_dir}_last.{args.video_format}", codec='rawvideo', fps=args.fps, remove_temp=False)
+    full_video.to_videofile(f"{args.output_dir}_last.{args.video_format}", fps=args.fps, remove_temp=False)
 
 
 
