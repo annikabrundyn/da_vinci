@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     print("now concatenate video snippets")
     full_video = []
-    for file in os.listdir(args.output_dir):
+    for file in sorted(os.listdir(args.output_dir)):
         print("file name: ", file)
 
         filePath = os.path.join(args.output_dir, file)
