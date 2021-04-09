@@ -148,6 +148,7 @@ if __name__ == "__main__":
     for file in os.listdir(args.output_dir):
         if os.path.splitext(file)[1] == args.video_format:
             filePath = os.path.join(args.output_dir, file)
+            print(filePath)
             video = VideoFileClip(filePath)
             full_video.append(video)
 
