@@ -98,7 +98,7 @@ if __name__ == "__main__":
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.{args.video_format}"),
                                        video_array=outputs_tensor,
                                        fps=args.fps,
-                                       #video_codec='rawvideo',
+                                       video_codec='h264',
                                        )
             outputs = []
             video_idx += 1
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             torchvision.io.write_video(filename=os.path.join(args.output_dir, f"{video_idx}.{args.video_format}"),
                                        video_array=outputs_tensor,
                                        fps=args.fps,
-                                       #video_codec='rawvideo',
+                                       video_codec='h264',
                                        )
             outputs = []
     print("last batch:", batch_idx)
@@ -126,4 +126,4 @@ if __name__ == "__main__":
 
     print(len(full_video))
     full_video = concatenate_videoclips(full_video)
-    full_video.write_videofile(f"{args.output_dir}_last.{args.video_format}", fps=args.fps)
+    full_video.write_videofile(f"{args.output_dir}_last.{args.video_format}", codec='rawvideo', fps=args.fps)
