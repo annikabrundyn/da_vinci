@@ -124,19 +124,12 @@ if __name__ == "__main__":
 
     print("now concatenate video snippets")
     full_video = []
-
     for file in os.listdir(args.output_dir):
-        print("start")
-        print(file)
-        print(os.path.splitext(file)[1])
-        print(args.video_format)
-       #if os.path.splitext(file)[1] == args.video_format:
-        if True:
-            filePath = os.path.join(args.output_dir, file)
-            print(filePath)
-            video = VideoFileClip(filePath)
-            print(video)
-            full_video.append(video)
+        print("file name: ", file)
+
+        filePath = os.path.join(args.output_dir, file)
+        video = VideoFileClip(filePath)
+        full_video.append(video)
 
     print(len(full_video))
     full_video = concatenate_videoclips(full_video)
