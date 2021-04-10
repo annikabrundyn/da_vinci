@@ -7,7 +7,7 @@ from moviepy.editor import VideoFileClip, ColorClip, TextClip, CompositeVideoCli
 
 
 def make_snippet(q_num, a, b, t_start, clip_len, input_dir):
-    total_len = clip_len + 2
+    total_len = clip_len + 3
     t_end = t_start + clip_len
 
     black = ColorClip(size=(1280, 720), color=(0, 0, 0), duration=total_len)
