@@ -66,3 +66,10 @@ python model.py --data_dir '/Users/annikabrundyn/Developer/da_vinci/daVinci_data
 ```bash
 python generate_disparity.py --left_dir $LEFT_DIR --right_dir $RIGHT_DIR --output_dir $OUTPUT_DIR
 ```
+
+
+### How to generate validation videos for a model
+TODO
+
+### How to generate qualitative experiment table, images and videos
+TODO
