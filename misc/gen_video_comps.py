@@ -23,9 +23,9 @@ def make_snippet(q_num, a, b, t_start, clip_len, input_dir):
     video = CompositeVideoClip([black,
                                 txt_clip_q.set_position(("left", "top")).set_duration(total_len),
                                 clip_a.set_start(1).set_position((300, 120)),
-                                txt_clip_a.set_start(1).set_position((120, 130)).set_duration(8),
+                                txt_clip_a.set_start(1).set_position((120, 130)).set_duration(clip_len),
                                 clip_b.set_start(1).set_position((300, 400)),
-                                txt_clip_b.set_start(1).set_position((120, 410)).set_duration(8)])
+                                txt_clip_b.set_start(1).set_position((120, 410)).set_duration(clip_len)])
 
     return video
 
