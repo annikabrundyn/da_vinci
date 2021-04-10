@@ -28,7 +28,7 @@ def make_snippet(q_num, a, b, t_start, clip_len, input_dir):
                                 clip_b.set_start(1).set_position((300, 400)),
                                 txt_clip_b.set_start(1).set_position((120, 410)).set_duration(clip_len)])
 
-    video.fx(vfx.speedx, 0.75)
+    video.fx(vfx.speedx, 0.6)
 
     return video
 
