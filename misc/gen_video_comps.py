@@ -4,6 +4,7 @@ import argparse
 from tqdm import tqdm
 
 from moviepy.editor import VideoFileClip, ColorClip, TextClip, CompositeVideoClip, concatenate_videoclips
+import moviepy.video.fx.all as vfx
 
 
 def make_snippet(q_num, a, b, t_start, clip_len, input_dir):
