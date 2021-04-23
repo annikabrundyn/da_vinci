@@ -23,6 +23,7 @@ class DaVinciDataModule(pl.LightningDataModule):
             batch_size: int = 32,
             seed: int = 42,
             num_val_sets: int = 13,
+            videos_drop_k: int = None,
             *args,
             **kwargs,
     ):
@@ -37,6 +38,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.seed = seed
         self.num_val_sets = num_val_sets
+        self.videos_drop_k = videos_drop_k
 
     # helper
     def _read_image_list(self, filename):
@@ -61,13 +63,20 @@ class DaVinciDataModule(pl.LightningDataModule):
         return all_samples
 
     # helper
-    def _sliding_window(self, img_sets):
+    def _sliding_window(self, img_sets, set_name):
         # create samples containing k frames per sample and dropping some number of random frames
         split_samples = []
         step_size = 1  # sample overlap size
 
+        if ((set_name == 'video') and (self.videos_drop_k)):
+            end = len(img_sets[0][1]) - self.frames_per_sample + 1 - self.videos_drop_k
+        else:
+            end = len(img_sets[0][1]) - self.frames_per_sample + 1
+
         for (name, frame_list) in img_sets:
-            for i in range(0, len(frame_list) - self.frames_per_sample + 1, step_size):
+            cur_set_split_samples = []
+
+            for i in range(0, end, step_size):
                 frames = frame_list[i:i + self.frames_per_sample]
 
                 # Randomly drop frames - only do this if we have 3 or more frames
@@ -113,15 +122,17 @@ class DaVinciDataModule(pl.LightningDataModule):
         test_sets = [("test", test_img_list)]
 
         # apply sliding window to each set
-        self.train_samples = self._sliding_window(train_sets)
-        self.val_samples = self._sliding_window(val_sets)
-        self.test_samples = self._sliding_window(test_sets)
+        self.train_samples = self._sliding_window(train_sets, 'train')
+        self.val_samples = self._sliding_window(val_sets, 'val')
+        self.test_samples = self._sliding_window(test_sets, 'test')
+        self.video_samples = self._sliding_window(val_sets, 'video')
 
         # create separate list of validation images to visualize (hand-picked 14 indices)
         self.vis_samples = self._create_val_img_list()
 
         # reverse to be from first to last frame for predicting videos since we don't shuffle
         self.val_samples = self.val_samples[::-1]
+        self.video_samples = self.video_samples[::-1]
 
         self.train_dataset = self.dataset(data_dir=self.data_dir,
                                           sample_list=self.train_samples,
@@ -149,6 +160,14 @@ class DaVinciDataModule(pl.LightningDataModule):
 
         self.vis_dataset = self.dataset(data_dir=self.data_dir,
                                         sample_list=self.vis_samples,
+                                        frames_per_sample=self.frames_per_sample,
+                                        frames_to_drop=self.frames_to_drop,
+                                        is_color_input=self.is_color_input,
+                                        is_color_output=self.is_color_output,
+                                        extra_info=self.extra_info)
+
+        self.video_dataset = self.dataset(data_dir=self.data_dir,
+                                        sample_list=self.video_samples,
                                         frames_per_sample=self.frames_per_sample,
                                         frames_to_drop=self.frames_to_drop,
                                         is_color_input=self.is_color_input,
@@ -195,3 +214,10 @@ class DaVinciDataModule(pl.LightningDataModule):
                             pin_memory=True)
         return loader
 
+    def video_dataloader(self):
+        loader = DataLoader(self.video_dataset,
+                            batch_size=self.batch_size,
+                            shuffle=False,
+                            num_workers=self.num_workers,
+                            pin_memory=True)
+        return loader
