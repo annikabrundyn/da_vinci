@@ -68,7 +68,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         split_samples = []
         step_size = 1  # sample overlap size
 
-        if ((set_name == 'video') and (self.videos_drop_k)):
+        if ((set_name in ['video', 'val', 'test']) and (self.videos_drop_k)):
             end = len(img_sets[0][1]) - self.frames_per_sample + 1 - self.videos_drop_k
         else:
             end = len(img_sets[0][1]) - self.frames_per_sample + 1
