@@ -81,7 +81,7 @@ if __name__ == "__main__":
     for batch_idx, batch in enumerate(tqdm(dm.video_dataloader())):
 
         img, target, extra_info = batch
-        img = img.to(devi ce)
+        img = img.to(device)
         preds = model(img)
 
         # concat left view and right view
