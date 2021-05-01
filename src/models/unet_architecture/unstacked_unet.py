@@ -70,8 +70,10 @@ class UnstackedUNet(nn.Module):
         return combine
 
     def forward(self, x):
+        x = x[:, 0:1, 0:3, :, :]
+        x = x.repeat(1, self.num_frames, 1, 1, 1)
 
-        ### Encoder
+        # Encoder
         xi = [self.layers[0](x)]
         comb_xi = [self.combine_modules[0](xi[0])]
 
