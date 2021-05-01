@@ -4,8 +4,11 @@ import torch
 from torchvision.utils import make_grid
 
 import pytorch_lightning as pl
+
 from pytorch_lightning.metrics.functional import ssim, psnr
 import lpips
+from DISTS_pytorch import DISTS
+
 import numpy as np
 
 from losses import Perceptual, L1_Perceptual, L1_SSIM, ssim_loss
@@ -39,6 +42,7 @@ class BaseModel(pl.LightningModule):
         self.criterion = self._determine_loss_fn()
 
         self.LPIPS = lpips.LPIPS(net='alex')
+        self.DISTS = DISTS()
 
         ### NOTE: for all the different models, this is essentially the only thing that changes (architecture)
         # self.net = MultiFrameUNet(num_frames=num_frames,
@@ -78,10 +82,11 @@ class BaseModel(pl.LightningModule):
         ssim_val = ssim(pred, target.type(pred.dtype))
         psnr_val = psnr(pred, target)
         lpips_val = self.LPIPS(pred, target).mean()
+        dists_val = self.DISTS(pred, target).mean()
 
         # return loss and metric values to log
         logs = {f'{step_name}_loss': loss_val, f'{step_name}_ssim': ssim_val, f'{step_name}_psnr': psnr_val,
-                f'{step_name}_lpips': lpips_val}
+                f'{step_name}_lpips': lpips_val, f'{step_name}_dists': dists_val}
 
         return logs
 
