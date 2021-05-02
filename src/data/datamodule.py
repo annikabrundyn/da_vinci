@@ -133,6 +133,7 @@ class DaVinciDataModule(pl.LightningDataModule):
         # reverse to be from first to last frame for predicting videos since we don't shuffle
         self.val_samples = self.val_samples[::-1]
         self.video_samples = self.video_samples[::-1]
+        self.test_samples = self.test_samples[::-1]
 
         self.train_dataset = self.dataset(data_dir=self.data_dir,
                                           sample_list=self.train_samples,
