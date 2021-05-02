@@ -83,6 +83,7 @@ if __name__ == "__main__":
         img, target = batch
         img = img.to(device)
         pred = model(img)
+        print(pred.shape)
 
         # calculate metrics
         ssim_val = ssim(pred, target.type(pred.dtype))

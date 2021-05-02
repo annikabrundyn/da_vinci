@@ -27,6 +27,7 @@ class BaseModel(pl.LightningModule):
         lr: float = 0.001,
         log_tb_imgs: bool = False,
         tb_img_freq: int = 8000,
+        *args,
         **kwargs
     ):
         super().__init__()
