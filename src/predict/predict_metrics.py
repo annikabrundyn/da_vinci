@@ -64,11 +64,7 @@ if __name__ == "__main__":
     else:
         dl = dm.val_dataloader()
 
-    for batch_idx, batch in enumerate(tqdm(dl)):
+    trainer = pl.Trainer.from_argparse_args(args)
+    output = trainer.test(model=model, test_dataloaders=dm.val_dataloader(), verbose=True)
 
-        img, target, extra_info = batch
-        img = img.to(device)
-        preds = model(img)
-
-        for i in range(len(preds)):
-            save_image(preds[i], os.path.join(args.output_dir, extra_info[i]))
+    print(output)
