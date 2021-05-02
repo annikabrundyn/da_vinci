@@ -19,6 +19,9 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
 
+    # trainer args
+    parser = pl.Trainer.add_argparse_args(parser)
+
     # model args
     parser = UnstackedModel.add_model_specific_args(parser)
     parser.add_argument("--ckpt", required=True, type=str, help="path to model checkpoint")
@@ -51,10 +54,10 @@ if __name__ == "__main__":
         args.data_dir,
         frames_per_sample=model.hparams.num_frames,
         frames_to_drop=0,
-        extra_info=True,
+        extra_info=False,
         batch_size=args.batch_size,
         num_workers=model.hparams.num_workers,
-        videos_drop_k=(args.max_frame_exp - model.hparams.num_frames),
+        #videos_drop_k=(args.max_frame_exp - model.hparams.num_frames),
     )
     dm.setup()
     print("dm setup")
