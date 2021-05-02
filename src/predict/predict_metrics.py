@@ -80,7 +80,7 @@ if __name__ == "__main__":
     lpips = []
 
     for batch_idx, batch in enumerate(tqdm(dl)):
-        img, target, extra_info = batch
+        img, target = batch
         img = img.to(device)
         pred = model(img)
 
@@ -89,7 +89,13 @@ if __name__ == "__main__":
         psnr_val = psnr(pred, target)
         lpips_val = LPIPS(pred, target).mean()
 
+        print('ssim_val', ssim_val)
+        print('psnr_val', psnr_val)
+        print('lpips_val', lpips_val)
+
         ssim.append(ssim_val)
         psnr.append(psnr_val)
         lpips.append(lpips_val)
+
+    print(sum(ssim)/len(ssim))
 
