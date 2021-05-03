@@ -12,6 +12,7 @@ from data.multiframe_data import UnstackedDaVinciDataModule, StackedDaVinciDataM
 
 from pytorch_lightning.metrics.functional import ssim, psnr
 import lpips
+import DISTS_pytorch
 
 
 if __name__ == "__main__":
@@ -73,30 +74,38 @@ if __name__ == "__main__":
     #trainer = pl.Trainer.from_argparse_args(args)
     #output = trainer.test(model=model, test_dataloaders=dm.val_dataloader(), verbose=True)
 
-    LPIPS = lpips.LPIPS(net='alex')
+    LPIPS_ALEX = lpips.LPIPS(net='alex')
+    LPIPS_VGG = lpips.LPIPS(net='vgg')
+    DISTS = DISTS_pytorch.DISTS()
 
-    ssim = []
-    psnr = []
-    lpips = []
+    ssim_sum = 0
+    psnr_sum = 0
+    lpips_alex_sum = 0
+    lpips_vgg_sum = 0
+    dists_sum = 0
 
     for batch_idx, batch in enumerate(tqdm(dl)):
+        if batch_idx > 1:
+            break
         img, target = batch
         img = img.to(device)
         pred = model(img)
         print(pred.shape)
 
         # calculate metrics
-        ssim_val = ssim(pred, target.type(pred.dtype))
-        psnr_val = psnr(pred, target)
-        lpips_val = LPIPS(pred, target).mean()
+        ssim_sum += ssim(pred, target)
+        psnr_sum += psnr(pred, target)
+        lpips_alex_sum += LPIPS_ALEX(pred, target).sum()
+        lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
+        dists_sum += DISTS(pred, target).sum()
 
-        print('ssim_val', ssim_val)
-        print('psnr_val', psnr_val)
-        print('lpips_val', lpips_val)
+        #print('ssim_val', ssim_val)
+        #print('psnr_val', psnr_val)
 
-        ssim.append(ssim_val)
-        psnr.append(psnr_val)
-        lpips.append(lpips_val)
+    final_lpips_alex = lpips_alex_sum / len(dl.dataset)
+    final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
+    final_dists = dists_sum / len(dl.dataset)
 
-    print(sum(ssim)/len(ssim))
+    print(final_lpips_alex)
+    print(final_dists)
 
