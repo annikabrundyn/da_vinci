@@ -72,12 +72,12 @@ if __name__ == "__main__":
 
     #ssim_sum = 0
     #psnr_sum = 0
-    lpips_alex_sum = 0
-    lpips_vgg_sum = 0
-    dists_sum = 0
-    # lpips_alex_sum = torch.tensor([0.], device=device)
-    # lpips_vgg_sum = torch.tensor([0.], device=device)
-    # dists_sum = torch.tensor([0.], device=device)
+    # lpips_alex_sum = 0
+    # lpips_vgg_sum = 0
+    # dists_sum = 0
+    lpips_alex_sum = torch.tensor([0.], device=device, requires_grad=False)
+    lpips_vgg_sum = torch.tensor([0.], device=device, requires_grad=False)
+    dists_sum = torch.tensor([0.], device=device, requires_grad=False)
 
     for batch_idx, batch in enumerate(tqdm(dl)):
 
