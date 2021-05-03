@@ -18,6 +18,7 @@ import DISTS_pytorch
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
     pl.seed_everything(42)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     parser = ArgumentParser()
@@ -70,9 +71,12 @@ if __name__ == "__main__":
 
     #ssim_sum = 0
     #psnr_sum = 0
-    lpips_alex_sum = torch.tensor([0], device=device)
-    lpips_vgg_sum = torch.tensor([0], device=device)
-    dists_sum = torch.tensor([0], device=device)
+    lpips_alex_sum = 0
+    lpips_vgg_sum = 0
+    dists_sum = 0
+    # lpips_alex_sum = torch.tensor([0.], device=device)
+    # lpips_vgg_sum = torch.tensor([0.], device=device)
+    # dists_sum = torch.tensor([0.], device=device)
 
     for batch_idx, batch in enumerate(tqdm(dl)):
         if batch_idx > 1:
@@ -81,10 +85,12 @@ if __name__ == "__main__":
         img = img.to(device)
         pred = model(img)
         print(pred.shape)
+        print(pred.shape)
 
         # calculate metrics
         #ssim_sum += ssim(pred, target, reduction='sum')
         #psnr_sum += psnr(pred, target reduction='sum')
+        print(lpips_alex_sum)
         lpips_alex_sum += LPIPS_ALEX(pred, target).sum()
         lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
         dists_sum += DISTS(pred, target).sum()
