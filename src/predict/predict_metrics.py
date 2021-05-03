@@ -66,8 +66,8 @@ if __name__ == "__main__":
         dl = dm.val_dataloader()
 
     print("hi \n")
-    LPIPS_ALEX = lpips.LPIPS(net='alex').to(device)
-    LPIPS_VGG = lpips.LPIPS(net='vgg').to(device)
+    LPIPS_ALEX = lpips.LPIPS(net='alex', eval_mode=True).to(device)
+    LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
     DISTS = DISTS_pytorch.DISTS().to(device)
 
     #ssim_sum = 0
@@ -85,13 +85,11 @@ if __name__ == "__main__":
         img, target = batch
         img = img.to(device)
         pred = model(img)
-        print(pred.shape)
-        print(pred.shape)
 
         # calculate metrics
         #ssim_sum += ssim(pred, target, reduction='sum')
         #psnr_sum += psnr(pred, target reduction='sum')
-        print(lpips_alex_sum)
+
         lpips_alex_sum += LPIPS_ALEX(pred, target.to(device)).sum()
         lpips_vgg_sum += LPIPS_VGG(pred, target.to(device)).sum()
         dists_sum += DISTS(pred, target.to(device)).sum()
