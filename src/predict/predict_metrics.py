@@ -67,38 +67,39 @@ if __name__ == "__main__":
 
     print("hi \n")
     LPIPS_ALEX = lpips.LPIPS(net='alex', eval_mode=True).to(device)
-    #LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
+    LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
     DISTS = DISTS_pytorch.DISTS().to(device)
 
-    #ssim_sum = 0
-    #psnr_sum = 0
     lpips_alex_sum = 0
     lpips_vgg_sum = 0
     dists_sum = 0
-    # lpips_alex_sum = torch.tensor([0.], device=device, requires_grad=False)
-    # lpips_vgg_sum = torch.tensor([0.], device=device, requires_grad=False)
-    # dists_sum = torch.tensor([0.], device=device, requires_grad=False)
+
+    ssim_avg_sum = 0
+    psnr_avg_sum = 0
+
 
     for batch_idx, batch in enumerate(tqdm(dl)):
 
         img, target = batch
         img = img.to(device)
+        target = target.to(device)
         pred = model(img)
 
         # calculate metrics
-        #ssim_sum += ssim(pred, target, reduction='sum')
-        #psnr_sum += psnr(pred, target reduction='sum')
+        lpips_alex_sum += LPIPS_ALEX(pred, target).sum().item()
+        lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
+        dists_sum += DISTS(pred, target).sum().item()
 
-        lpips_alex_sum += LPIPS_ALEX(pred, target.to(device)).sum().item()
-        #lpips_vgg_sum += LPIPS_VGG(pred, target.to(device)).sum()
-        dists_sum += DISTS(pred, target.to(device)).sum().item()
+        ssim_avg_sum += ssim(pred, target)
+        psnr_avg_sum += psnr(pred, target)
 
-        #print('ssim_val', ssim_val)
-        #print('psnr_val', psnr_val)
-
+    # average
     final_lpips_alex = lpips_alex_sum / len(dl.dataset)
-    #final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
+    final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
     final_dists = dists_sum / len(dl.dataset)
+
+    final_ssim = ssim_avg_sum / len(dl)
+    final_psnr = psnr_avg_sum / len(dl)
 
     print(final_lpips_alex)
     print(final_dists)
