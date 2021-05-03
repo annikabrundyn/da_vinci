@@ -88,6 +88,7 @@ if __name__ == "__main__":
 
         # calculate metrics
         lpips_alex_sum += LPIPS_ALEX(pred, target).sum().item()
+        print(lpips_alex_sum)
         #lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
         dists_sum += DISTS(pred, target).sum().item()
 
