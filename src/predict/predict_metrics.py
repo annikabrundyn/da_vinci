@@ -11,8 +11,8 @@ from models.right_view.stacked_unet2d import StackedModel
 from data.multiframe_data import UnstackedDaVinciDataModule, StackedDaVinciDataModule
 
 from pytorch_lightning.metrics.functional import ssim, psnr
-from lpips import LPIPS
-#import DISTS_pytorch
+import lpips
+import DISTS_pytorch
 
 
 if __name__ == "__main__":
@@ -66,16 +66,16 @@ if __name__ == "__main__":
         dl = dm.val_dataloader()
 
     print("hi \n")
-    #LPIPS_ALEX = lpips.LPIPS(net='alex', eval_mode=True).to(device)
-    LPIPS_VGG = LPIPS(net='vgg', eval_mode=True).to(device)
-    #DISTS = DISTS_pytorch.DISTS().to(device)
+    LPIPS_ALEX = lpips.LPIPS(net='alex', eval_mode=True).to(device)
+    #LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
+    DISTS = DISTS_pytorch.DISTS().to(device)
 
-    #lpips_alex_sum = 0
-    lpips_vgg_sum = 0
-    #dists_sum = 0
+    lpips_alex_sum = 0
+    #lpips_vgg_sum = 0
+    dists_sum = 0
 
-    #ssim_avg_sum = 0
-    #psnr_avg_sum = 0
+    ssim_avg_sum = 0
+    psnr_avg_sum = 0
 
 
     for batch_idx, batch in enumerate(tqdm(dl)):
@@ -86,27 +86,27 @@ if __name__ == "__main__":
         pred = model(img)
 
         # calculate metrics
-        #lpips_alex_sum += LPIPS_ALEX(pred, target).sum().item()
-        lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
-        #dists_sum += DISTS(pred, target).sum().item()
+        lpips_alex_sum += LPIPS_ALEX(pred, target).sum().item()
+        #lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
+        dists_sum += DISTS(pred, target).sum().item()
 
-        #ssim_avg_sum += ssim(pred, target)
-        #psnr_avg_sum += psnr(pred, target)
+        ssim_avg_sum += ssim(pred, target)
+        psnr_avg_sum += psnr(pred, target)
 
     # average
-    #final_lpips_alex = lpips_alex_sum / len(dl.dataset)
-    final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
-    #final_dists = dists_sum / len(dl.dataset)
+    final_lpips_alex = lpips_alex_sum / len(dl.dataset)
+    #final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
+    final_dists = dists_sum / len(dl.dataset)
 
-    #final_ssim = ssim_avg_sum / len(dl)
-    #final_psnr = psnr_avg_sum / len(dl)
+    final_ssim = ssim_avg_sum / len(dl)
+    final_psnr = psnr_avg_sum / len(dl)
 
     print("---RESULTS---")
-    #print("LPIPS (alex): ", final_lpips_alex)
-    print("LPIPS (vgg): ", final_lpips_vgg)
-    #print("DISTS: ", final_dists)
-    #print("SSIM: ", final_ssim)
-    #print("PSNR: ", final_psnr)
+    print("LPIPS (alex): ", final_lpips_alex)
+    #print("LPIPS (vgg): ", final_lpips_vgg)
+    print("DISTS: ", final_dists)
+    print("SSIM: ", final_ssim)
+    print("PSNR: ", final_psnr)
 
     print("done")
 
