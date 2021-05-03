@@ -68,7 +68,7 @@ if __name__ == "__main__":
         dl = dm.val_dataloader()
 
     print("hi \n")
-    lpips_alex = lpips.LPIPS(net='alex', eval_mode=True).to(device)
+    lpips_alex = lpips.LPIPS(net='alex').to(device)
     #LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
     dists = DISTS_pytorch.DISTS().to(device)
     ssim = SSIM().to(device)
