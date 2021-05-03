@@ -72,12 +72,12 @@ if __name__ == "__main__":
 
     #ssim_sum = 0
     #psnr_sum = 0
-    # lpips_alex_sum = 0
-    # lpips_vgg_sum = 0
-    # dists_sum = 0
-    lpips_alex_sum = torch.tensor([0.], device=device, requires_grad=False)
-    lpips_vgg_sum = torch.tensor([0.], device=device, requires_grad=False)
-    dists_sum = torch.tensor([0.], device=device, requires_grad=False)
+    lpips_alex_sum = 0
+    lpips_vgg_sum = 0
+    dists_sum = 0
+    # lpips_alex_sum = torch.tensor([0.], device=device, requires_grad=False)
+    # lpips_vgg_sum = torch.tensor([0.], device=device, requires_grad=False)
+    # dists_sum = torch.tensor([0.], device=device, requires_grad=False)
 
     for batch_idx, batch in enumerate(tqdm(dl)):
 
@@ -89,9 +89,9 @@ if __name__ == "__main__":
         #ssim_sum += ssim(pred, target, reduction='sum')
         #psnr_sum += psnr(pred, target reduction='sum')
 
-        lpips_alex_sum += LPIPS_ALEX(pred, target.to(device)).sum()
+        lpips_alex_sum += LPIPS_ALEX(pred, target.to(device)).sum().item()
         #lpips_vgg_sum += LPIPS_VGG(pred, target.to(device)).sum()
-        dists_sum += DISTS(pred, target.to(device)).sum()
+        dists_sum += DISTS(pred, target.to(device)).sum().item()
 
         #print('ssim_val', ssim_val)
         #print('psnr_val', psnr_val)
