@@ -28,7 +28,6 @@ if __name__ == "__main__":
     # model args
     parser = UnstackedModel.add_model_specific_args(parser)
     parser.add_argument("--ckpt", required=True, type=str, help="path to model checkpoint")
-    parser.add_argument("--output_dir", required=True, type=str, help="output directory")
     parser.add_argument("--max_frame_exp", type=int, default=10)
     parser.add_argument("--stacked", action="store_true")
     parser.add_argument("--test", action="store_true")
