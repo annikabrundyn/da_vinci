@@ -69,18 +69,19 @@ if __name__ == "__main__":
 
     print("hi \n")
     lpips_alex = lpips.LPIPS(net='alex').to(device)
-    #LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
     dists = DISTS_pytorch.DISTS().to(device)
-    ssim = SSIM().to(device)
-    psnr = PSNR().to(device)
+
+    #LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
+    #ssim = SSIM().to(device)
+    #psnr = PSNR().to(device)
 
 
     lpips_alex_sum = 0
-    #lpips_vgg_sum = 0
     dists_sum = 0
 
-    ssim_avg_sum = 0
-    psnr_avg_sum = 0
+    #lpips_vgg_sum = 0
+    #ssim_avg_sum = 0
+    #psnr_avg_sum = 0
 
 
     for batch_idx, batch in enumerate(tqdm(dl)):
@@ -94,23 +95,24 @@ if __name__ == "__main__":
         lpips_alex_sum += lpips_alex(pred, target).sum().item()
         dists_sum += dists(pred, target).sum().item()
 
-        ssim_avg_sum += ssim(pred, target)
-        psnr_avg_sum += psnr(pred, target)
+        #ssim_avg_sum += ssim(pred, target)
+        #psnr_avg_sum += psnr(pred, target)
 
     # average
     final_lpips_alex = lpips_alex_sum / len(dl.dataset)
-    #final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
     final_dists = dists_sum / len(dl.dataset)
 
-    final_ssim = ssim_avg_sum / len(dl)
-    final_psnr = psnr_avg_sum / len(dl)
+    #final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
+    #final_ssim = ssim_avg_sum / len(dl)
+    #final_psnr = psnr_avg_sum / len(dl)
 
     print("---RESULTS---")
     print("LPIPS (alex): ", final_lpips_alex)
-    #print("LPIPS (vgg): ", final_lpips_vgg)
     print("DISTS: ", final_dists)
-    print("SSIM: ", final_ssim)
-    print("PSNR: ", final_psnr)
+
+    #print("LPIPS (vgg): ", final_lpips_vgg)
+    #print("SSIM: ", final_ssim)
+    #print("PSNR: ", final_psnr)
 
     print("done")
 
