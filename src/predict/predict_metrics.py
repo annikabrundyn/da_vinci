@@ -16,6 +16,10 @@ import lpips
 import DISTS_pytorch
 
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
 if __name__ == "__main__":
     # sets seed for numpy, torch, python.random and PYTHONHASHSEED
     pl.seed_everything(42)
@@ -45,9 +49,13 @@ if __name__ == "__main__":
 
     # model
     model = m.load_from_checkpoint(checkpoint_path=args.ckpt)
+    print("num trainable parameters: ", count_parameters(model))
+
     model.to(device)
     model.eval()
     model.freeze()
+
+
 
     # data
     dm = d(
