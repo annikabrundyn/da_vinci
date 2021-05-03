@@ -92,9 +92,9 @@ if __name__ == "__main__":
         #ssim_sum += ssim(pred, target, reduction='sum')
         #psnr_sum += psnr(pred, target reduction='sum')
         print(lpips_alex_sum)
-        lpips_alex_sum += LPIPS_ALEX(pred, target).sum()
-        lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
-        dists_sum += DISTS(pred, target).sum()
+        lpips_alex_sum += LPIPS_ALEX(pred, target.to(device)).sum()
+        lpips_vgg_sum += LPIPS_VGG(pred, target.to(device)).sum()
+        dists_sum += DISTS(pred, target.to(device)).sum()
 
         #print('ssim_val', ssim_val)
         #print('psnr_val', psnr_val)
