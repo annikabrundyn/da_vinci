@@ -64,9 +64,9 @@ if __name__ == "__main__":
     else:
         dl = dm.val_dataloader()
 
-    LPIPS_ALEX = lpips.LPIPS(net='alex')
-    LPIPS_VGG = lpips.LPIPS(net='vgg')
-    DISTS = DISTS_pytorch.DISTS()
+    LPIPS_ALEX = lpips.LPIPS(net='alex').to(device)
+    LPIPS_VGG = lpips.LPIPS(net='vgg').to(device)
+    DISTS = DISTS_pytorch.DISTS().to(device)
 
     #ssim_sum = 0
     #psnr_sum = 0
