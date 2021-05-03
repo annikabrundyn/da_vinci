@@ -80,8 +80,7 @@ if __name__ == "__main__":
     # dists_sum = torch.tensor([0.], device=device)
 
     for batch_idx, batch in enumerate(tqdm(dl)):
-        if batch_idx > 1:
-            break
+
         img, target = batch
         img = img.to(device)
         pred = model(img)
