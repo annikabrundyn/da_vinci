@@ -60,7 +60,6 @@ if __name__ == "__main__":
         extra_info=False,
         batch_size=args.batch_size,
         num_workers=model.hparams.num_workers,
-        #videos_drop_k=(args.max_frame_exp - model.hparams.num_frames),
     )
     dm.setup()
     print("dm setup")
@@ -70,16 +69,12 @@ if __name__ == "__main__":
     else:
         dl = dm.val_dataloader()
 
-
-    #trainer = pl.Trainer.from_argparse_args(args)
-    #output = trainer.test(model=model, test_dataloaders=dm.val_dataloader(), verbose=True)
-
     LPIPS_ALEX = lpips.LPIPS(net='alex')
     LPIPS_VGG = lpips.LPIPS(net='vgg')
     DISTS = DISTS_pytorch.DISTS()
 
-    ssim_sum = 0
-    psnr_sum = 0
+    #ssim_sum = 0
+    #psnr_sum = 0
     lpips_alex_sum = 0
     lpips_vgg_sum = 0
     dists_sum = 0
@@ -93,8 +88,8 @@ if __name__ == "__main__":
         print(pred.shape)
 
         # calculate metrics
-        ssim_sum += ssim(pred, target)
-        psnr_sum += psnr(pred, target)
+        #ssim_sum += ssim(pred, target, reduction='sum')
+        #psnr_sum += psnr(pred, target reduction='sum')
         lpips_alex_sum += LPIPS_ALEX(pred, target).sum()
         lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
         dists_sum += DISTS(pred, target).sum()
