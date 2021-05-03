@@ -104,3 +104,5 @@ if __name__ == "__main__":
     print(final_lpips_alex)
     print(final_dists)
 
+    print("done")
+
