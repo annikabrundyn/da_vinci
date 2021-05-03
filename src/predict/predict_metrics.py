@@ -65,6 +65,7 @@ if __name__ == "__main__":
     else:
         dl = dm.val_dataloader()
 
+    print("hi \n")
     LPIPS_ALEX = lpips.LPIPS(net='alex').to(device)
     LPIPS_VGG = lpips.LPIPS(net='vgg').to(device)
     DISTS = DISTS_pytorch.DISTS().to(device)
