@@ -34,10 +34,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # make prediction folder if doesnt exist
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
-
     if args.stacked:
         m = StackedModel
         d = StackedDaVinciDataModule
