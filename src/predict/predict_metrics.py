@@ -101,8 +101,12 @@ if __name__ == "__main__":
     final_ssim = ssim_avg_sum / len(dl)
     final_psnr = psnr_avg_sum / len(dl)
 
-    print(final_lpips_alex)
-    print(final_dists)
+    print("---RESULTS---")
+    print("LPIPS (alex): ", final_lpips_alex)
+    print("LPIPS (vgg): ", final_lpips_vgg)
+    print("DISTS: ", final_dists)
+    print("SSIM: ", final_ssim)
+    print("PSNR: ", final_psnr)
 
     print("done")
 
