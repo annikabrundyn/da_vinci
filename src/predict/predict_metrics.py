@@ -56,6 +56,7 @@ if __name__ == "__main__":
         extra_info=False,
         batch_size=args.batch_size,
         num_workers=model.hparams.num_workers,
+        videos_drop_k=(args.max_frame_exp - model.hparams.num_frames),
     )
     dm.setup()
     print("dm setup")
