@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     print("hi \n")
     LPIPS_ALEX = lpips.LPIPS(net='alex', eval_mode=True).to(device)
-    LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
+    #LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
     DISTS = DISTS_pytorch.DISTS().to(device)
 
     #ssim_sum = 0
@@ -90,14 +90,14 @@ if __name__ == "__main__":
         #psnr_sum += psnr(pred, target reduction='sum')
 
         lpips_alex_sum += LPIPS_ALEX(pred, target.to(device)).sum()
-        lpips_vgg_sum += LPIPS_VGG(pred, target.to(device)).sum()
+        #lpips_vgg_sum += LPIPS_VGG(pred, target.to(device)).sum()
         dists_sum += DISTS(pred, target.to(device)).sum()
 
         #print('ssim_val', ssim_val)
         #print('psnr_val', psnr_val)
 
     final_lpips_alex = lpips_alex_sum / len(dl.dataset)
-    final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
+    #final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
     final_dists = dists_sum / len(dl.dataset)
 
     print(final_lpips_alex)
