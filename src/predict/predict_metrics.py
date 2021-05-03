@@ -67,11 +67,11 @@ if __name__ == "__main__":
 
     print("hi \n")
     LPIPS_ALEX = lpips.LPIPS(net='alex', eval_mode=True).to(device)
-    LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
+    #LPIPS_VGG = lpips.LPIPS(net='vgg', eval_mode=True).to(device)
     DISTS = DISTS_pytorch.DISTS().to(device)
 
     lpips_alex_sum = 0
-    lpips_vgg_sum = 0
+    #lpips_vgg_sum = 0
     dists_sum = 0
 
     ssim_avg_sum = 0
@@ -87,15 +87,17 @@ if __name__ == "__main__":
 
         # calculate metrics
         lpips_alex_sum += LPIPS_ALEX(pred, target).sum().item()
-        lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
+        #lpips_vgg_sum += LPIPS_VGG(pred, target).sum()
         dists_sum += DISTS(pred, target).sum().item()
 
         ssim_avg_sum += ssim(pred, target)
         psnr_avg_sum += psnr(pred, target)
 
+        print('lpipsalex')
+
     # average
     final_lpips_alex = lpips_alex_sum / len(dl.dataset)
-    final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
+    #final_lpips_vgg = lpips_vgg_sum / len(dl.dataset)
     final_dists = dists_sum / len(dl.dataset)
 
     final_ssim = ssim_avg_sum / len(dl)
@@ -103,7 +105,7 @@ if __name__ == "__main__":
 
     print("---RESULTS---")
     print("LPIPS (alex): ", final_lpips_alex)
-    print("LPIPS (vgg): ", final_lpips_vgg)
+    #print("LPIPS (vgg): ", final_lpips_vgg)
     print("DISTS: ", final_dists)
     print("SSIM: ", final_ssim)
     print("PSNR: ", final_psnr)
