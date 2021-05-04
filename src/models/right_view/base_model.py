@@ -98,9 +98,9 @@ class BaseModel(pl.LightningModule):
         self.log_dict(logs)
 
         # log predicted images every 10k steps
-        if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
-            # pick random element in batch to visualize (train dataloader is shuffled)
-            self._log_images(img[0], target[0], pred[0], step_name="train")
+        # if self.hparams.log_tb_imgs and self.global_step % self.hparams.tb_img_freq == 0:
+        #     # pick random element in batch to visualize (train dataloader is shuffled)
+        #     self._log_images(img[0], target[0], pred[0], step_name="train")
 
         return logs['train_loss']
 
