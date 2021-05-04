@@ -115,11 +115,13 @@ if __name__ == "__main__":
     # save val imgs callback
     #save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
 
-
-    ckpt_callback = ModelCheckpoint(monitor='val_loss', save_last=True, save_top_k=1)
+    checkpoint = ModelCheckpoint(monitor='val_loss',
+                                 filename='{epoch:03d}-{val_loss:.4f}',
+                                 save_last=True,
+                                 mode="min")
 
     # train - by default logging every 50 steps (in train)
     #trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds], num_sanity_val_steps=0)
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[ckpt_callback])
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
