@@ -8,6 +8,8 @@ from models.right_view.base_model import BaseModel
 from models.unet_architecture import UNet, UNetExtraSkip
 from data.multiframe_data import StackedDaVinciDataModule
 
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 #from metrics import FIDCallback
 #from callbacks import SaveImgCallBack
 
@@ -113,8 +115,11 @@ if __name__ == "__main__":
     # save val imgs callback
     #save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
 
+
+    ckpt_callback = ModelCheckpoint(monitor='val_loss', save_last=True, save_top_k=1)
+
     # train - by default logging every 50 steps (in train)
     #trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds], num_sanity_val_steps=0)
-    trainer = pl.Trainer.from_argparse_args(args)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[ckpt_callback])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())
