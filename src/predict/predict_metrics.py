@@ -25,6 +25,7 @@ if __name__ == "__main__":
     pl.seed_everything(42)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(device)
 
     parser = ArgumentParser()
 
