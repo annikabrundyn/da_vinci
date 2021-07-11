@@ -70,20 +70,19 @@ class FIDCallback(pl.callbacks.base.Callback):
     def on_validation_epoch_start(self, trainer, pl_module):
         if trainer.current_epoch % self.fid_freq == 0:
 
-                print(f"FID: {fid}\n")
+            pl_module.eval()
 
-                fid = self.calc_val_fid(pl_module)
+            fid = self.calc_val_fid(pl_module)
+            print(f"FID: {fid}\n")
 
-                # log FID
-                pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
+            # log FID
+            pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
+            # self.to(torch.device('cpu'))
 
             self.last_global_step = trainer.global_step
 
     def calc_val_fid(self, pl_module, *args):
-        pl_module.eval()
-
         with torch.no_grad():
-
             self.inception = self.inception.to(pl_module.device)
             # self.to(pl_module.device)
             features = []
@@ -105,3 +104,5 @@ class FIDCallback(pl.callbacks.base.Callback):
             sample_cov = np.cov(features, rowvar=False)
 
             fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
+
+        return fid

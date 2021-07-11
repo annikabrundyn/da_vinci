@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 import sys
 import torch
+import json
 import torch.nn as nn
 
 from collections import defaultdict
@@ -23,10 +24,12 @@ class BaselineModel(nn.Module):
 
     def __init__(self):
         super(BaselineModel, self).__init__()
+        use_cuda = torch.cuda.is_available()
+        self.device = torch.device("cuda:0" if use_cuda else "cpu")
 
     def forward(self, x, x_trans, fill="copy_left"):
         orig_x = torch.clone(x)
-        out = torch.roll(x, x_trans, 2)
+        out = torch.roll(x, x_trans, 3)
         img_width = x.size()[3]
 
         if x_trans <= 0:
@@ -39,8 +42,8 @@ class BaselineModel(nn.Module):
         if fill == "zeros":
             out[:, :, :, empty_slice_start:empty_slice_end] = 0
         elif fill == "copy_left":
-            out[:, :, :, empty_slice_start:empty_slice_end] = orig_x[:, :, :,
-                                                                     empty_slice_start:empty_slice_end]
+            out[:, :,
+                :, empty_slice_start:empty_slice_end] = orig_x[:, :, :, empty_slice_start:empty_slice_end]
         elif "roll":
             pass
         else:
@@ -64,7 +67,7 @@ if __name__ == "__main__":
 
     # data
     dm = StackedDaVinciDataModule(data_dir=args.data_dir, frames_per_sample=1,
-                                  frames_to_drop=0, num_workers=16)
+                                  frames_to_drop=0, num_workers=16, batch_size=32)
     dm.setup()
     val_dataloader = dm.val_dataloader()
     sample_img = next(iter(val_dataloader))[0][0]
@@ -90,11 +93,12 @@ if __name__ == "__main__":
     # Candidate x-coord shifts for input imgs
     img_width = len(sample_img[0][0])
     half_width = int(img_width / 2)
+
     translations = range(-half_width, half_width)
 
     # Train
     with torch.no_grad():
-        for x_tran in tqdm(translations):
+        for x_tran in tqdm(translations, desc="Training model"):
             for batch_idx, sample in enumerate(val_dataloader):
                 inputs, targets = sample
                 inputs, targets = inputs.to(device), targets.to(device)
@@ -102,9 +106,11 @@ if __name__ == "__main__":
 
                 for loss in loss_module_dict:
                     loss_result_dict[loss][x_tran] += loss_module_dict[loss](
-                        y_true=targets.to(device), y_pred=shifted_inputs).cpu().item() / len(inputs)
+                        y_true=targets.to(device), y_pred=shifted_inputs).cpu().item()
 
             for loss in loss_module_dict:
+                loss_result_dict[loss][x_tran] = loss_result_dict[loss][x_tran] / \
+                    len(val_dataloader)
                 loss_module_dict[loss].reset()
 
     # Get min loss value and corresponding disparity for each loss
@@ -116,27 +122,27 @@ if __name__ == "__main__":
 
     # Calculate metrics for the optimal shift for each loss
     fid = FIDCallback(args.data_dir, "real_stats.pickle", val_dataloader, len(dm.val_samples), 1)
-    lpips = lpips.LPIPS(net='alex')
-    ssim_val, psnr_val, lpips_val = 0, 0, 0
+    lpips = lpips.LPIPS(net='alex').to(device)
 
     for loss in loss_result_dict:
         fid_val = fid._calc_fid(model, final_results_dict[loss]["min_x_trans"])
+        ssim_val, psnr_val, lpips_val = 0, 0, 0
 
-        for batch_idx, sample in enumerate(val_dataloader):
+        for batch_idx, sample in tqdm(enumerate(val_dataloader), desc=f"Calculating metrics for {loss}"):
             inputs, targets = sample
             inputs, targets = inputs.to(device), targets.to(device)
             shifted_inputs = model(inputs, final_results_dict[loss]["min_x_trans"])
 
-            ssim_val += ssim(shifted_inputs, targets.type(targets.dtype)) / len(inputs)
-            psnr_val += psnr(shifted_inputs, targets) / len(inputs)
-            lpips_val += lpips(shifted_inputs, targets).mean() / len(inputs)
+            ssim_val += ssim(shifted_inputs, targets.type(targets.dtype)).mean()
+            psnr_val += psnr(shifted_inputs, targets).mean()
+            lpips_val += lpips(shifted_inputs, targets).mean()
 
-        final_results_dict[loss]['SSIM'] = ssim_val.item()
-        final_results_dict[loss]['PSNR'] = psnr_val.item()
-        final_results_dict[loss]['LPIPS'] = lpips_val.item()
+        final_results_dict[loss]['SSIM'] = ssim_val.item() / len(val_dataloader)
+        final_results_dict[loss]['PSNR'] = psnr_val.item() / len(val_dataloader)
+        final_results_dict[loss]['LPIPS'] = lpips_val.item() / len(val_dataloader)
         final_results_dict[loss]['FID'] = fid_val
 
     # Write results to file
     with open("baseline_results.txt", "w") as f:
         sys.stdout = f  # Change the standard output to the file we created.
-        print(f"{final_results_dict}")
+        print(json.dumps(final_results_dict, sort_keys=True, indent=4))
