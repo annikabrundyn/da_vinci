@@ -62,11 +62,9 @@ class FIDCallback(pl.callbacks.base.Callback):
             self.real_mean = embeds['mean']
             self.real_cov = embeds['cov']
 
-
     def to(self, device):
         self.inception = self.inception.to(device)
         self.val_dl = self.val_dl.to(device)
-
 
     @rank_zero_only
     def on_validation_epoch_start(self, trainer, pl_module):
@@ -74,32 +72,37 @@ class FIDCallback(pl.callbacks.base.Callback):
 
             pl_module.eval()
 
-            with torch.no_grad():
-                self.inception = self.inception.to(pl_module.device)
-                #self.to(pl_module.device)
-                features = []
+            fid = self.calc_val_fid(pl_module)
+            print(f"FID: {fid}\n")
 
-                samples_used = 0
-                for i, (img, target) in enumerate(tqdm(self.val_dl, desc="Getting features for generated images.")):
-                    samples_used += len(target)
-                    if samples_used >= self.num_samples:
-                        break
-
-                    pred = pl_module(img.to(pl_module.device))
-
-                    feat = self.inception(pred)[0].view(pred.shape[0], -1)  # compute features
-                    features.append(feat.to('cpu'))
-
-                features = torch.cat(features, 0).numpy()
-
-                sample_mean = np.mean(features, 0)
-                sample_cov = np.cov(features, rowvar=False)
-
-                fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
-                print(f"FID: {fid}\n")
-
-                # log FID
-                pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
-                #self.to(torch.device('cpu'))
+            # log FID
+            pl_module.logger.experiment.add_scalar("val_fid", fid, trainer.global_step)
+            # self.to(torch.device('cpu'))
 
             self.last_global_step = trainer.global_step
+
+    def calc_val_fid(self, pl_module, *args):
+        with torch.no_grad():
+            self.inception = self.inception.to(pl_module.device)
+            # self.to(pl_module.device)
+            features = []
+
+            samples_used = 0
+            for i, (img, target) in enumerate(tqdm(self.val_dl, desc="Getting features for generated images.")):
+                samples_used += len(target)
+                if samples_used >= self.num_samples:
+                    break
+
+                pred = pl_module(img.to(pl_module.device))
+
+                feat = self.inception(pred)[0].view(pred.shape[0], -1)  # compute features
+                features.append(feat.to('cpu'))
+
+            features = torch.cat(features, 0).numpy()
+
+            sample_mean = np.mean(features, 0)
+            sample_cov = np.cov(features, rowvar=False)
+
+            fid = calc_fid(sample_mean, sample_cov, self.real_mean, self.real_cov)
+
+        return fid
