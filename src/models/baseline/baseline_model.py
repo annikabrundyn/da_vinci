@@ -87,7 +87,7 @@ if __name__ == "__main__":
     loss_module_dict = {}
     loss_result_dict = defaultdict(lambda: defaultdict(float))
     losses_registry = LossRegistry.get_registry()
-    print(losses_registry)
+    print(f"Losses for training: {losses_registry}")
 
     # Instatiate each loss
     for loss in losses_registry:
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     for loss in loss_result_dict:
         fid_val = fid.calc_val_fid(model, final_results_dict[loss]["min_x_trans"])
-        ssim_val, psnr_val, lpips_val = 0, 0, 0
+        ssim_val, psnr_val, lpips_val, dists_val = 0, 0, 0, 0
 
         for batch_idx, sample in tqdm(enumerate(val_dataloader), desc=f"Calculating metrics for {loss}"):
             inputs, targets = sample
