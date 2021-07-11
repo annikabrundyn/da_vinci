@@ -20,14 +20,15 @@ from torch.utils.data import DataLoader
 
 
 class BaselineModel(nn.Module):
-    SUPPORTED_FILLS = {"zeros", "roll", "copy_left"}
+    SUPPORTED_FILLS = {"zeros", "copy_left"}
 
-    def __init__(self):
+    def __init__(self, fill_method):
         super(BaselineModel, self).__init__()
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if use_cuda else "cpu")
+        self.fill_method = fill_method
 
-    def forward(self, x, x_trans, fill="copy_left"):
+    def forward(self, x, x_trans):
         orig_x = torch.clone(x)
         out = torch.roll(x, x_trans, 3)
         img_width = x.size()[3]
@@ -39,12 +40,12 @@ class BaselineModel(nn.Module):
             empty_slice_start = 0
             empty_slice_end = img_width - x_trans
 
-        if fill == "zeros":
+        if self.fill_method == "zeros":
             out[:, :, :, empty_slice_start:empty_slice_end] = 0
-        elif fill == "copy_left":
+        elif self.fill_method == "copy_left":
             out[:, :,
                 :, empty_slice_start:empty_slice_end] = orig_x[:, :, :, empty_slice_start:empty_slice_end]
-        elif "roll":
+        elif self.fill_method == "roll":
             pass
         else:
             raise RuntimeError("Unsupported fill operation")
@@ -58,6 +59,7 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument("--data_dir", type=str, help="path to davinci data")
+    parser.add_argument("--fill_method", type=str, help="path to davinci data")
 
     args = parser.parse_args()
 
@@ -78,7 +80,7 @@ if __name__ == "__main__":
     print("size of testset:", len(dm.test_samples))
 
     # model
-    model = BaselineModel().to(device)
+    model = BaselineModel(args.fill_method).to(device)
     model.eval()
 
     loss_module_dict = {}
@@ -125,7 +127,7 @@ if __name__ == "__main__":
     lpips = lpips.LPIPS(net='alex').to(device)
 
     for loss in loss_result_dict:
-        fid_val = fid._calc_fid(model, final_results_dict[loss]["min_x_trans"])
+        fid_val = fid.calc_val_fid(model, final_results_dict[loss]["min_x_trans"])
         ssim_val, psnr_val, lpips_val = 0, 0, 0
 
         for batch_idx, sample in tqdm(enumerate(val_dataloader), desc=f"Calculating metrics for {loss}"):
@@ -143,6 +145,8 @@ if __name__ == "__main__":
         final_results_dict[loss]['FID'] = fid_val
 
     # Write results to file
-    with open("baseline_results.txt", "w") as f:
+    with open("baseline_results.txt", "a") as f:
         sys.stdout = f  # Change the standard output to the file we created.
+        print(f"Fill method: {args.fill_method}")
         print(json.dumps(final_results_dict, sort_keys=True, indent=4))
+        print("\n")

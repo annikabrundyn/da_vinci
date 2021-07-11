@@ -13,5 +13,9 @@ singularity exec --nv --overlay $SCRATCH/overlay-50G-10M.ext3:ro /scratch/work/p
 source /ext3/env.sh
 conda activate da_vinci
 
-python ../../src/models/baseline/baseline_model.py --data_dir /scratch/js11133/da_vinci/raw_data/
+python ../../src/models/baseline/baseline_model.py --data_dir
+/scratch/js11133/da_vinci/raw_data/ --fill_method zeros
+
+python ../../src/models/baseline/baseline_model.py --data_dir
+/scratch/js11133/da_vinci/raw_data/ --fill_method copy_left
 "
