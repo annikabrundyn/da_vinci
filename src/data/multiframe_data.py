@@ -1,4 +1,5 @@
-from data.data import DaVinciDataSet, DaVinciDataModule
+from data.dataset import DaVinciDataSet
+from data.datamodule import DaVinciDataModule
 
 
 class StackedDaVinciDataSet(DaVinciDataSet):

@@ -3,16 +3,16 @@ from argparse import ArgumentParser
 import torch
 
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, GPUStatsMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from models.right_view.base_model import BaseModel
-from models.unet_architecture import UnstackedUNet, UnstackedUNetExtraSkip
+from models.unet_architecture import UnstackedTempEncUNet
 from data.multiframe_data import UnstackedDaVinciDataModule
 from metrics import FIDCallback
 from callbacks import SaveImgCallBack
 
 
-class UnstackedModel(BaseModel):
+class UnstackedTempEncModel(BaseModel):
     def __init__(
             self,
             num_frames: int,
@@ -35,21 +35,22 @@ class UnstackedModel(BaseModel):
         # UNet without extra skip connection (normal)
         if self.hparams.extra_skip in ("False", "F", "false"):
             print("Architecture: Normal UNet *without* extra skip connection")
-            self.net = UnstackedUNet(num_frames=self.num_frames,
-                                     combine_fn=self.combine_fn,
-                                     num_layers=self.hparams.num_layers,
-                                     features_start=self.hparams.features_start,
-                                     bilinear=self.bilinear,
-                                     sigmoid_on_output=self.hparams.sigmoid_on_output)
+            self.net = UnstackedTempEncUNet(num_frames=self.num_frames,
+                                            combine_fn=self.combine_fn,
+                                            num_layers=self.hparams.num_layers,
+                                            features_start=self.hparams.features_start,
+                                            bilinear=self.bilinear,
+                                            sigmoid_on_output=self.hparams.sigmoid_on_output)
 
         else:
-            print("Architecture: Modified UNet *with* extra skip connection")
-            self.net = UnstackedUNetExtraSkip(num_frames=self.num_frames,
-                                              combine_fn=self.combine_fn,
-                                              num_layers=self.hparams.num_layers,
-                                              features_start=self.hparams.features_start,
-                                              bilinear=self.bilinear,
-                                              sigmoid_on_output=self.hparams.sigmoid_on_output)
+            print("not possible to add extra skip")
+            # print("Architecture: Modified UNet *with* extra skip connection")
+            self.net = UnstackedTempEncUNet(num_frames=self.num_frames,
+                                            combine_fn=self.combine_fn,
+                                            num_layers=self.hparams.num_layers,
+                                            features_start=self.hparams.features_start,
+                                            bilinear=self.bilinear,
+                                            sigmoid_on_output=self.hparams.sigmoid_on_output)
 
         self.save_hyperparameters()
 
@@ -64,17 +65,17 @@ if __name__ == "__main__":
     parser = pl.Trainer.add_argparse_args(parser)
 
     # model args
-    parser = UnstackedModel.add_model_specific_args(parser)
+    parser = UnstackedTempEncModel.add_model_specific_args(parser)
     args = parser.parse_args()
 
     # initialize model, load from checkpoint if passed and update saved dm parameters
     if args.ckpt_path is None:
         print("no model checkpoint provided")
-        model = UnstackedModel(**args.__dict__)
+        model = UnstackedTempEncModel(**args.__dict__)
     else:
         print("load pretrained model checkpoint")
         # only parameter that we change is the learning rate provided
-        model = UnstackedModel.load_from_checkpoint(args.ckpt_path, lr=args.lr)
+        model = UnstackedTempEncModel.load_from_checkpoint(args.ckpt_path, lr=args.lr)
         args.data_dir = model.hparams.data_dir
         args.num_frames = model.hparams.num_frames
         args.batch_size = model.hparams.batch_size
@@ -116,13 +117,10 @@ if __name__ == "__main__":
                                  save_last=True,
                                  mode="min")
 
-    gpu_stats = GPUStatsMonitor()
-
     # init pl trainer
-    # note i've removed resume from checkpoint in trainer for now
     print("initialize trainer")
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds, checkpoint, gpu_stats], num_sanity_val_steps=0)
-
+    # note removed resume from checkpoint in trainer
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint, fid, save_preds], num_sanity_val_steps=0)
 
     print("start training model...")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

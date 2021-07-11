@@ -18,11 +18,13 @@ class UNetExtraSkip(nn.Module):
             output_channels: int = 3,
             num_layers: int = 5,
             features_start: int = 64,
-            bilinear: bool = False
+            bilinear: bool = False,
+            sigmoid_on_output: bool = False
     ):
         super().__init__()
         self.num_layers = num_layers
         self.input_channels = input_channels
+        self.sigmoid_on_output = sigmoid_on_output
 
         layers = [DoubleConv(self.input_channels, features_start)]
 
@@ -42,6 +44,7 @@ class UNetExtraSkip(nn.Module):
         # WIP: should we combine them with a single convolutional layer? no non-linearity?
         self.final_conv = nn.Conv2d(2 * output_channels, output_channels, kernel_size=3, padding=1)
 
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         xi = [self.layers[0](x)]
@@ -55,11 +58,13 @@ class UNetExtraSkip(nn.Module):
         orig_output = self.layers[-1](xi[-1])
 
         # WIP: add additional connection straight from input to output
-        # TODO: double check that the first frame is the "latest frame"
+        # TODO: double check that the first frame is the "latest frame" - True - note only using current frame here
+        # TODO: output both orig_output and new_output to visualize the shift
         input = x[:, 0:3, :, :]
         input_concat_output = torch.cat([input, orig_output], dim=1)
         new_output = self.final_conv(input_concat_output)
 
-        # TODO: output both orig_output and new_output to visualize the shift
+        if self.sigmoid_on_output:
+            new_output = self.sigmoid(new_output)
 
         return new_output

@@ -1,4 +1,4 @@
-from data.data import DaVinciDataModule
+from deprecated.data import DaVinciDataModule
 from deprecated.depth_map.model import Model
 
 import os.path

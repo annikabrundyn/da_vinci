@@ -21,26 +21,28 @@ class UnstackedUNetExtraSkip(nn.Module):
             output_channels: int = 3,
             num_layers: int = 5,
             features_start: int = 64,
-            bilinear: bool = False
+            bilinear: bool = False,
+            sigmoid_on_output: bool = False
     ):
         super().__init__()
         self.num_layers = num_layers
         self.input_channels = input_channels
         self.num_frames = num_frames
+        self.sigmoid_on_output = sigmoid_on_output
 
-        self.combine = self.determine_combine(combine_fn)
+        combine_model = self._determine_combine_fn(combine_fn)
 
         layers = [DoubleConvMF(self.input_channels, features_start)]
-        combine_modules = [self.combine]
+        combine_modules = [combine_model(features_start, num_frames)]
 
         feats = features_start
         for _ in range(num_layers - 1):
             layers.append(DownMF(feats, feats * 2))
+            combine_modules.append(combine_model(feats * 2, num_frames))
             feats *= 2
 
         for _ in range(num_layers - 1):
             layers.append(Up(feats, feats // 2, bilinear))
-            combine_modules.append(self.combine)
             feats //= 2
 
         layers.append(nn.Conv2d(feats, output_channels, kernel_size=1))
@@ -51,15 +53,17 @@ class UnstackedUNetExtraSkip(nn.Module):
         # WIP: should we combine them with a single convolutional layer? no non-linearity?
         self.final_conv = nn.Conv2d(2 * output_channels, output_channels, kernel_size=3, padding=1)
 
-    def determine_combine(self, combine_fn):
+        self.sigmoid = nn.Sigmoid()
+
+    def _determine_combine_fn(self, combine_fn):
         if combine_fn == "conv3d":
-            combine = CombineConv3D(self.num_frames)
+            combine = CombineConv3D
 
         elif combine_fn == "max":
-            combine = CombineMax()
+            combine = CombineMax
 
         elif combine_fn == "average":
-            combine = CombineAverage()
+            combine = CombineAverage
 
         return combine
 
@@ -82,11 +86,13 @@ class UnstackedUNetExtraSkip(nn.Module):
         orig_output = self.layers[-1](comb_xi[-1])
 
         # WIP: add additional connection straight from input to output
-        # TODO: double check that the first frame is the "latest frame" -- I THINK ITS THE LAST FRAME ACTUALLY
+        # TODO: double check that the first frame is the "latest frame" - it is
         input = x[:, 0, :, :, :]
         input_concat_output = torch.cat([input, orig_output], dim=1)
         new_output = self.final_conv(input_concat_output)
 
         # TODO: output both orig_output and new_output to visualize the shift
+        if self.sigmoid_on_output:
+            new_output = self.sigmoid(new_output)
 
         return new_output

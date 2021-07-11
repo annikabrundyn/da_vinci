@@ -1,14 +1,17 @@
 from argparse import ArgumentParser
 
 import pytorch_lightning as pl
-import lpips
 
 from torchvision.utils import make_grid
 
 from models.right_view.base_model import BaseModel
 from models.unet_architecture import UNet, UNetExtraSkip
-from data import StackedDaVinciDataModule
-from metrics import FIDCallback
+from data.multiframe_data import StackedDaVinciDataModule
+
+from pytorch_lightning.callbacks import ModelCheckpoint
+
+#from metrics import FIDCallback
+#from callbacks import SaveImgCallBack
 
 
 class StackedModel(BaseModel):
@@ -20,13 +23,14 @@ class StackedModel(BaseModel):
             extra_skip: str,
             num_layers: int,
             bilinear: str,
+            sigmoid_on_output: bool,
             features_start: int = 64,
             lr: float = 0.001,
             log_tb_imgs: bool = True,
             tb_img_freq: int = 10000,
             **kwargs
     ):
-        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear,
+        super().__init__(num_frames, combine_fn, loss, extra_skip, num_layers, bilinear, sigmoid_on_output,
                          features_start, lr, log_tb_imgs, tb_img_freq, ** kwargs)
 
         self.input_channels = 3 * self.num_frames
@@ -38,7 +42,8 @@ class StackedModel(BaseModel):
                 output_channels=3,
                 num_layers=self.hparams.num_layers,
                 features_start=self.hparams.features_start,
-                bilinear=self.bilinear)
+                bilinear=self.bilinear,
+                sigmoid_on_output=self.hparams.sigmoid_on_output)
         else:
             print("with skip")
             self.net = UNetExtraSkip(
@@ -46,7 +51,8 @@ class StackedModel(BaseModel):
                 output_channels=3,
                 num_layers=self.hparams.num_layers,
                 features_start=self.hparams.features_start,
-                bilinear=self.bilinear)
+                bilinear=self.bilinear,
+                sigmoid_on_output=self.hparams.sigmoid_on_output)
 
     def _log_images(self, img, target, pred, step_name):
         # unstack multiple frames to visualize
@@ -104,9 +110,18 @@ if __name__ == "__main__":
     print("lightning version", pl.__version__)
 
     # fid metric callback
-    fid = FIDCallback(args.data_dir, "real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
+    #fid = FIDCallback(args.data_dir, "real_stats.pickle", dm.val_dataloader_shuffle(), args.fid_n_samples, args.fid_epoch_freq)
+
+    # save val imgs callback
+    #save_preds = SaveImgCallBack(dm.vis_img_dataloader(), args.save_epoch_freq)
+
+    checkpoint = ModelCheckpoint(monitor='val_loss',
+                                 filename='{epoch:03d}-{val_loss:.4f}',
+                                 save_last=True,
+                                 mode="min")
 
     # train - by default logging every 50 steps (in train)
-    trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid])
+    #trainer = pl.Trainer.from_argparse_args(args, callbacks=[fid, save_preds], num_sanity_val_steps=0)
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[checkpoint])
     print("trainer created")
     trainer.fit(model, dm.train_dataloader(), dm.val_dataloader())

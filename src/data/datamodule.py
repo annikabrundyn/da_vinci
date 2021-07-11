@@ -1,84 +1,13 @@
-import math
 import os
 import random
 
 import pytorch_lightning as pl
-import torch
-from PIL import Image
 from sklearn.utils import shuffle
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
+from torch.utils.data import DataLoader
 
 
-class DaVinciDataSet(Dataset):
-    def __init__(self,
-                 data_dir: str,
-                 sample_list: list,
-                 frames_per_sample: int,
-                 frames_to_drop: int,
-                 channel_stack_frames: bool = None,
-                 target_dir = 'image_1',
-                 is_color_input: bool = True,
-                 is_color_output: bool = True,
-                 extra_info: bool = False,
-                 ):
-        self.data_dir = data_dir
-        self.sample_list = sample_list
-        self.frames_per_sample = frames_per_sample
-        self.frames_to_drop = frames_to_drop
-        self.channel_stack_frames = channel_stack_frames
-        self.target_dir = target_dir
-
-        self.is_color_input = is_color_input
-        self.is_color_output = is_color_output
-
-        self.extra_info = extra_info
-
-        self._img_transforms()
-
-    def _img_transforms(self):
-
-        if self.is_color_input:
-            self.img_transform = transforms.Compose([transforms.ToTensor()])
-        else:
-            self.img_transform = transforms.Compose([transforms.Grayscale(), transforms.ToTensor()])
-
-        if self.is_color_output:
-            self.target_transform = transforms.Compose([transforms.ToTensor()])
-        else:
-            self.target_transform = transforms.Compose([transforms.Grayscale(), transforms.ToTensor()])
-
-    def __len__(self):
-        return len(self.sample_list)
-
-    def __getitem__(self, index):
-        image_set, frames = self.sample_list[index]
-
-        images = []
-
-        for frame in frames:
-            img_path = os.path.join(self.data_dir, "{:s}".format(image_set), 'image_0', "{:s}".format(frame))
-            image = Image.open(img_path)
-            image = self.img_transform(image)
-            images.append(image)
-
-        if self.channel_stack_frames:
-            image_tensor = torch.cat(images, dim=0)
-        else:
-            image_tensor = torch.stack(images)
-
-        # target is only the first frame
-        target_path = os.path.join(self.data_dir, "{:s}".format(image_set), self.target_dir, "{:s}".format(frames[0]))
-        target = Image.open(target_path)
-        target = self.target_transform(target)
-
-        if self.extra_info:
-            sample_info = {}
-            sample_info['image_set'] = image_set
-            sample_info['frame_nums'] = " ".join(frames)
-            return image_tensor, target, sample_info
-        else:
-            return image_tensor, target
+# target right frames to visualize (hand picked from validation dataset)
+VIS_IMG_LIST = [26035, 31777, 19795, 13276, 13356, 13514, 13635, 4742, 31360, 31361, 3337, 21297, 21675, 1364]
 
 
 class DaVinciDataModule(pl.LightningDataModule):
@@ -86,15 +15,15 @@ class DaVinciDataModule(pl.LightningDataModule):
             self,
             data_dir: str,
             frames_per_sample: int,
-            frames_to_drop: int,
+            frames_to_drop: int = 0,
             is_color_input: bool = True,
             is_color_output: bool = True,
             extra_info: bool = False,
-            val_split: float = 0.2,
-            test_split: float = 0.1,
-            num_workers: int = 8,
+            num_workers: int = 4,
             batch_size: int = 32,
-            num_pred_img_samples: int = 15,
+            seed: int = 42,
+            num_val_sets: int = 13,
+            videos_drop_k: int = None,
             *args,
             **kwargs,
     ):
@@ -105,12 +34,11 @@ class DaVinciDataModule(pl.LightningDataModule):
         self.is_color_input = is_color_input
         self.is_color_output = is_color_output
         self.extra_info = extra_info
-        self.val_split = val_split
-        self.test_split = test_split
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.num_pred_img_samples = num_pred_img_samples
-        self.dataset = DaVinciDataSet
+        self.seed = seed
+        self.num_val_sets = num_val_sets
+        self.videos_drop_k = videos_drop_k
 
     # helper
     def _read_image_list(self, filename):
@@ -121,9 +49,8 @@ class DaVinciDataModule(pl.LightningDataModule):
             if not next_line:
                 break
             png_name = next_line.rstrip()
-
             img_list.append(png_name)
-        return img_list
+        return img_list[::-1]
 
     # helper
     def _split_into_chunks(self, img_list, window_size, name):
@@ -136,13 +63,20 @@ class DaVinciDataModule(pl.LightningDataModule):
         return all_samples
 
     # helper
-    def _sliding_window(self, img_sets, val_set=False):
+    def _sliding_window(self, img_sets, set_name):
         # create samples containing k frames per sample and dropping some number of random frames
         split_samples = []
         step_size = 1  # sample overlap size
 
+        if ((set_name in ['video', 'val', 'test']) and (self.videos_drop_k)):
+            end = len(img_sets[0][1]) - self.frames_per_sample + 1 - self.videos_drop_k
+        else:
+            end = len(img_sets[0][1]) - self.frames_per_sample + 1
+
         for (name, frame_list) in img_sets:
-            for i in range(0, len(frame_list) - self.frames_per_sample + 1, step_size):
+            cur_set_split_samples = []
+
+            for i in range(0, end, step_size):
                 frames = frame_list[i:i + self.frames_per_sample]
 
                 # Randomly drop frames - only do this if we have 3 or more frames
@@ -157,58 +91,49 @@ class DaVinciDataModule(pl.LightningDataModule):
 
                 split_samples += [(name, frames)]
 
-                if val_set and (name, frames[0]) in self.vis_img_list_names:
-                    self.vis_img_list += [(name, frames)]
-
         return split_samples
 
     # helper
-    def _create_val_img_list(self, val_sets):
-        vis_img_list_names = []
-        random_seed_list = range(2020, 2020 + self.num_pred_img_samples)
+    def _create_val_img_list(self):
+        vis_img_samples = []
 
-        for i in random_seed_list:
-            random.seed(i)
-            s = random.choice(val_sets)
-            name = s[0]
-            frame = random.choice(s[1])
-            vis_img_list_names.append((name, frame))
+        # TODO: import note that this only works when we're not randomly dropping frames
+        for target_idx in VIS_IMG_LIST:
+            idxs = [(target_idx - i) for i in range(self.frames_per_sample)]
+            str_idxs = [f"{str(idx).zfill(6)}.png" for idx in idxs]
+            vis_img_samples.append(('train', str_idxs))
 
-        return vis_img_list_names
+        return vis_img_samples
 
     def setup(self):
         # this function does the train/val/test splits - needs to be run first after instantiating dm
+
+        # read files in train folder, reverse order and split into snippets of 500 frames
         train_img_list = self._read_image_list(os.path.join(self.data_dir, 'train.txt'))
-        train_img_list = train_img_list[::-1]
-        all_sets = self._split_into_chunks(train_img_list, window_size=1000, name='train')
+        train_sets = self._split_into_chunks(train_img_list, window_size=500, name='train')
 
+        # split snippets into train / val
+        train_sets = shuffle(train_sets, random_state=self.seed)
+        val_sets = train_sets[:self.num_val_sets]
+        train_sets = train_sets[self.num_val_sets:]
+
+        # read files from test folder
         test_img_list = self._read_image_list(os.path.join(self.data_dir, 'test.txt'))
-        test_img_list = test_img_list[::-1]
-        all_sets += self._split_into_chunks(test_img_list, window_size=1000, name='test')
+        test_sets = [("test", test_img_list)]
 
-        # shuffle all 41 sets of 1000 frames
-        self.all_sets = shuffle(all_sets, random_state=42)
+        # apply sliding window to each set
+        self.train_samples = self._sliding_window(train_sets, 'train')
+        self.val_samples = self._sliding_window(val_sets, 'val')
+        self.test_samples = self._sliding_window(test_sets, 'test')
+        self.video_samples = self._sliding_window(val_sets, 'video')
 
-        # split train/val/test
-        val_len = math.floor(self.val_split * len(self.all_sets))
-        test_len = math.floor(self.test_split * len(self.all_sets))
-        train_len = len(self.all_sets) - val_len - test_len
+        # create separate list of validation images to visualize (hand-picked 14 indices)
+        self.vis_samples = self._create_val_img_list()
 
-        self.train_sets = self.all_sets[:train_len]
-        self.val_sets = self.all_sets[train_len:train_len + val_len]
-        self.test_sets = self.all_sets[-test_len:]
-
-        # create separate list of random images from validation set to predict on at the end of training
-        self.vis_img_list_names = self._create_val_img_list(self.val_sets)
-        self.vis_img_list = []
-
-        self.train_samples = self._sliding_window(self.train_sets)
-        self.val_samples = self._sliding_window(self.val_sets, val_set=True)
-        self.test_samples = self._sliding_window(self.test_sets)
-
-        self.train_samples = shuffle(self.train_samples, random_state=42)
-        self.val_samples = shuffle(self.val_samples, random_state=42)
-        self.test_samples = shuffle(self.test_samples, random_state=42)
+        # reverse to be from first to last frame for predicting videos since we don't shuffle
+        self.val_samples = self.val_samples[::-1]
+        self.video_samples = self.video_samples[::-1]
+        self.test_samples = self.test_samples[::-1]
 
         self.train_dataset = self.dataset(data_dir=self.data_dir,
                                           sample_list=self.train_samples,
@@ -235,7 +160,15 @@ class DaVinciDataModule(pl.LightningDataModule):
                                          extra_info=self.extra_info)
 
         self.vis_dataset = self.dataset(data_dir=self.data_dir,
-                                        sample_list=self.vis_img_list,
+                                        sample_list=self.vis_samples,
+                                        frames_per_sample=self.frames_per_sample,
+                                        frames_to_drop=self.frames_to_drop,
+                                        is_color_input=self.is_color_input,
+                                        is_color_output=self.is_color_output,
+                                        extra_info=self.extra_info)
+
+        self.video_dataset = self.dataset(data_dir=self.data_dir,
+                                        sample_list=self.video_samples,
                                         frames_per_sample=self.frames_per_sample,
                                         frames_to_drop=self.frames_to_drop,
                                         is_color_input=self.is_color_input,
@@ -277,6 +210,14 @@ class DaVinciDataModule(pl.LightningDataModule):
     def vis_img_dataloader(self):
         loader = DataLoader(self.vis_dataset,
                             batch_size=1,
+                            shuffle=False,
+                            num_workers=self.num_workers,
+                            pin_memory=True)
+        return loader
+
+    def video_dataloader(self):
+        loader = DataLoader(self.video_dataset,
+                            batch_size=self.batch_size,
                             shuffle=False,
                             num_workers=self.num_workers,
                             pin_memory=True)

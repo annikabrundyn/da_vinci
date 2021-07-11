@@ -17,10 +17,12 @@ class UNet(nn.Module):
             output_channels: int = 3,
             num_layers: int = 5,
             features_start: int = 64,
-            bilinear: bool = False
+            bilinear: bool = False,
+            sigmoid_on_output: bool = False
     ):
         super().__init__()
         self.num_layers = num_layers
+        self.sigmoid_on_output = sigmoid_on_output
 
         layers = [DoubleConv(input_channels, features_start)]
 
@@ -34,8 +36,9 @@ class UNet(nn.Module):
             feats //= 2
 
         layers.append(nn.Conv2d(feats, output_channels, kernel_size=1))
-
         self.layers = nn.ModuleList(layers)
+
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         xi = [self.layers[0](x)]
@@ -47,5 +50,8 @@ class UNet(nn.Module):
             xi[-1] = layer(xi[-1], xi[-2 - i])
         # Final conv layer of UNet
         output = self.layers[-1](xi[-1])
+
+        if self.sigmoid_on_output:
+            output = self.sigmoid(output)
 
         return output
