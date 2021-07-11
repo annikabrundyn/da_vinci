@@ -13,6 +13,7 @@ from losses.loss_registry import LossRegistry
 from metrics.fid.fid_callback import FIDCallback
 
 import lpips
+import DISTS_pytorch
 
 from pytorch_lightning.metrics.functional import psnr
 from pytorch_lightning.metrics.functional import ssim
@@ -96,7 +97,8 @@ if __name__ == "__main__":
     img_width = len(sample_img[0][0])
     half_width = int(img_width / 2)
 
-    translations = range(-half_width, half_width)
+    # translations = range(-half_width, half_width)
+    translations = range(-1, 1)
 
     # Train
     with torch.no_grad():
@@ -125,6 +127,7 @@ if __name__ == "__main__":
     # Calculate metrics for the optimal shift for each loss
     fid = FIDCallback(args.data_dir, "real_stats.pickle", val_dataloader, len(dm.val_samples), 1)
     lpips = lpips.LPIPS(net='alex').to(device)
+    dists = dists = DISTS_pytorch.DISTS().to(device)
 
     for loss in loss_result_dict:
         fid_val = fid.calc_val_fid(model, final_results_dict[loss]["min_x_trans"])
@@ -138,14 +141,17 @@ if __name__ == "__main__":
             ssim_val += ssim(shifted_inputs, targets.type(targets.dtype)).mean()
             psnr_val += psnr(shifted_inputs, targets).mean()
             lpips_val += lpips(shifted_inputs, targets).mean()
+            dists_val += dists(shifted_inputs, targets).mean()
 
         final_results_dict[loss]['SSIM'] = ssim_val.item() / len(val_dataloader)
         final_results_dict[loss]['PSNR'] = psnr_val.item() / len(val_dataloader)
         final_results_dict[loss]['LPIPS'] = lpips_val.item() / len(val_dataloader)
+        final_results_dict[loss]['DISTS'] = dists_val.item() / len
+        (val_dataloader)
         final_results_dict[loss]['FID'] = fid_val
 
     # Write results to file
-    with open("baseline_results.txt", "a") as f:
+    with open(f"baseline_results_{args.fill_method}.txt", "a") as f:
         sys.stdout = f  # Change the standard output to the file we created.
         print(f"Fill method: {args.fill_method}")
         print(json.dumps(final_results_dict, sort_keys=True, indent=4))
