@@ -39,7 +39,7 @@ class BaselineModel(nn.Module):
             empty_slice_end = img_width
         else:
             empty_slice_start = 0
-            empty_slice_end = img_width - x_trans
+            empty_slice_end = x_trans
 
         if self.fill_method == "zeros":
             out[:, :, :, empty_slice_start:empty_slice_end] = 0
@@ -146,8 +146,7 @@ if __name__ == "__main__":
         final_results_dict[loss]['SSIM'] = ssim_val.item() / len(val_dataloader)
         final_results_dict[loss]['PSNR'] = psnr_val.item() / len(val_dataloader)
         final_results_dict[loss]['LPIPS'] = lpips_val.item() / len(val_dataloader)
-        final_results_dict[loss]['DISTS'] = dists_val.item() / len
-        (val_dataloader)
+        final_results_dict[loss]['DISTS'] = dists_val.item() / len(val_dataloader)
         final_results_dict[loss]['FID'] = fid_val
 
     # Write results to file
