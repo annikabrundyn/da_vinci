@@ -72,6 +72,7 @@ if __name__ == "__main__":
     dm = StackedDaVinciDataModule(data_dir=args.data_dir, frames_per_sample=1,
                                   frames_to_drop=0, num_workers=16, batch_size=32)
     dm.setup()
+    train_dataloader = dm.train_dataloader()
     val_dataloader = dm.val_dataloader()
     sample_img = next(iter(val_dataloader))[0][0]
 
@@ -103,7 +104,7 @@ if __name__ == "__main__":
     # Train
     with torch.no_grad():
         for x_tran in tqdm(translations, desc="Training model"):
-            for batch_idx, sample in enumerate(val_dataloader):
+            for batch_idx, sample in enumerate(train_dataloader):
                 inputs, targets = sample
                 inputs, targets = inputs.to(device), targets.to(device)
                 shifted_inputs = model(inputs, x_tran)
